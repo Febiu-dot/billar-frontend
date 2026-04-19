@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-felt-dark text-chalk font-body antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-display tracking-wide;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-felt border border-felt-light/30 rounded-xl p-4 shadow-lg;
+  }
+
+  .btn-primary {
+    @apply bg-gold text-felt-dark font-semibold px-4 py-2 rounded-lg
+           hover:bg-gold-light active:scale-95 transition-all duration-150 text-sm;
+  }
+
+  .btn-secondary {
+    @apply bg-felt-light/20 text-chalk border border-felt-light/40 font-medium px-4 py-2
+           rounded-lg hover:bg-felt-light/40 active:scale-95 transition-all duration-150 text-sm;
+  }
+
+  .btn-danger {
+    @apply bg-red-700 text-white font-semibold px-4 py-2 rounded-lg
+           hover:bg-red-600 active:scale-95 transition-all duration-150 text-sm;
+  }
+
+  .input {
+    @apply bg-felt-dark border border-felt-light/40 text-chalk rounded-lg px-3 py-2
+           focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/60
+           placeholder-chalk/30 text-sm w-full;
+  }
+
+  .badge-status {
+    @apply inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full;
+  }
+
+  .table-row {
+    @apply border-b border-felt-light/20 hover:bg-felt-light/10 transition-colors;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0f2b1e; }
+::-webkit-scrollbar-thumb { background: #246040; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #c9a84c; }
+
+/* Animación pulso en juego */
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201,168,76,0.4); }
+  50%       { box-shadow: 0 0 0 8px rgba(201,168,76,0); }
+}
+.pulse-gold { animation: pulse-gold 2s ease-in-out infinite; }
