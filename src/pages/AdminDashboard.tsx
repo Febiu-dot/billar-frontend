@@ -36,7 +36,7 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <PageHeader title="Dashboard" subtitle="Resumen en tiempo real del torneo" />
+      <PageHeader title="Panel Principal" subtitle="Resumen en tiempo real del torneo" />
 
       <div className="p-6 space-y-6">
         {/* Stats */}
