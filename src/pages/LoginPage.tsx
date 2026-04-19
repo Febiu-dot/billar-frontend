@@ -34,11 +34,12 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-sm mx-4">
         {/* Logo */}
         <div className="text-center mb-8">
-          {/* Tres bolas de billar */}
-          <div className="flex items-center justify-center gap-2 mb-5">
-            <div className="w-10 h-10 rounded-full bg-white border-2 border-silver-muted/40 shadow-lg" />
-            <div className="w-12 h-12 rounded-full bg-snooker-red border-2 border-red-700 shadow-lg" />
-            <div className="w-10 h-10 rounded-full bg-snooker-yellow border-2 border-yellow-600 shadow-lg" />
+          <div className="flex justify-center mb-4">
+            <img
+              src="/logo-febiu.png"
+              alt="FEBIU Uruguay"
+              className="w-28 h-28 rounded-full object-cover border-2 border-orange/40 shadow-2xl"
+            />
           </div>
           <h1 className="font-display text-2xl font-bold text-silver-light uppercase tracking-widest leading-tight">
             Federación de Billar

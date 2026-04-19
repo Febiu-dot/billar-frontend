@@ -48,12 +48,8 @@ export default function PublicPage() {
       {/* Header */}
       <header className="bg-carbon-50 border-b border-silver-muted/10 px-4 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex gap-1.5">
-              <div className="w-5 h-5 rounded-full bg-white border border-silver-muted/30" />
-              <div className="w-6 h-6 rounded-full bg-snooker-red border border-red-700" />
-              <div className="w-5 h-5 rounded-full bg-snooker-yellow border border-yellow-600" />
-            </div>
+          <div className="flex items-center gap-3">
+            <img src="/logo-febiu.png" alt="FEBIU" className="w-10 h-10 rounded-full object-cover border border-silver-muted/20" />
             <div>
               <h1 className="font-display text-xl font-bold text-silver-light uppercase tracking-wide leading-tight">
                 Federación de Billar del Uruguay

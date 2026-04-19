@@ -23,12 +23,12 @@ export default function Layout() {
   const handleLogout = () => { logout(); navigate('/login'); };
 
   const adminLinks = [
-    { to: '/admin', label: 'Dashboard', icon: '◉' },
-    { to: '/admin/partidos', label: 'Partidos', icon: '⚔' },
-    { to: '/admin/sedes', label: 'Sedes', icon: '▣' },
-    { to: '/admin/mesas', label: 'Mesas', icon: '▦' },
-    { to: '/admin/jugadores', label: 'Jugadores', icon: '▶' },
-    { to: '/admin/fixture', label: 'Fixture', icon: '◈' },
+    { to: '/admin',           label: 'Panel Principal', icon: '◉' },
+    { to: '/admin/partidos',  label: 'Partidos',        icon: '⚔' },
+    { to: '/admin/sedes',     label: 'Sedes',           icon: '▣' },
+    { to: '/admin/mesas',     label: 'Mesas',           icon: '▦' },
+    { to: '/admin/jugadores', label: 'Jugadores',       icon: '▶' },
+    { to: '/admin/fixture',   label: 'Fixture',         icon: '◈' },
   ];
 
   const juezLinks = [
@@ -39,18 +39,17 @@ export default function Layout() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Sidebar */}
+      {/* Barra lateral */}
       <aside className="w-60 bg-carbon-50 border-r border-silver-muted/10 flex flex-col flex-shrink-0">
         {/* Logo */}
-        <div className="px-5 py-5 border-b border-silver-muted/10">
-          <div className="flex items-center gap-3 mb-1">
-            <div className="w-8 h-8 rounded-full bg-snooker-red border-2 border-orange/50 flex items-center justify-center text-white text-xs font-bold">●</div>
-            <div>
-              <h1 className="font-display text-sm font-bold text-orange leading-tight uppercase tracking-wider">FBU</h1>
-            </div>
+        <div className="px-4 py-4 border-b border-silver-muted/10 flex items-center gap-3">
+          <img src="/logo-febiu.png" alt="FEBIU" className="w-12 h-12 rounded-full object-cover border border-silver-muted/20" />
+          <div>
+            <p className="text-orange font-display font-bold text-sm uppercase tracking-wider leading-tight">FEBIU</p>
+            <p className="text-silver-dark text-xs leading-tight">Federación de Billar</p>
+            <p className="text-silver-dark text-xs">del Uruguay</p>
+            <p className="text-silver-muted text-xs">Sistema de Torneos</p>
           </div>
-          <p className="text-silver-dark text-xs leading-tight">Federación de Billar del Uruguay</p>
-          <p className="text-silver-muted text-xs">Sistema de Torneos</p>
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
@@ -72,7 +71,7 @@ export default function Layout() {
         </div>
       </aside>
 
-      {/* Main */}
+      {/* Contenido principal */}
       <main className="flex-1 overflow-y-auto bg-carbon-100">
         <Outlet />
       </main>
