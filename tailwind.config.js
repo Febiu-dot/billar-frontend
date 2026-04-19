@@ -4,14 +4,14 @@ export default {
   theme: {
     extend: {
       colors: {
-        felt: { DEFAULT: '#1a4731', dark: '#0f2b1e', light: '#246040' },
-        gold:  { DEFAULT: '#c9a84c', dark: '#a07830', light: '#e6c870' },
-        chalk: { DEFAULT: '#e8e0d0', muted: '#b0a890' },
-        cue:   { DEFAULT: '#8b5e3c', light: '#c49a6c' },
+        carbon:  { DEFAULT: '#0a0a0a', 50: '#1a1a1a', 100: '#111111' },
+        orange:  { DEFAULT: '#e85d04', light: '#f48c06', dark: '#c44b00', glow: '#ff7c1f' },
+        silver:  { DEFAULT: '#c0c0c0', light: '#e8e8e8', dark: '#888888', muted: '#555555' },
+        snooker: { red: '#cc0000', green: '#1a6b3a', brown: '#6b3a1a', blue: '#0055aa', pink: '#e878a0', black: '#111111', yellow: '#e8c820' },
       },
       fontFamily: {
-        display: ['"Bebas Neue"', 'sans-serif'],
-        body:    ['"DM Sans"', 'sans-serif'],
+        display: ['"Barlow Condensed"', 'sans-serif'],
+        body:    ['"Inter"', 'sans-serif'],
         mono:    ['"JetBrains Mono"', 'monospace'],
       },
     },
