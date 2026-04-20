@@ -1,4 +1,4 @@
-const CACHE_NAME = 'billar-torneo-v2';
+const CACHE_NAME = 'billar-torneo-v3';
 
 // Recursos estáticos a cachear en la instalación
 const STATIC_ASSETS = [
