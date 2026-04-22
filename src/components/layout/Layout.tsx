@@ -41,7 +41,7 @@ export default function Disposicion() {
     { a: '/juez', etiqueta: 'Mi Sede', icono: 'o' },
   ];
 
-  const links = usuario?.role === 'admin' ? adminLinks : juezLinks;
+  const links = (usuario?.role === 'admin' || usuario?.role === 'administración') ? adminLinks : juezLinks;
 
   const SidebarContent = () => (
     <>
