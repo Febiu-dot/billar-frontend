@@ -41,7 +41,8 @@ export default function Disposicion() {
     { a: '/juez', etiqueta: 'Mi Sede', icono: 'o' },
   ];
 
-  const links = (usuario?.role === 'admin' || usuario?.role === 'administración') ? adminLinks : juezLinks;
+  const esJuez = usuario?.role === 'juez_sede';
+  const links = esJuez ? juezLinks : adminLinks;
 
   const SidebarContent = () => (
     <>
@@ -56,9 +57,11 @@ export default function Disposicion() {
       </div>
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {links.map(l => <NavItem key={l.a} {...l} />)}
-        <div className="pt-3 border-t border-gray-700 mt-3">
-          <NavItem a="/publico" etiqueta="Vista Publica" icono="p" />
-        </div>
+        {!esJuez && (
+          <div className="pt-3 border-t border-gray-700 mt-3">
+            <NavItem a="/publico" etiqueta="Vista Publica" icono="p" />
+          </div>
+        )}
       </nav>
       <div className="px-3 py-4 border-t border-gray-700">
         <div className="px-3 py-2 mb-2">
