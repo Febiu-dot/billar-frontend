@@ -18,12 +18,12 @@ function NavItem({ a, etiqueta, icono }: { a: string; etiqueta: string; icono: s
   );
 }
 
-export default function Disposicion() {
+export default function Layout() {
   const { usuario, cerrar_sesion } = useAuth();
   const navegar_por = useNavigate();
   const [menuAbierto, setMenuAbierto] = useState(false);
 
-  const gestionar_el_cierre_de_sesion = () => {
+  const handleLogout = () => {
     cerrar_sesion();
     navegar_por('/acceso');
   };
@@ -41,8 +41,8 @@ export default function Disposicion() {
     { a: '/juez', etiqueta: 'Mi Sede', icono: 'o' },
   ];
 
-  const esJuez = usuario?.role === 'juez_sede';
-  const links = esJuez ? juezLinks : adminLinks;
+  const isJuez = usuario?.role === 'juez_sede';
+  const links = isJuez ? juezLinks : adminLinks;
 
   const SidebarContent = () => (
     <>
@@ -57,7 +57,7 @@ export default function Disposicion() {
       </div>
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {links.map(l => <NavItem key={l.a} {...l} />)}
-        {!esJuez && (
+        {!isJuez && (
           <div className="pt-3 border-t border-gray-700 mt-3">
             <NavItem a="/publico" etiqueta="Vista Publica" icono="p" />
           </div>
@@ -69,7 +69,7 @@ export default function Disposicion() {
           <p className="text-orange-400 font-semibold text-sm">{usuario?.nombre_de_usuario}</p>
           <p className="text-gray-400 text-xs uppercase">{usuario?.role}</p>
         </div>
-        <button onClick={gestionar_el_cierre_de_sesion} className="w-full btn-secondary text-left text-xs">
+        <button onClick={handleLogout} className="w-full btn-secondary text-left text-xs">
           Cerrar sesion
         </button>
       </div>
