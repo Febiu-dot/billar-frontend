@@ -1,8 +1,8 @@
-const CACHE_NAME = 'billar-torneo-v6';
+const CACHE_NAME = 'febiu-billar-v2';
 
 const STATIC_ASSETS = [
   '/',
-  '/login',
+  '/index.html',
   '/manifest.json',
 ];
 
@@ -18,29 +18,53 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
+      Promise.all(
+        keys
+          .filter((key) => key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
+      )
     )
   );
   self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
+  const { request } = event;
+  const url = new URL(request.url);
 
-  if (url.pathname.startsWith('/api') || url.hostname !== self.location.hostname) {
+  // ✅ API y dominios externos: siempre red, NUNCA cache
+  if (url.pathname.startsWith('/api/') || url.hostname !== self.location.hostname) {
+    event.respondWith(fetch(request));
     return;
   }
 
-  if (event.request.mode === 'navigate') {
+  // Navegación SPA: network-first, fallback a index.html
+  if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match('/'))
+      fetch(request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match('/index.html'))
     );
     return;
   }
 
+  // Assets estáticos: cache-first
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      return cached || fetch(event.request);
+    caches.match(request).then((cached) => {
+      if (cached) return cached;
+      return fetch(request).then((response) => {
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+        }
+        return response;
+      });
     })
   );
 });
