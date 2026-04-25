@@ -235,14 +235,14 @@ export default function JudgePage() {
                     <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5 truncate">
                       {resultModal.playerA?.firstName} — Sets
                     </label>
-                    <input type="number" min="0" max="5" className="input text-center text-xl font-mono"
+                    <input type="number" min="0" max={resultModal.ruleSet?.setsToWin ?? 5} className="input text-center text-xl font-mono"
                       value={form.setsA} onChange={e => setForm({ ...form, setsA: e.target.value })} />
                   </div>
                   <div>
                     <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5 truncate">
                       {resultModal.playerB?.firstName} — Sets
                     </label>
-                    <input type="number" min="0" max="5" className="input text-center text-xl font-mono"
+                    <input type="number" min="0" max={resultModal.ruleSet?.setsToWin ?? 5} className="input text-center text-xl font-mono"
                       value={form.setsB} onChange={e => setForm({ ...form, setsB: e.target.value })} />
                   </div>
                 </div>
@@ -252,14 +252,14 @@ export default function JudgePage() {
                     <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5 truncate">
                       {resultModal.playerA?.firstName} — Tantos
                     </label>
-                    <input type="number" min="0" className="input text-center font-mono"
+                    <input type="number" min="0" max={resultModal.ruleSet?.pointsPerSet ?? 50} className="input text-center font-mono"
                       value={form.pointsA} onChange={e => setForm({ ...form, pointsA: e.target.value })} />
                   </div>
                   <div>
                     <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5 truncate">
                       {resultModal.playerB?.firstName} — Tantos
                     </label>
-                    <input type="number" min="0" className="input text-center font-mono"
+                    <input type="number" min="0" max={resultModal.ruleSet?.pointsPerSet ?? 50} className="input text-center font-mono"
                       value={form.pointsB} onChange={e => setForm({ ...form, pointsB: e.target.value })} />
                   </div>
                 </div>
