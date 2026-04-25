@@ -89,6 +89,18 @@ export interface MatchResult {
   notes?: string;
 }
 
+export interface RuleSet {
+  id: number;
+  name: string;
+  bestOf: number;
+  setsToWin: number;
+  pointsPerSet: number;
+  woSetsWinner: number;
+  woSetsLoser: number;
+  woPtsWinner: number;
+  woPtsLoser: number;
+}
+
 export interface Match {
   id: number;
   phaseId: number;
@@ -99,6 +111,8 @@ export interface Match {
   playerB?: Player;
   tableId?: number;
   table?: Table;
+  ruleSetId?: number;
+  ruleSet?: RuleSet;
   status: MatchStatus;
   round: number;
   scheduledAt?: string;
