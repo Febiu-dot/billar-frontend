@@ -89,12 +89,12 @@ export function Modal({ title, children, onClose }: {
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="bg-carbon-50 border border-silver-muted/20 rounded-xl w-full max-w-md shadow-2xl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-silver-muted/10">
+      <div className="bg-carbon-50 border border-silver-muted/20 rounded-xl w-full max-w-md shadow-2xl max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-silver-muted/10 flex-shrink-0">
           <h3 className="font-display text-xl font-bold text-orange uppercase tracking-wide">{title}</h3>
           <button onClick={onClose} className="text-silver-dark hover:text-silver text-xl leading-none">✕</button>
         </div>
-        <div className="px-5 py-4">{children}</div>
+        <div className="px-5 py-4 overflow-y-auto">{children}</div>
       </div>
     </div>
   );
