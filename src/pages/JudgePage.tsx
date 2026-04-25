@@ -1,48 +1,140 @@
-import { useEffect, useState } from 'react';
-import { api } from '../services/api';
-import { socket } from '../services/socket';
-import { Match, Table } from '../types';
-import { MatchStatusBadge, playerName, LoadingSpinner, Modal, EmptyState } from '../components/ui';
-import { useAuth } from '../context/AuthContext';
+export type Role = 'admin' | 'juez_sede' | 'publico';
+export type MatchStatus = 'pendiente' | 'asignado' | 'en_juego' | 'finalizado' | 'wo';
+export type TableStatus = 'libre' | 'ocupada' | 'fuera_de_servicio';
+export type CategoryName = 'master' | 'primera' | 'segunda' | 'tercera';
+export type PhaseType = 'clasificatorio' | 'segunda' | 'primera' | 'master';
 
-interface SetScore { a: string; b: string; }
+export interface User {
+  id: number;
+  username: string;
+  role: Role;
+  venueId?: number;
+  venueName?: string;
+}
 
-export default function JudgePage() {
-  const { user } = useAuth();
-  const [tables, setTables]           = useState<Table[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [resultModal, setResultModal] = useState<Match | null>(null);
-  const [sets, setSets]               = useState<SetScore[]>([{ a: '', b: '' }]);
-  const [isWO, setIsWO]               = useState(false);
-  const [woPlayerId, setWoPlayerId]   = useState('');
-  const [notes, setNotes]             = useState('');
-  const [saving, setSaving]           = useState(false);
-  const [error, setError]             = useState('');
+export interface Venue {
+  id: number;
+  name: string;
+  address?: string;
+  city?: string;
+  tables?: Table[];
+  _count?: { tables: number };
+}
 
-  const fetchTables = () => {
-    const url = user?.venueId ? `/tables?venueId=${user.venueId}` : '/tables';
-    api.get(url).then(r => { setTables(r.data); setLoading(false); });
-  };
+export interface Table {
+  id: number;
+  number: number;
+  venueId: number;
+  venue?: Venue;
+  status: TableStatus;
+  matches?: Match[];
+}
 
-  useEffect(() => {
-    fetchTables();
-    if (user?.venueId) socket.emit('join:venue', user.venueId);
-    socket.on('match:updated', fetchTables);
-    socket.on('table:updated', fetchTables);
-    return () => {
-      socket.off('match:updated', fetchTables);
-      socket.off('table:updated', fetchTables);
-    };
-  }, [user?.venueId]);
+export interface Category {
+  id: number;
+  name: CategoryName;
+}
 
-  const openResultModal = (match: Match) => {
-    setResultModal(match);
-    setSets([{ a: '', b: '' }]);
-    setIsWO(false);
-    setWoPlayerId('');
-    setNotes('');
-    setError('');
-  };
+export interface Player {
+  id: number;
+  firstName: string;
+  lastName: string;
+  dni?: string;
+  categoryId: number;
+  category?: Category;
+  active: boolean;
+}
 
-  const handleStartMatch = async (matchId: number) => {
-    await api.put(`/matches/${matchId}/start`)
+export interface Tournament {
+  id: number;
+  name: string;
+  year: number;
+  description?: string;
+  active: boolean;
+  circuits?: Circuit[];
+}
+
+export interface Circuit {
+  id: number;
+  name: string;
+  tournamentId: number;
+  tournament?: Tournament;
+  order: number;
+  startDate?: string;
+  endDate?: string;
+  active: boolean;
+  phases?: Phase[];
+}
+
+export interface Phase {
+  id: number;
+  name: string;
+  type: PhaseType;
+  circuitId: number;
+  circuit?: Circuit;
+  order: number;
+  matches?: Match[];
+}
+
+export interface MatchResult {
+  id: number;
+  matchId: number;
+  setsA: number;
+  setsB: number;
+  pointsA: number;
+  pointsB: number;
+  winnerId?: number;
+  isWO: boolean;
+  woPlayerId?: number;
+  notes?: string;
+}
+
+export interface RuleSet {
+  id: number;
+  name: string;
+  bestOf: number;
+  setsToWin: number;
+  pointsPerSet: number;
+  woSetsWinner: number;
+  woSetsLoser: number;
+  woPtsWinner: number;
+  woPtsLoser: number;
+}
+
+export interface Match {
+  id: number;
+  phaseId: number;
+  phase?: Phase;
+  playerAId: number;
+  playerA?: Player;
+  playerBId: number;
+  playerB?: Player;
+  tableId?: number;
+  table?: Table;
+  ruleSetId?: number;
+  ruleSet?: RuleSet;
+  status: MatchStatus;
+  round: number;
+  scheduledAt?: string;
+  startedAt?: string;
+  finishedAt?: string;
+  result?: MatchResult;
+}
+
+export interface RankingEntry {
+  id: number;
+  playerId: number;
+  player?: Player;
+  circuitId: number;
+  circuit?: Circuit;
+  points: number;
+  matchesPlayed: number;
+  matchesWon: number;
+  setsWon: number;
+  setsLost: number;
+  pointsFor: number;
+  pointsAgainst: number;
+  position?: number;
+  setsAverage?: number;
+  pointsAverage?: number;
+}
