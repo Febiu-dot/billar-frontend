@@ -19,7 +19,7 @@ function NavItem({ a, etiqueta, icono }: { a: string; etiqueta: string; icono: s
 }
 
 export default function Layout() {
-  const { usuario, cerrar_sesion } = useAuth();
+  const { user, logout } = useAuth();
   const navegar_por = useNavigate();
   const [menuAbierto, setMenuAbierto] = useState(false);
 
@@ -41,7 +41,9 @@ export default function Layout() {
     { a: '/juez', etiqueta: 'Mi Sede', icono: 'o' },
   ];
 
-  const isJuez = usuario?.role === 'juez_sede';
+  const isJuez = user?.role === 'juez_sede';
+const handleLogout = () => { logout(); navigate('/login'); };
+// y donde muestra: {user?.username} y {user?.role}
   const links = isJuez ? juezLinks : adminLinks;
 
   const SidebarContent = () => (
