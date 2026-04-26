@@ -27,14 +27,14 @@ export default function PlayersPage() {
 
   const openAdd = () => {
     setEditPlayer(null);
-    setForm({ firstName: '', lastName: '', dni: '', categoryId: categories[0]?.id?.toString() ?? '' });
+    setForm({ firstName: '', lastName: '', ci: '', categoryId: categories[0]?.id?.toString() ?? '' });
     setError('');
     setShowModal(true);
   };
 
   const openEdit = (p: Player) => {
     setEditPlayer(p);
-    setForm({ firstName: p.firstName, lastName: p.lastName, dni: p.dni ?? '', categoryId: p.categoryId.toString() });
+    setForm({ firstName: p.firstName, lastName: p.lastName, ci: p.ci ?? '', categoryId: p.categoryId.toString() });
     setError('');
     setShowModal(true);
   };
@@ -44,7 +44,7 @@ export default function PlayersPage() {
     setSaving(true);
     setError('');
     try {
-      const payload = { ...form, categoryId: Number(form.categoryId), dni: form.dni || undefined };
+      const payload = { ...form, categoryId: Number(form.categoryId), ci: form.ci || undefined };
       if (editPlayer) {
         await api.put(`/players/${editPlayer.id}`, payload);
       } else {
