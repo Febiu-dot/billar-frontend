@@ -9,7 +9,7 @@ export default function PlayersPage() {
   const [loading, setLoading]     = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editPlayer, setEditPlayer] = useState<Player | null>(null);
-  const [form, setForm]           = useState({ firstName: '', lastName: '', ci: '', categoryId: '' });
+  const [form, setForm]           = useState({ firstName: '', lastName: '', dni: '', categoryId: '' });
   const [saving, setSaving]       = useState(false);
   const [error, setError]         = useState('');
   const [filterCat, setFilterCat] = useState('');
@@ -18,23 +18,24 @@ export default function PlayersPage() {
   const fetchPlayers = () =>
     api.get('/players').then(r => {
       setPlayers(r.data);
-      const cats = Array.from(new Map(r.data.map((p: Player) => [p.category?.id, p.category]).filter(([, c]: any) => c)).values()) as Category[];
-      setCategories(cats);
       setLoading(false);
     });
 
-  useEffect(() => { fetchPlayers(); }, []);
+  useEffect(() => {
+    fetchPlayers();
+    api.get('/categories').then(r => setCategories(r.data));
+  }, []);
 
   const openAdd = () => {
     setEditPlayer(null);
-    setForm({ firstName: '', lastName: '', ci: '', categoryId: categories[0]?.id?.toString() ?? '' });
+    setForm({ firstName: '', lastName: '', dni: '', categoryId: categories[0]?.id?.toString() ?? '' });
     setError('');
     setShowModal(true);
   };
 
   const openEdit = (p: Player) => {
     setEditPlayer(p);
-    setForm({ firstName: p.firstName, lastName: p.lastName, ci: p.ci ?? '', categoryId: p.categoryId.toString() });
+    setForm({ firstName: p.firstName, lastName: p.lastName, dni: p.dni ?? '', categoryId: p.categoryId.toString() });
     setError('');
     setShowModal(true);
   };
@@ -44,7 +45,7 @@ export default function PlayersPage() {
     setSaving(true);
     setError('');
     try {
-      const payload = { ...form, categoryId: Number(form.categoryId), ci: form.ci || undefined };
+      const payload = { ...form, categoryId: Number(form.categoryId), dni: form.dni || undefined };
       if (editPlayer) {
         await api.put(`/players/${editPlayer.id}`, payload);
       } else {
@@ -64,7 +65,7 @@ export default function PlayersPage() {
       await api.put(`/players/${p.id}`, {
         firstName: p.firstName,
         lastName: p.lastName,
-        ci: p.ci,
+        dni: p.dni,
         categoryId: p.categoryId,
         active: !p.active,
       });
@@ -135,7 +136,7 @@ export default function PlayersPage() {
                   <thead>
                     <tr className="border-b border-felt-light/20 text-chalk/40 text-xs uppercase tracking-widest">
                       <th className="text-left px-4 py-3">Jugador</th>
-                      <th className="text-left px-4 py-3 hidden sm:table-cell">ci</th>
+                      <th className="text-left px-4 py-3 hidden sm:table-cell">C.I.</th>
                       <th className="text-left px-4 py-3">Categoría</th>
                       <th className="text-left px-4 py-3 hidden sm:table-cell">Estado</th>
                       <th className="px-4 py-3"></th>
@@ -148,7 +149,7 @@ export default function PlayersPage() {
                           {p.lastName}, {p.firstName}
                         </td>
                         <td className="px-4 py-3 text-chalk/40 font-mono hidden sm:table-cell">
-                          {p.ci ?? '—'}
+                          {p.dni ?? '—'}
                         </td>
                         <td className="px-4 py-3">
                           {p.category && <CategoryBadge name={p.category.name} />}
@@ -199,8 +200,8 @@ export default function PlayersPage() {
               </div>
             </div>
             <div>
-              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">ci</label>
-              <input className="input" value={form.ci} onChange={e => setForm({ ...form, ci: e.target.value })} placeholder="Opcional" />
+              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">C.I.</label>
+              <input className="input" value={form.dni} onChange={e => setForm({ ...form, dni: e.target.value })} placeholder="Opcional" />
             </div>
             <div>
               <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Categoría *</label>
