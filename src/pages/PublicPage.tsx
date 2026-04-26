@@ -131,6 +131,30 @@ export default function PublicPage() {
                       <p className="text-silver-dark text-xs">{m.playerB?.lastName}</p>
                     </div>
                   </div>
+
+                  {/* Desglose por set */}
+                  {m.sets && m.sets.length > 0 && (
+                    <div className="mt-3 border-t border-silver-muted/10 pt-2 space-y-1">
+                      {m.sets.map(s => (
+                        <div key={s.setNumber} className="flex items-center gap-2 font-mono text-xs justify-center">
+                          <span className="text-silver-dark w-6">S{s.setNumber}</span>
+                          <span className={s.pointsA > s.pointsB ? 'text-orange font-bold' : 'text-silver-dark'}>
+                            {s.pointsA}
+                          </span>
+                          <span className="text-silver-muted">—</span>
+                          <span className={s.pointsB > s.pointsA ? 'text-orange font-bold' : 'text-silver-dark'}>
+                            {s.pointsB}
+                          </span>
+                          {s.pointsA > s.pointsB ? (
+                            <span className="text-orange">← ✓</span>
+                          ) : (
+                            <span className="text-orange">✓ →</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <p className="text-silver-dark text-xs text-center mt-2 font-mono">{m.phase?.name} · Ronda {m.round}</p>
                 </div>
               ))}
@@ -189,6 +213,18 @@ export default function PublicPage() {
                             {playerName(m.playerB)}
                           </p>
                         </div>
+                        {/* Desglose por set en resultados */}
+                        {m.sets && m.sets.length > 0 && (
+                          <div className="flex gap-2 mt-1 flex-wrap">
+                            {m.sets.map(s => (
+                              <span key={s.setNumber} className="font-mono text-xs text-silver-dark">
+                                S{s.setNumber}: <span className={s.pointsA > s.pointsB ? 'text-orange' : ''}>{s.pointsA}</span>
+                                —
+                                <span className={s.pointsB > s.pointsA ? 'text-orange' : ''}>{s.pointsB}</span>
+                              </span>
+                            ))}
+                          </div>
+                        )}
                         <p className="text-silver-dark text-xs font-mono">
                           {m.phase?.name}
                           {m.result?.isWO && <span className="ml-2 text-red-400">W.O.</span>}
