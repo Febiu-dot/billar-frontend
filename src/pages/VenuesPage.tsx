@@ -1,4 +1,4 @@
-mport { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { Venue, Table } from '../types';
 import { PageHeader, TableStatusBadge, LoadingSpinner, Modal, EmptyState } from '../components/ui';
