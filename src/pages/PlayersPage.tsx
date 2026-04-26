@@ -16,18 +16,14 @@ export default function PlayersPage() {
   const [search, setSearch]       = useState('');
 
   const fetchPlayers = () =>
-    api.get('/players').then(r => { setPlayers(r.data); setLoading(false); });
-
-  useEffect(() => {
-    fetchPlayers();
     api.get('/players').then(r => {
       setPlayers(r.data);
-      // Extract unique categories from players
       const cats = Array.from(new Map(r.data.map((p: Player) => [p.category?.id, p.category]).filter(([, c]: any) => c)).values()) as Category[];
       setCategories(cats);
       setLoading(false);
     });
-  }, []);
+
+  useEffect(() => { fetchPlayers(); }, []);
 
   const openAdd = () => {
     setEditPlayer(null);
@@ -63,6 +59,21 @@ export default function PlayersPage() {
     }
   };
 
+  const handleToggleActive = async (p: Player) => {
+    try {
+      await api.put(`/players/${p.id}`, {
+        firstName: p.firstName,
+        lastName: p.lastName,
+        dni: p.dni,
+        categoryId: p.categoryId,
+        active: !p.active,
+      });
+      fetchPlayers();
+    } catch {
+      alert('Error al cambiar el estado del jugador');
+    }
+  };
+
   const catOrder: CategoryName[] = ['master', 'primera', 'segunda', 'tercera'];
 
   const filtered = players.filter(p => {
@@ -73,7 +84,6 @@ export default function PlayersPage() {
     return matchesCat && matchesSearch;
   });
 
-  // Group by category
   const grouped: Record<string, Player[]> = {};
   filtered.forEach(p => {
     const cat = p.category?.name ?? 'sin_categoria';
@@ -92,7 +102,6 @@ export default function PlayersPage() {
       />
 
       <div className="p-6 space-y-5">
-        {/* Filters */}
         <div className="flex flex-wrap gap-3 items-center">
           <input
             className="input w-48"
@@ -150,7 +159,21 @@ export default function PlayersPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <button className="btn-secondary py-1 px-3 text-xs" onClick={() => openEdit(p)}>Editar</button>
+                          <div className="flex gap-2 justify-end">
+                            <button
+                              className={`py-1 px-3 text-xs rounded-lg border transition-all ${
+                                p.active
+                                  ? 'border-red-700/40 text-red-400 hover:bg-red-900/20'
+                                  : 'border-green-700/40 text-green-400 hover:bg-green-900/20'
+                              }`}
+                              onClick={() => handleToggleActive(p)}
+                            >
+                              {p.active ? 'Desactivar' : 'Activar'}
+                            </button>
+                            <button className="btn-secondary py-1 px-3 text-xs" onClick={() => openEdit(p)}>
+                              Editar
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
