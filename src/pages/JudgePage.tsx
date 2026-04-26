@@ -5,18 +5,19 @@ import { Match, Table } from '../types';
 import { MatchStatusBadge, playerName, LoadingSpinner, Modal, EmptyState } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 
-interface SetScore { a: string; b: string; }
+interface SetScore { a: string; b: string; saved: boolean; }
 
 export default function JudgePage() {
   const { user } = useAuth();
   const [tables, setTables]           = useState<Table[]>([]);
   const [loading, setLoading]         = useState(true);
   const [resultModal, setResultModal] = useState<Match | null>(null);
-  const [sets, setSets]               = useState<SetScore[]>([{ a: '', b: '' }]);
+  const [sets, setSets]               = useState<SetScore[]>([{ a: '', b: '', saved: false }]);
   const [isWO, setIsWO]               = useState(false);
   const [woPlayerId, setWoPlayerId]   = useState('');
   const [notes, setNotes]             = useState('');
   const [saving, setSaving]           = useState(false);
+  const [savingSet, setSavingSet]     = useState<number | null>(null);
   const [error, setError]             = useState('');
 
   const fetchTables = () => {
@@ -37,7 +38,24 @@ export default function JudgePage() {
 
   const openResultModal = (match: Match) => {
     setResultModal(match);
-    setSets([{ a: '', b: '' }]);
+    // Si ya hay sets guardados, cargarlos
+    if (match.sets && match.sets.length > 0) {
+      const loadedSets: SetScore[] = match.sets.map(s => ({
+        a: s.pointsA.toString(),
+        b: s.pointsB.toString(),
+        saved: true,
+      }));
+      // Agregar fila vacía al final si el partido no tiene ganador
+      const setsToWin = match.ruleSet?.setsToWin ?? 3;
+      const winsA = loadedSets.filter(s => Number(s.a) > Number(s.b)).length;
+      const winsB = loadedSets.filter(s => Number(s.b) > Number(s.a)).length;
+      if (winsA < setsToWin && winsB < setsToWin) {
+        loadedSets.push({ a: '', b: '', saved: false });
+      }
+      setSets(loadedSets);
+    } else {
+      setSets([{ a: '', b: '', saved: false }]);
+    }
     setIsWO(false);
     setWoPlayerId('');
     setNotes('');
@@ -57,29 +75,51 @@ export default function JudgePage() {
     return null;
   };
 
-  const updateSet = (index: number, side: 'a' | 'b', value: string, match: Match) => {
-    const pointsPerSet = match.ruleSet?.pointsPerSet ?? 60;
-    const setsToWin   = match.ruleSet?.setsToWin ?? 3;
-    const newSets = sets.map((s, i) => i === index ? { ...s, [side]: value } : s);
-
-    let winsA = 0, winsB = 0;
-    for (let i = 0; i < newSets.length; i++) {
-      const w = calcSetWinner(newSets[i].a, newSets[i].b, pointsPerSet);
-      if (w === 'a') winsA++;
-      if (w === 'b') winsB++;
-    }
-
-    const currentWinner = calcSetWinner(newSets[index].a, newSets[index].b, pointsPerSet);
-    const matchOver = winsA >= setsToWin || winsB >= setsToWin;
-
-    if (currentWinner && !matchOver && newSets.length === index + 1) {
-      newSets.push({ a: '', b: '' });
-    }
-
+  const updateSet = (index: number, side: 'a' | 'b', value: string) => {
+    const newSets = sets.map((s, i) => i === index ? { ...s, [side]: value, saved: false } : s);
     setSets(newSets);
   };
 
-  const handleSubmitResult = async (e: React.FormEvent) => {
+  const handleSaveSet = async (index: number) => {
+    if (!resultModal) return;
+    const s = sets[index];
+    const pointsPerSet = resultModal.ruleSet?.pointsPerSet ?? 60;
+    const winner = calcSetWinner(s.a, s.b, pointsPerSet);
+    if (!winner) {
+      setError(`Set ${index + 1}: ingresá tantos válidos (alguno debe llegar a ${pointsPerSet})`);
+      return;
+    }
+    setSavingSet(index);
+    setError('');
+    try {
+      await api.put(`/matches/${resultModal.id}/set`, {
+        setNumber: index + 1,
+        pointsA: Number(s.a),
+        pointsB: Number(s.b),
+      });
+
+      const newSets = sets.map((set, i) => i === index ? { ...set, saved: true } : set);
+
+      // Calcular si hay ganador
+      const setsToWin = resultModal.ruleSet?.setsToWin ?? 3;
+      const winsA = newSets.filter(set => Number(set.a) > Number(set.b) && set.saved).length;
+      const winsB = newSets.filter(set => Number(set.b) > Number(set.a) && set.saved).length;
+
+      // Agregar nueva fila si el partido no terminó
+      if (winsA < setsToWin && winsB < setsToWin && newSets.length === index + 1) {
+        newSets.push({ a: '', b: '', saved: false });
+      }
+
+      setSets(newSets);
+      fetchTables();
+    } catch {
+      setError('Error al guardar el set');
+    } finally {
+      setSavingSet(null);
+    }
+  };
+
+  const handleCloseMatch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resultModal) return;
     setSaving(true);
@@ -91,7 +131,8 @@ export default function JudgePage() {
     try {
       let setsA = 0, setsB = 0, pointsA = 0, pointsB = 0;
 
-      for (const s of sets) {
+      const savedSets = sets.filter(s => s.saved);
+      for (const s of savedSets) {
         const w = calcSetWinner(s.a, s.b, pointsPerSet);
         if (w === 'a') setsA++;
         if (w === 'b') setsB++;
@@ -113,19 +154,17 @@ export default function JudgePage() {
         isWO,
         woPlayerId: isWO && woPlayerId ? Number(woPlayerId) : undefined,
         notes: notes || undefined,
-        sets: sets
-          .filter(s => s.a !== '' && s.b !== '')
-          .map((s, i) => ({
-            setNumber: i + 1,
-            pointsA: Number(s.a),
-            pointsB: Number(s.b),
-          })),
+        sets: savedSets.map((s, i) => ({
+          setNumber: i + 1,
+          pointsA: Number(s.a),
+          pointsB: Number(s.b),
+        })),
       });
 
       setResultModal(null);
       fetchTables();
     } catch {
-      setError('Error al guardar el resultado');
+      setError('Error al cerrar el partido');
     } finally {
       setSaving(false);
     }
@@ -133,13 +172,12 @@ export default function JudgePage() {
 
   const currentMatch = (t: Table) => t.matches?.[0];
 
-  const getSummary = (match: Match) => {
-    const pointsPerSet = match.ruleSet?.pointsPerSet ?? 60;
+  const getSummary = () => {
     let winsA = 0, winsB = 0;
     for (const s of sets) {
-      const w = calcSetWinner(s.a, s.b, pointsPerSet);
-      if (w === 'a') winsA++;
-      if (w === 'b') winsB++;
+      if (!s.saved) continue;
+      if (Number(s.a) > Number(s.b)) winsA++;
+      if (Number(s.b) > Number(s.a)) winsB++;
     }
     return { winsA, winsB };
   };
@@ -224,17 +262,13 @@ export default function JudgePage() {
                           <button
                             className="btn-primary flex-1 text-sm"
                             onClick={() => handleStartMatch(match.id)}
-                          >
-                            ▶ Iniciar Partido
-                          </button>
+                          >▶ Iniciar Partido</button>
                         )}
                         {match.status === 'en_juego' && (
                           <button
                             className="btn-primary flex-1 text-sm"
                             onClick={() => openResultModal(match)}
-                          >
-                            📝 Cargar Resultado
-                          </button>
+                          >📝 Cargar Resultado</button>
                         )}
                         {(match.status === 'finalizado' || match.status === 'wo') && (
                           <div className="flex-1 text-center">
@@ -259,11 +293,12 @@ export default function JudgePage() {
       </div>
 
       {resultModal && (() => {
-        const { winsA, winsB } = getSummary(resultModal);
+        const { winsA, winsB } = getSummary();
         const setsToWin    = resultModal.ruleSet?.setsToWin ?? 3;
         const pointsPerSet = resultModal.ruleSet?.pointsPerSet ?? 60;
         const nameA = resultModal.playerA?.firstName ?? 'Jugador A';
         const nameB = resultModal.playerB?.firstName ?? 'Jugador B';
+        const matchHasWinner = winsA >= setsToWin || winsB >= setsToWin;
 
         return (
           <Modal title="CARGAR RESULTADO" onClose={() => setResultModal(null)}>
@@ -277,6 +312,7 @@ export default function JudgePage() {
               </p>
             </div>
 
+            {/* Marcador en tiempo real */}
             <div className="flex justify-center items-center gap-6 bg-felt-dark/50 rounded-lg py-3 mb-4">
               <div className="text-center">
                 <p className="text-chalk/50 text-xs truncate max-w-[80px]">{nameA}</p>
@@ -289,7 +325,8 @@ export default function JudgePage() {
               </div>
             </div>
 
-            <form onSubmit={handleSubmitResult} className="space-y-4">
+            <form onSubmit={handleCloseMatch} className="space-y-4">
+              {/* W.O. toggle */}
               <div className="flex items-center gap-3 bg-felt-dark/50 rounded-lg px-3 py-2">
                 <input
                   type="checkbox"
@@ -321,35 +358,38 @@ export default function JudgePage() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <p className="text-chalk/60 text-xs uppercase tracking-widest truncate">{nameA}</p>
-                    <p className="text-chalk/30 text-xs uppercase tracking-widest">Set</p>
-                    <p className="text-chalk/60 text-xs uppercase tracking-widest truncate">{nameB}</p>
+                  <div className="grid grid-cols-7 gap-2 text-center">
+                    <p className="col-span-2 text-chalk/60 text-xs uppercase tracking-widest truncate">{nameA}</p>
+                    <p className="col-span-1 text-chalk/30 text-xs uppercase tracking-widest">Set</p>
+                    <p className="col-span-2 text-chalk/60 text-xs uppercase tracking-widest truncate">{nameB}</p>
+                    <p className="col-span-2"></p>
                   </div>
 
                   {sets.map((s, i) => {
                     const winner = calcSetWinner(s.a, s.b, pointsPerSet);
+                    const isSaving = savingSet === i;
                     return (
                       <div
                         key={i}
-                        className={`grid grid-cols-3 gap-2 items-center rounded-lg px-2 py-1 ${
-                          winner ? 'bg-gold/10' : 'bg-felt-dark/30'
+                        className={`grid grid-cols-7 gap-2 items-center rounded-lg px-2 py-1 ${
+                          s.saved ? 'bg-gold/10' : 'bg-felt-dark/30'
                         }`}
                       >
                         <input
                           type="number"
                           min="0"
                           max={pointsPerSet}
-                          className={`input text-center font-mono ${winner === 'a' ? 'border-gold/50' : ''}`}
+                          className={`col-span-2 input text-center font-mono ${winner === 'a' ? 'border-gold/50' : ''}`}
                           value={s.a}
-                          onChange={e => updateSet(i, 'a', e.target.value, resultModal)}
+                          onChange={e => updateSet(i, 'a', e.target.value)}
+                          disabled={s.saved}
                           placeholder="0"
                         />
-                        <div className="text-center">
+                        <div className="col-span-1 text-center">
                           <span className="text-chalk/40 font-mono text-sm">{i + 1}</span>
-                          {winner && (
+                          {winner && s.saved && (
                             <span className="ml-1 text-xs text-gold">
-                              {winner === 'a' ? '← ✓' : '✓ →'}
+                              {winner === 'a' ? '←' : '→'}
                             </span>
                           )}
                         </div>
@@ -357,11 +397,26 @@ export default function JudgePage() {
                           type="number"
                           min="0"
                           max={pointsPerSet}
-                          className={`input text-center font-mono ${winner === 'b' ? 'border-gold/50' : ''}`}
+                          className={`col-span-2 input text-center font-mono ${winner === 'b' ? 'border-gold/50' : ''}`}
                           value={s.b}
-                          onChange={e => updateSet(i, 'b', e.target.value, resultModal)}
+                          onChange={e => updateSet(i, 'b', e.target.value)}
+                          disabled={s.saved}
                           placeholder="0"
                         />
+                        <div className="col-span-2">
+                          {!s.saved ? (
+                            <button
+                              type="button"
+                              className="btn-primary text-xs py-1 w-full"
+                              onClick={() => handleSaveSet(i)}
+                              disabled={isSaving || !s.a || !s.b}
+                            >
+                              {isSaving ? '...' : '✓ Set'}
+                            </button>
+                          ) : (
+                            <span className="text-green-400 text-xs text-center block">✓</span>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -383,15 +438,19 @@ export default function JudgePage() {
               {error && <p className="text-red-400 text-sm">{error}</p>}
 
               <div className="flex gap-3 pt-2">
-                <button type="submit" className="btn-primary flex-1" disabled={saving}>
-                  {saving ? 'Guardando...' : '✓ Cerrar Partido'}
+                <button
+                  type="submit"
+                  className="btn-primary flex-1"
+                  disabled={saving || (!isWO && !matchHasWinner)}
+                >
+                  {saving ? 'Cerrando...' : matchHasWinner || isWO ? '✓ Cerrar Partido' : 'Partido en curso...'}
                 </button>
                 <button
                   type="button"
                   className="btn-secondary flex-1"
                   onClick={() => setResultModal(null)}
                 >
-                  Cancelar
+                  Cerrar
                 </button>
               </div>
             </form>
