@@ -128,11 +128,38 @@ export default function MatchesPage() {
                       <span className="font-semibold text-chalk truncate">{playerName(m.playerB)}</span>
                     </div>
 
-                    {m.result && (m.result.pointsA > 0 || m.result.pointsB > 0) && (
+                    {/* Desglose por set */}
+                    {m.sets && m.sets.length > 0 && (
+                      <div className="mt-2 space-y-0.5">
+                        {m.sets.map(s => (
+                          <div key={s.setNumber} className="flex items-center gap-2 font-mono text-xs">
+                            <span className="text-chalk/30 w-8">S{s.setNumber}</span>
+                            <span className={s.pointsA > s.pointsB ? 'text-gold font-bold' : 'text-chalk/50'}>
+                              {s.pointsA}
+                            </span>
+                            <span className="text-chalk/20">—</span>
+                            <span className={s.pointsB > s.pointsA ? 'text-gold font-bold' : 'text-chalk/50'}>
+                              {s.pointsB}
+                            </span>
+                            {s.pointsA > s.pointsB ? (
+                              <span className="text-gold text-xs">← ✓</span>
+                            ) : (
+                              <span className="text-gold text-xs">✓ →</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {m.result && !m.sets?.length && (m.result.pointsA > 0 || m.result.pointsB > 0) && (
                       <p className="text-xs text-chalk/30 font-mono mt-0.5">
                         {m.result.pointsA} pts — {m.result.pointsB} pts
                         {m.result.isWO && <span className="ml-2 text-red-400">W.O.</span>}
                       </p>
+                    )}
+
+                    {m.result?.isWO && (
+                      <p className="text-xs text-red-400 font-mono mt-0.5">W.O.</p>
                     )}
                   </div>
 
