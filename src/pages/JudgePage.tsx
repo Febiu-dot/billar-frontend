@@ -113,6 +113,13 @@ export default function JudgePage() {
         isWO,
         woPlayerId: isWO && woPlayerId ? Number(woPlayerId) : undefined,
         notes: notes || undefined,
+        sets: sets
+          .filter(s => s.a !== '' && s.b !== '')
+          .map((s, i) => ({
+            setNumber: i + 1,
+            pointsA: Number(s.a),
+            pointsB: Number(s.b),
+          })),
       });
 
       setResultModal(null);
