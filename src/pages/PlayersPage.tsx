@@ -9,7 +9,7 @@ export default function PlayersPage() {
   const [loading, setLoading]     = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editPlayer, setEditPlayer] = useState<Player | null>(null);
-  const [form, setForm]           = useState({ firstName: '', lastName: '', dni: '', categoryId: '' });
+  const [form, setForm]           = useState({ firstName: '', lastName: '', ci: '', categoryId: '' });
   const [saving, setSaving]       = useState(false);
   const [error, setError]         = useState('');
   const [filterCat, setFilterCat] = useState('');
@@ -64,7 +64,7 @@ export default function PlayersPage() {
       await api.put(`/players/${p.id}`, {
         firstName: p.firstName,
         lastName: p.lastName,
-        dni: p.dni,
+        ci: p.ci,
         categoryId: p.categoryId,
         active: !p.active,
       });
@@ -135,7 +135,7 @@ export default function PlayersPage() {
                   <thead>
                     <tr className="border-b border-felt-light/20 text-chalk/40 text-xs uppercase tracking-widest">
                       <th className="text-left px-4 py-3">Jugador</th>
-                      <th className="text-left px-4 py-3 hidden sm:table-cell">DNI</th>
+                      <th className="text-left px-4 py-3 hidden sm:table-cell">ci</th>
                       <th className="text-left px-4 py-3">Categoría</th>
                       <th className="text-left px-4 py-3 hidden sm:table-cell">Estado</th>
                       <th className="px-4 py-3"></th>
@@ -148,7 +148,7 @@ export default function PlayersPage() {
                           {p.lastName}, {p.firstName}
                         </td>
                         <td className="px-4 py-3 text-chalk/40 font-mono hidden sm:table-cell">
-                          {p.dni ?? '—'}
+                          {p.ci ?? '—'}
                         </td>
                         <td className="px-4 py-3">
                           {p.category && <CategoryBadge name={p.category.name} />}
@@ -199,8 +199,8 @@ export default function PlayersPage() {
               </div>
             </div>
             <div>
-              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">DNI</label>
-              <input className="input" value={form.dni} onChange={e => setForm({ ...form, dni: e.target.value })} placeholder="Opcional" />
+              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">ci</label>
+              <input className="input" value={form.ci} onChange={e => setForm({ ...form, ci: e.target.value })} placeholder="Opcional" />
             </div>
             <div>
               <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Categoría *</label>
