@@ -89,6 +89,15 @@ export interface MatchResult {
   notes?: string;
 }
 
+export interface SetResult {
+  id: number;
+  matchId: number;
+  setNumber: number;
+  pointsA: number;
+  pointsB: number;
+  winnerId?: number;
+}
+
 export interface RuleSet {
   id: number;
   name: string;
@@ -119,6 +128,7 @@ export interface Match {
   startedAt?: string;
   finishedAt?: string;
   result?: MatchResult;
+  sets?: SetResult[];
 }
 
 export interface RankingEntry {
