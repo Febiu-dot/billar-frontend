@@ -38,7 +38,7 @@ export default function Layout() {
   ];
 
   const juezLinks = [
-    { a: '/juez', etiqueta: 'Mi Sede', icono: 'o' },
+    { a: '/juez', etiqueta: user?.venueName ?? 'Mi Sede', icono: 'o' },
   ];
 
   const isJuez = user?.role === 'juez_sede';
