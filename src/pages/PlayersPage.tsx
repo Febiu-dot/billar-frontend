@@ -3,13 +3,26 @@ import { api } from '../services/api';
 import { Player, Category, CategoryName } from '../types';
 import { PageHeader, CategoryBadge, LoadingSpinner, Modal, EmptyState } from '../components/ui';
 
+const CLUBS = [
+  'CAPOLAVORO',
+  'FERIA FRANCA',
+  'YATAY',
+  'CABRERA',
+  'MODEL CENTER',
+  'NUEVO MALVIN',
+  'SPORTING UNION',
+  'CENTENARIO',
+  'CASA DEL BILLAR',
+  'PIEDRA HONDA',
+];
+
 export default function PlayersPage() {
   const [players, setPlayers]     = useState<Player[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading]     = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editPlayer, setEditPlayer] = useState<Player | null>(null);
-  const [form, setForm]           = useState({ firstName: '', lastName: '', dni: '', categoryId: '' });
+  const [form, setForm]           = useState({ firstName: '', lastName: '', dni: '', categoryId: '', club: '' });
   const [saving, setSaving]       = useState(false);
   const [error, setError]         = useState('');
   const [filterCat, setFilterCat] = useState('');
@@ -28,14 +41,14 @@ export default function PlayersPage() {
 
   const openAdd = () => {
     setEditPlayer(null);
-    setForm({ firstName: '', lastName: '', dni: '', categoryId: categories[0]?.id?.toString() ?? '' });
+    setForm({ firstName: '', lastName: '', dni: '', categoryId: categories[0]?.id?.toString() ?? '', club: '' });
     setError('');
     setShowModal(true);
   };
 
   const openEdit = (p: Player) => {
     setEditPlayer(p);
-    setForm({ firstName: p.firstName, lastName: p.lastName, dni: p.dni ?? '', categoryId: p.categoryId.toString() });
+    setForm({ firstName: p.firstName, lastName: p.lastName, dni: p.dni ?? '', categoryId: p.categoryId.toString(), club: p.club ?? '' });
     setError('');
     setShowModal(true);
   };
@@ -45,7 +58,7 @@ export default function PlayersPage() {
     setSaving(true);
     setError('');
     try {
-      const payload = { ...form, categoryId: Number(form.categoryId), dni: form.dni || undefined };
+      const payload = { ...form, categoryId: Number(form.categoryId), dni: form.dni || undefined, club: form.club || undefined };
       if (editPlayer) {
         await api.put(`/players/${editPlayer.id}`, payload);
       } else {
@@ -68,6 +81,7 @@ export default function PlayersPage() {
         dni: p.dni,
         categoryId: p.categoryId,
         active: !p.active,
+        club: p.club,
       });
       fetchPlayers();
     } catch {
@@ -136,8 +150,9 @@ export default function PlayersPage() {
                   <thead>
                     <tr className="border-b border-felt-light/20 text-chalk/40 text-xs uppercase tracking-widest">
                       <th className="text-left px-4 py-3">Jugador</th>
+                      <th className="text-left px-4 py-3 hidden sm:table-cell">Club</th>
                       <th className="text-left px-4 py-3 hidden sm:table-cell">C.I.</th>
-                      <th className="text-left px-4 py-3">Categoría</th>
+                      <th className="text-left px-4 py-3">Categoria</th>
                       <th className="text-left px-4 py-3 hidden sm:table-cell">Estado</th>
                       <th className="px-4 py-3"></th>
                     </tr>
@@ -148,8 +163,11 @@ export default function PlayersPage() {
                         <td className="px-4 py-3 font-medium text-chalk">
                           {p.lastName}, {p.firstName}
                         </td>
+                        <td className="px-4 py-3 text-chalk/50 text-xs hidden sm:table-cell">
+                          {p.club ?? '-'}
+                        </td>
                         <td className="px-4 py-3 text-chalk/40 font-mono hidden sm:table-cell">
-                          {p.dni ?? '—'}
+                          {p.dni ?? '-'}
                         </td>
                         <td className="px-4 py-3">
                           {p.category && <CategoryBadge name={p.category.name} />}
@@ -196,15 +214,22 @@ export default function PlayersPage() {
               </div>
               <div>
                 <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Apellido *</label>
-                <input className="input" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} required placeholder="Pérez" />
+                <input className="input" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} required placeholder="Perez" />
               </div>
+            </div>
+            <div>
+              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Club</label>
+              <select className="input" value={form.club} onChange={e => setForm({ ...form, club: e.target.value })}>
+                <option value="">Sin club</option>
+                {CLUBS.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
             </div>
             <div>
               <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">C.I.</label>
               <input className="input" value={form.dni} onChange={e => setForm({ ...form, dni: e.target.value })} placeholder="Opcional" />
             </div>
             <div>
-              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Categoría *</label>
+              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Categoria *</label>
               <select className="input" value={form.categoryId} onChange={e => setForm({ ...form, categoryId: e.target.value })} required>
                 <option value="">Seleccionar</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
