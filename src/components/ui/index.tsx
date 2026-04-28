@@ -62,9 +62,23 @@ export function StatCard({ label, value, icon, color = 'orange' }: {
   );
 }
 
-export function playerName(p?: { firstName: string; lastName: string }) {
+const CLUB_ABBR: Record<string, string> = {
+  'CAPOLAVORO': 'CAP',
+  'FERIA FRANCA': 'FF',
+  'YATAY': 'YAT',
+  'CABRERA': 'CAB',
+  'MODEL CENTER': 'MC',
+  'NUEVO MALVIN': 'NM',
+  'SPORTING UNION': 'SU',
+  'CENTENARIO': 'CEN',
+  'CASA DEL BILLAR': 'CDB',
+  'PIEDRA HONDA': 'PH',
+};
+
+export function playerName(p?: { firstName: string; lastName: string; club?: string }) {
   if (!p) return '—';
-  return `${p.firstName} ${p.lastName}`;
+  const abbr = p.club ? CLUB_ABBR[p.club.toUpperCase()] : null;
+  return abbr ? `${p.firstName} ${p.lastName} (${abbr})` : `${p.firstName} ${p.lastName}`;
 }
 
 export function EmptyState({ message }: { message: string }) {
