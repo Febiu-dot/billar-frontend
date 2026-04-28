@@ -24,7 +24,7 @@ export function TableStatusBadge({ status }: { status: TableStatus }) {
 
 export function CategoryBadge({ name }: { name: CategoryName }) {
   const map: Record<CategoryName, { label: string; cls: string }> = {
-    master:  { label: 'MÁSTER',  cls: 'bg-orange/20 text-orange' },
+    master:  { label: 'MASTER',  cls: 'bg-orange/20 text-orange' },
     primera: { label: 'PRIMERA', cls: 'bg-blue-900/30 text-blue-300' },
     segunda: { label: 'SEGUNDA', cls: 'bg-purple-900/30 text-purple-300' },
     tercera: { label: 'TERCERA', cls: 'bg-silver-muted/20 text-silver-dark' },
@@ -63,20 +63,20 @@ export function StatCard({ label, value, icon, color = 'orange' }: {
 }
 
 const CLUB_ABBR: Record<string, string> = {
-  'CAPOLAVORO': 'CAP',
+  CAPOLAVORO: 'CAP',
   'FERIA FRANCA': 'FF',
-  'YATAY': 'YAT',
-  'CABRERA': 'CAB',
+  YATAY: 'YAT',
+  CABRERA: 'CAB',
   'MODEL CENTER': 'MC',
   'NUEVO MALVIN': 'NM',
   'SPORTING UNION': 'SU',
-  'CENTENARIO': 'CEN',
+  CENTENARIO: 'CEN',
   'CASA DEL BILLAR': 'CDB',
   'PIEDRA HONDA': 'PH',
 };
 
 export function playerName(p?: { firstName: string; lastName: string; club?: string }) {
-  if (!p) return '—';
+  if (!p) return '-';
   const abbr = p.club ? CLUB_ABBR[p.club.toUpperCase()] : null;
   return abbr ? `${p.firstName} ${p.lastName} (${abbr})` : `${p.firstName} ${p.lastName}`;
 }
@@ -84,7 +84,7 @@ export function playerName(p?: { firstName: string; lastName: string; club?: str
 export function EmptyState({ message }: { message: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-silver-muted">
-      <span className="text-4xl mb-3">●</span>
+      <span className="text-4xl mb-3">o</span>
       <p className="text-sm">{message}</p>
     </div>
   );
@@ -106,7 +106,7 @@ export function Modal({ title, children, onClose }: {
       <div className="bg-carbon-50 border border-silver-muted/20 rounded-xl w-full max-w-md shadow-2xl max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-silver-muted/10 flex-shrink-0">
           <h3 className="font-display text-xl font-bold text-orange uppercase tracking-wide">{title}</h3>
-          <button onClick={onClose} className="text-silver-dark hover:text-silver text-xl leading-none">✕</button>
+          <button onClick={onClose} className="text-silver-dark hover:text-silver text-xl leading-none">X</button>
         </div>
         <div className="px-5 py-4 overflow-y-auto">{children}</div>
       </div>
