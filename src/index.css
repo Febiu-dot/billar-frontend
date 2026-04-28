@@ -1,73 +1,151 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+export type Role = 'admin' | 'juez_sede' | 'publico';
+export type MatchStatus = 'pendiente' | 'asignado' | 'en_juego' | 'finalizado' | 'wo';
+export type TableStatus = 'libre' | 'ocupada' | 'fuera_de_servicio';
+export type CategoryName = 'master' | 'primera' | 'segunda' | 'tercera';
+export type PhaseType = 'clasificatorio' | 'segunda' | 'primera' | 'master';
 
-@layer base {
-  body {
-    @apply bg-carbon-100 text-silver-light font-body antialiased;
-  }
-  h1, h2, h3, h4 {
-    @apply font-display tracking-wide;
-  }
+export interface User {
+  id: number;
+  username: string;
+  role: Role;
+  venueId?: number;
+  venueName?: string;
 }
 
-@layer components {
-  .card {
-    @apply bg-carbon-50 border border-silver-muted/20 rounded-xl p-4 shadow-lg;
-  }
-
-  .btn-primary {
-    @apply bg-orange text-white font-semibold px-4 py-2 rounded-lg
-           hover:bg-orange-light active:scale-95 transition-all duration-150 text-sm;
-  }
-
-  .btn-secondary {
-    @apply bg-silver-muted/20 text-silver border border-silver-muted/30 font-medium px-4 py-2
-           rounded-lg hover:bg-silver-muted/30 active:scale-95 transition-all duration-150 text-sm;
-  }
-
-  .btn-danger {
-    @apply bg-red-700 text-white font-semibold px-4 py-2 rounded-lg
-           hover:bg-red-600 active:scale-95 transition-all duration-150 text-sm;
-  }
-
-  .input {
-    @apply bg-carbon-100 border border-silver-muted/30 text-silver-light rounded-lg px-3 py-2
-           focus:outline-none focus:ring-2 focus:ring-orange/50 focus:border-orange/60
-           placeholder-silver-muted/40 text-sm w-full;
-  }
-
-  .badge-status {
-    @apply inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full;
-  }
-
-  .table-row {
-    @apply border-b border-silver-muted/10 hover:bg-silver-muted/5 transition-colors;
-  }
-
-  .sidebar-active {
-    @apply bg-orange text-white font-semibold;
-  }
-
-  .sidebar-item {
-    @apply text-silver/60 hover:text-silver hover:bg-silver-muted/10;
-  }
+export interface Venue {
+  id: number;
+  name: string;
+  address?: string;
+  city?: string;
+  tables?: Table[];
+  _count?: { tables: number };
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: #0a0a0a; }
-::-webkit-scrollbar-thumb { background: #e85d04; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #f48c06; }
-
-/* Pulse orange para partidos en juego */
-@keyframes pulse-orange {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(232,93,4,0.4); }
-  50%       { box-shadow: 0 0 0 8px rgba(232,93,4,0); }
+export interface Table {
+  id: number;
+  number: number;
+  venueId: number;
+  venue?: Venue;
+  status: TableStatus;
+  matches?: Match[];
 }
-.pulse-orange { animation: pulse-orange 2s ease-in-out infinite; }
 
-/* Línea decorativa naranja */
-.orange-line {
-  border-left: 3px solid #e85d04;
+export interface Category {
+  id: number;
+  name: CategoryName;
+}
+
+export interface Player {
+  id: number;
+  firstName: string;
+  lastName: string;
+  dni?: string;
+  categoryId: number;
+  category?: Category;
+  active: boolean;
+  club?: string;
+}
+
+export interface Tournament {
+  id: number;
+  name: string;
+  year: number;
+  description?: string;
+  active: boolean;
+  circuits?: Circuit[];
+}
+
+export interface Circuit {
+  id: number;
+  name: string;
+  tournamentId: number;
+  tournament?: Tournament;
+  order: number;
+  startDate?: string;
+  endDate?: string;
+  active: boolean;
+  phases?: Phase[];
+}
+
+export interface Phase {
+  id: number;
+  name: string;
+  type: PhaseType;
+  circuitId: number;
+  circuit?: Circuit;
+  order: number;
+  matches?: Match[];
+}
+
+export interface MatchResult {
+  id: number;
+  matchId: number;
+  setsA: number;
+  setsB: number;
+  pointsA: number;
+  pointsB: number;
+  winnerId?: number;
+  isWO: boolean;
+  woPlayerId?: number;
+  notes?: string;
+}
+
+export interface SetResult {
+  id: number;
+  matchId: number;
+  setNumber: number;
+  pointsA: number;
+  pointsB: number;
+  winnerId?: number;
+}
+
+export interface RuleSet {
+  id: number;
+  name: string;
+  bestOf: number;
+  setsToWin: number;
+  pointsPerSet: number;
+  woSetsWinner: number;
+  woSetsLoser: number;
+  woPtsWinner: number;
+  woPtsLoser: number;
+}
+
+export interface Match {
+  id: number;
+  phaseId: number;
+  phase?: Phase;
+  playerAId: number;
+  playerA?: Player;
+  playerBId: number;
+  playerB?: Player;
+  tableId?: number;
+  table?: Table;
+  ruleSetId?: number;
+  ruleSet?: RuleSet;
+  status: MatchStatus;
+  round: number;
+  scheduledAt?: string;
+  startedAt?: string;
+  finishedAt?: string;
+  result?: MatchResult;
+  sets?: SetResult[];
+}
+
+export interface RankingEntry {
+  id: number;
+  playerId: number;
+  player?: Player;
+  circuitId: number;
+  circuit?: Circuit;
+  points: number;
+  matchesPlayed: number;
+  matchesWon: number;
+  setsWon: number;
+  setsLost: number;
+  pointsFor: number;
+  pointsAgainst: number;
+  position?: number;
+  setsAverage?: number;
+  pointsAverage?: number;
 }
