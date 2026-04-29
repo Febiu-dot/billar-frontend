@@ -1,3 +1,65 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-carbon-100 text-silver-light font-body antialiased;
+  }
+  h1, h2, h3, h4 {
+    @apply font-display tracking-wide;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-carbon-50 border border-silver-muted/20 rounded-xl p-4 shadow-lg;
+  }
+  .btn-primary {
+    @apply bg-orange text-white font-semibold px-4 py-2 rounded-lg
+           hover:bg-orange-light active:scale-95 transition-all duration-150 text-sm;
+  }
+  .btn-secondary {
+    @apply bg-silver-muted/20 text-silver border border-silver-muted/30 font-medium px-4 py-2
+           rounded-lg hover:bg-silver-muted/30 active:scale-95 transition-all duration-150 text-sm;
+  }
+  .btn-danger {
+    @apply bg-red-700 text-white font-semibold px-4 py-2 rounded-lg
+           hover:bg-red-600 active:scale-95 transition-all duration-150 text-sm;
+  }
+  .input {
+    @apply bg-carbon-100 border border-silver-muted/30 text-silver-light rounded-lg px-3 py-2
+           focus:outline-none focus:ring-2 focus:ring-orange/50 focus:border-orange/60
+           placeholder-silver-muted/40 text-sm w-full;
+  }
+  .badge-status {
+    @apply inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full;
+  }
+  .table-row {
+    @apply border-b border-silver-muted/10 hover:bg-silver-muted/5 transition-colors;
+  }
+  .sidebar-active {
+    @apply bg-orange text-white font-semibold;
+  }
+  .sidebar-item {
+    @apply text-silver/60 hover:text-silver hover:bg-silver-muted/10;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #0a0a0a; }
+::-webkit-scrollbar-thumb { background: #e85d04; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #f48c06; }
+
+/* Pulse orange para partidos en juego */
+@keyframes pulse-orange {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(232,93,4,0.4); }
+  50%       { box-shadow: 0 0 0 8px rgba(232,93,4,0); }
+}
+.pulse-orange { animation: pulse-orange 2s ease-in-out infinite; }
+
+/* Linea decorativa naranja */
+.orange-line {
+  border-left: 3px solid #e85d04;
+}
