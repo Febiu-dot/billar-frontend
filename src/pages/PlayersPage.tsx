@@ -17,22 +17,19 @@ const CLUBS = [
 ];
 
 export default function PlayersPage() {
-  const [players, setPlayers]     = useState<Player[]>([]);
+  const [players, setPlayers]       = useState<Player[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading]       = useState(true);
+  const [showModal, setShowModal]   = useState(false);
   const [editPlayer, setEditPlayer] = useState<Player | null>(null);
-  const [form, setForm]           = useState({ firstName: '', lastName: '', dni: '', categoryId: '', club: '' });
-  const [saving, setSaving]       = useState(false);
-  const [error, setError]         = useState('');
-  const [filterCat, setFilterCat] = useState('');
-  const [search, setSearch]       = useState('');
+  const [form, setForm]             = useState({ firstName: '', lastName: '', dni: '', categoryId: '', club: '' });
+  const [saving, setSaving]         = useState(false);
+  const [error, setError]           = useState('');
+  const [filterCat, setFilterCat]   = useState('');
+  const [search, setSearch]         = useState('');
 
   const fetchPlayers = () =>
-    api.get('/players').then(r => {
-      setPlayers(r.data);
-      setLoading(false);
-    });
+    api.get('/players').then(r => { setPlayers(r.data); setLoading(false); });
 
   useEffect(() => {
     fetchPlayers();
@@ -124,15 +121,15 @@ export default function PlayersPage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button
-              className={`badge-status cursor-pointer ${!filterCat ? 'bg-gold/20 text-gold' : 'bg-felt-light/20 text-chalk/60'}`}
+              className={`badge-status cursor-pointer ${!filterCat ? 'bg-orange/20 text-orange' : 'bg-silver-muted/20 text-silver-dark'}`}
               onClick={() => setFilterCat('')}
             >Todos</button>
             {catOrder.map(c => (
               <button
                 key={c}
-                className={`badge-status cursor-pointer capitalize ${filterCat === c ? 'bg-gold/20 text-gold' : 'bg-felt-light/20 text-chalk/60'}`}
+                className={`badge-status cursor-pointer capitalize ${filterCat === c ? 'bg-orange/20 text-orange' : 'bg-silver-muted/20 text-silver-dark'}`}
                 onClick={() => setFilterCat(filterCat === c ? '' : c)}
               >{c}</button>
             ))}
@@ -144,40 +141,40 @@ export default function PlayersPage() {
         ) : (
           catOrder.filter(c => grouped[c]?.length).map(cat => (
             <div key={cat}>
-              <h2 className="font-display text-xl text-chalk/60 mb-2 uppercase">{cat}</h2>
+              <h2 className="font-display text-xl text-silver-dark mb-2 uppercase">{cat}</h2>
               <div className="card p-0 overflow-hidden">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-felt-light/20 text-chalk/40 text-xs uppercase tracking-widest">
+                    <tr className="border-b border-silver-muted/10 text-silver-dark text-xs uppercase tracking-widest">
                       <th className="text-left px-4 py-3">Jugador</th>
-                      <th className="text-left px-4 py-3 hidden sm:table-cell">Club</th>
-                      <th className="text-left px-4 py-3 hidden sm:table-cell">C.I.</th>
+                      <th className="text-left px-4 py-3">Club</th>
                       <th className="text-left px-4 py-3">Categoria</th>
+                      <th className="text-left px-4 py-3 hidden sm:table-cell">C.I.</th>
                       <th className="text-left px-4 py-3 hidden sm:table-cell">Estado</th>
-                      <th className="px-4 py-3"></th>
+                      <th className="px-4 py-3 hidden sm:table-cell"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {grouped[cat].map(p => (
                       <tr key={p.id} className="table-row">
-                        <td className="px-4 py-3 font-medium text-chalk">
+                        <td className="px-4 py-3 font-medium text-silver-light">
                           {p.lastName}, {p.firstName}
                         </td>
-                        <td className="px-4 py-3 text-chalk/50 text-xs hidden sm:table-cell">
+                        <td className="px-4 py-3 text-silver-dark text-xs">
                           {p.club ?? '-'}
-                        </td>
-                        <td className="px-4 py-3 text-chalk/40 font-mono hidden sm:table-cell">
-                          {p.dni ?? '-'}
                         </td>
                         <td className="px-4 py-3">
                           {p.category && <CategoryBadge name={p.category.name} />}
+                        </td>
+                        <td className="px-4 py-3 text-silver-dark font-mono hidden sm:table-cell">
+                          {p.dni ?? '-'}
                         </td>
                         <td className="px-4 py-3 hidden sm:table-cell">
                           <span className={`badge-status ${p.active ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
                             {p.active ? 'Activo' : 'Inactivo'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-4 py-3 text-right hidden sm:table-cell">
                           <div className="flex gap-2 justify-end">
                             <button
                               className={`py-1 px-3 text-xs rounded-lg border transition-all ${
@@ -209,27 +206,27 @@ export default function PlayersPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Nombre *</label>
+                <label className="block text-silver-dark text-xs uppercase tracking-widest mb-1.5">Nombre *</label>
                 <input className="input" value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} required placeholder="Juan" />
               </div>
               <div>
-                <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Apellido *</label>
+                <label className="block text-silver-dark text-xs uppercase tracking-widest mb-1.5">Apellido *</label>
                 <input className="input" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} required placeholder="Perez" />
               </div>
             </div>
             <div>
-              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Club</label>
+              <label className="block text-silver-dark text-xs uppercase tracking-widest mb-1.5">Club</label>
               <select className="input" value={form.club} onChange={e => setForm({ ...form, club: e.target.value })}>
                 <option value="">Sin club</option>
                 {CLUBS.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">C.I.</label>
+              <label className="block text-silver-dark text-xs uppercase tracking-widest mb-1.5">C.I.</label>
               <input className="input" value={form.dni} onChange={e => setForm({ ...form, dni: e.target.value })} placeholder="Opcional" />
             </div>
             <div>
-              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Categoria *</label>
+              <label className="block text-silver-dark text-xs uppercase tracking-widest mb-1.5">Categoria *</label>
               <select className="input" value={form.categoryId} onChange={e => setForm({ ...form, categoryId: e.target.value })} required>
                 <option value="">Seleccionar</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
