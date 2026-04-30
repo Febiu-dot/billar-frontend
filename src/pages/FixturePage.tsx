@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
-import { Tournament, Match, Phase, Circuit } from '../types';
+import { Tournament, Match, Phase, Circuit, Player } from '../types';
 import { MatchStatusBadge, playerName, LoadingSpinner, EmptyState, Modal } from '../components/ui';
 
 const PHASE_TYPES = ['clasificatorio', 'segunda', 'primera', 'master'];
@@ -29,6 +29,13 @@ export default function FixturePage() {
   const [pForm, setPForm] = useState({ name: '', type: 'clasificatorio', order: '1' });
   const [pSaving, setPSaving] = useState(false);
   const [pError, setPError] = useState('');
+
+  // Inscripción modal
+  const [inscripcionModal, setInscripcionModal] = useState<Circuit | null>(null);
+  const [allPlayers, setAllPlayers] = useState<Player[]>([]);
+  const [inscripcionLoading, setInscripcionLoading] = useState(false);
+  const [inscripcionSearch, setInscripcionSearch] = useState('');
+  const [inscripcionSaving, setInscripcionSaving] = useState<number | null>(null);
 
   const fetchTournaments = () =>
     api.get('/tournaments').then(r => {
@@ -184,6 +191,57 @@ export default function FixturePage() {
     }
   };
 
+  // Inscripción
+  const openInscripcion = async (circuit: Circuit) => {
+    setInscripcionModal(circuit);
+    setInscripcionSearch('');
+    setInscripcionLoading(true);
+    try {
+      const res = await api.get('/players');
+      setAllPlayers(res.data);
+    } catch {
+      setAllPlayers([]);
+    } finally {
+      setInscripcionLoading(false);
+    }
+  };
+
+  const handleInscribir = async (circuit: Circuit, playerId: number) => {
+    setInscripcionSaving(playerId);
+    try {
+      await api.post(`/circuits/${circuit.id}/players`, { playerId });
+      // refrescar el torneo para actualizar la lista de inscriptos
+      if (selectedTournament) {
+        const res = await api.get(`/tournaments/${selectedTournament.id}`);
+        setSelectedTournament(res.data);
+        // actualizar el modal con el circuito actualizado
+        const updatedCircuit = res.data.circuits?.find((c: Circuit) => c.id === circuit.id);
+        if (updatedCircuit) setInscripcionModal(updatedCircuit);
+      }
+    } catch (err: any) {
+      alert(err?.response?.data?.error ?? 'Error al inscribir jugador');
+    } finally {
+      setInscripcionSaving(null);
+    }
+  };
+
+  const handleDesinscribir = async (circuit: Circuit, playerId: number) => {
+    setInscripcionSaving(playerId);
+    try {
+      await api.delete(`/circuits/${circuit.id}/players/${playerId}`);
+      if (selectedTournament) {
+        const res = await api.get(`/tournaments/${selectedTournament.id}`);
+        setSelectedTournament(res.data);
+        const updatedCircuit = res.data.circuits?.find((c: Circuit) => c.id === circuit.id);
+        if (updatedCircuit) setInscripcionModal(updatedCircuit);
+      }
+    } catch (err: any) {
+      alert(err?.response?.data?.error ?? 'Error al desinscribir jugador');
+    } finally {
+      setInscripcionSaving(null);
+    }
+  };
+
   const getMatchesByRound = (matches: Match[]) => {
     const rounds: Record<number, Match[]> = {};
     matches.forEach(m => {
@@ -235,7 +293,7 @@ export default function FixturePage() {
                   <p className="text-chalk/50 text-sm mt-1">{selectedTournament.description}</p>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap justify-end">
                 <span className={`badge-status ${selectedTournament.active ? 'bg-green-900/40 text-green-400' : 'bg-chalk/10 text-chalk/40'}`}>
                   {selectedTournament.active ? 'Activo' : 'Finalizado'}
                 </span>
@@ -273,7 +331,13 @@ export default function FixturePage() {
                         {circuit.endDate && ` → ${new Date(circuit.endDate).toLocaleDateString('es-UY')}`}
                       </span>
                     )}
-                    <div className="flex gap-2 ml-auto">
+                    <div className="flex gap-2 ml-auto flex-wrap">
+                      <button
+                        className="py-1 px-3 text-xs rounded-lg border border-blue-700/40 text-blue-300 hover:bg-blue-900/20 transition-all"
+                        onClick={() => openInscripcion(circuit)}
+                      >
+                        👥 Inscripción ({circuit.players?.length ?? 0})
+                      </button>
                       <button className="btn-primary py-1 px-3 text-xs" onClick={() => openAddPhase(circuit)}>
                         + Fase
                       </button>
@@ -428,6 +492,100 @@ export default function FixturePage() {
               <button type="button" className="btn-secondary flex-1" onClick={() => setPhaseModal(null)}>Cancelar</button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {/* Inscripción modal */}
+      {inscripcionModal && (
+        <Modal title={`INSCRIPCIÓN — ${inscripcionModal.name}`} onClose={() => setInscripcionModal(null)}>
+          <div className="space-y-4">
+            {/* Buscador */}
+            <input
+              className="input"
+              placeholder="Buscar jugador por nombre o club..."
+              value={inscripcionSearch}
+              onChange={e => setInscripcionSearch(e.target.value)}
+            />
+
+            {inscripcionLoading ? (
+              <div className="text-center py-6 text-chalk/40">Cargando jugadores...</div>
+            ) : (
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+
+                {/* Inscriptos */}
+                <div>
+                  <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">
+                    Inscriptos ({inscripcionModal.players?.length ?? 0})
+                  </p>
+                  {(inscripcionModal.players?.length ?? 0) === 0 ? (
+                    <p className="text-chalk/20 text-sm pl-1">Sin jugadores inscriptos aún.</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {inscripcionModal.players
+                        ?.filter(cp => {
+                          const nombre = `${cp.player.firstName} ${cp.player.lastName} ${cp.player.club ?? ''}`.toLowerCase();
+                          return nombre.includes(inscripcionSearch.toLowerCase());
+                        })
+                        .map(cp => (
+                          <div key={cp.player.id} className="flex items-center justify-between bg-blue-900/20 border border-blue-700/30 rounded-lg px-3 py-2">
+                            <div>
+                              <span className="text-chalk/90 text-sm font-medium">{cp.player.lastName}, {cp.player.firstName}</span>
+                              <span className="text-chalk/40 text-xs ml-2">{cp.player.club ?? ''}</span>
+                              <span className="text-blue-400/60 text-xs ml-2 capitalize">{cp.player.category?.name}</span>
+                            </div>
+                            <button
+                              className="py-0.5 px-2 text-xs rounded border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all disabled:opacity-40"
+                              disabled={inscripcionSaving === cp.player.id}
+                              onClick={() => handleDesinscribir(inscripcionModal, cp.player.id)}
+                            >
+                              {inscripcionSaving === cp.player.id ? '...' : 'Quitar'}
+                            </button>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Disponibles */}
+                <div>
+                  <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">
+                    Disponibles para inscribir
+                  </p>
+                  {(() => {
+                    const inscriptosIds = new Set(inscripcionModal.players?.map(cp => cp.player.id) ?? []);
+                    const disponibles = allPlayers.filter(p => {
+                      if (inscriptosIds.has(p.id)) return false;
+                      const nombre = `${p.firstName} ${p.lastName} ${p.club ?? ''}`.toLowerCase();
+                      return nombre.includes(inscripcionSearch.toLowerCase());
+                    });
+                    if (disponibles.length === 0) return (
+                      <p className="text-chalk/20 text-sm pl-1">No hay jugadores disponibles.</p>
+                    );
+                    return (
+                      <div className="space-y-1">
+                        {disponibles.map(p => (
+                          <div key={p.id} className="flex items-center justify-between bg-felt-dark/40 border border-felt-light/10 rounded-lg px-3 py-2">
+                            <div>
+                              <span className="text-chalk/70 text-sm">{p.lastName}, {p.firstName}</span>
+                              <span className="text-chalk/30 text-xs ml-2">{p.club ?? ''}</span>
+                              <span className="text-chalk/30 text-xs ml-2 capitalize">{(p as any).category?.name}</span>
+                            </div>
+                            <button
+                              className="py-0.5 px-2 text-xs rounded border border-green-700/40 text-green-400 hover:bg-green-900/20 transition-all disabled:opacity-40"
+                              disabled={inscripcionSaving === p.id}
+                              onClick={() => handleInscribir(inscripcionModal, p.id)}
+                            >
+                              {inscripcionSaving === p.id ? '...' : '+ Inscribir'}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+          </div>
         </Modal>
       )}
     </div>
