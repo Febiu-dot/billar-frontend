@@ -37,6 +37,9 @@ export default function FixturePage() {
   const [inscripcionSearch, setInscripcionSearch] = useState('');
   const [inscripcionSaving, setInscripcionSaving] = useState<number | null>(null);
 
+  // Generando partidos
+  const [generando, setGenerando] = useState<number | null>(null);
+
   const fetchTournaments = () =>
     api.get('/tournaments').then(r => {
       setTournaments(r.data);
@@ -210,11 +213,9 @@ export default function FixturePage() {
     setInscripcionSaving(playerId);
     try {
       await api.post(`/circuits/${circuit.id}/players`, { playerId });
-      // refrescar el torneo para actualizar la lista de inscriptos
       if (selectedTournament) {
         const res = await api.get(`/tournaments/${selectedTournament.id}`);
         setSelectedTournament(res.data);
-        // actualizar el modal con el circuito actualizado
         const updatedCircuit = res.data.circuits?.find((c: Circuit) => c.id === circuit.id);
         if (updatedCircuit) setInscripcionModal(updatedCircuit);
       }
@@ -242,6 +243,22 @@ export default function FixturePage() {
     }
   };
 
+  // Generar partidos
+  const handleGenerarPartidos = async (circuit: Circuit) => {
+    if (!confirm(`¿Generar partidos para "${circuit.name}"?\n\nSi ya hay partidos creados, serán eliminados y regenerados.`)) return;
+    setGenerando(circuit.id);
+    try {
+      const res = await api.post(`/circuits/${circuit.id}/generate`);
+      const d = res.data.detalle;
+      alert(`✅ Partidos generados correctamente\n\nClasificatorio: ${d.clasificatorio}\nSegunda: ${d.segunda}\nPrimera: ${d.primera}\nMáster: ${d.master}\n\nTotal: ${res.data.total}`);
+      refreshSelected();
+    } catch (err: any) {
+      alert(err?.response?.data?.error ?? 'Error al generar partidos');
+    } finally {
+      setGenerando(null);
+    }
+  };
+
   const getMatchesByRound = (matches: Match[]) => {
     const rounds: Record<number, Match[]> = {};
     matches.forEach(m => {
@@ -264,7 +281,6 @@ export default function FixturePage() {
       </div>
 
       <div className="p-6 space-y-6">
-        {/* Tournament selector */}
         {tournaments.length > 0 && (
           <div className="flex items-center gap-3 flex-wrap">
             <label className="text-chalk/50 text-xs uppercase tracking-widest">Torneo:</label>
@@ -284,7 +300,6 @@ export default function FixturePage() {
           <EmptyState message="No hay torneos disponibles. Creá uno con el botón de arriba." />
         ) : (
           <div className="space-y-8">
-            {/* Tournament header */}
             <div className="card flex items-start justify-between">
               <div>
                 <h2 className="font-display text-2xl text-gold">{selectedTournament.name}</h2>
@@ -312,7 +327,6 @@ export default function FixturePage() {
               </div>
             </div>
 
-            {/* Circuits & Phases */}
             {selectedTournament.circuits?.length === 0 ? (
               <div className="card text-center text-chalk/30 py-8">
                 Sin circuitos. Agregá uno con el botón "+ Circuito".
@@ -338,6 +352,13 @@ export default function FixturePage() {
                       >
                         👥 Inscripción ({circuit.players?.length ?? 0})
                       </button>
+                      <button
+                        className="py-1 px-3 text-xs rounded-lg border border-gold/40 text-gold hover:bg-gold/10 transition-all disabled:opacity-40"
+                        disabled={generando === circuit.id}
+                        onClick={() => handleGenerarPartidos(circuit)}
+                      >
+                        {generando === circuit.id ? 'Generando...' : '⚡ Generar partidos'}
+                      </button>
                       <button className="btn-primary py-1 px-3 text-xs" onClick={() => openAddPhase(circuit)}>
                         + Fase
                       </button>
@@ -356,7 +377,6 @@ export default function FixturePage() {
                     circuit.phases?.map((phase: Phase) => {
                       const matchesByRound = getMatchesByRound(phase.matches ?? []);
                       const rounds = Object.keys(matchesByRound).map(Number).sort((a, b) => a - b);
-
                       return (
                         <div key={phase.id} className="mb-6">
                           <div className="flex items-center gap-2 mb-3">
@@ -372,7 +392,6 @@ export default function FixturePage() {
                               Eliminar
                             </button>
                           </div>
-
                           {rounds.length === 0 ? (
                             <p className="text-chalk/20 text-xs pl-2">Sin partidos en esta fase</p>
                           ) : (
@@ -499,20 +518,16 @@ export default function FixturePage() {
       {inscripcionModal && (
         <Modal title={`INSCRIPCIÓN — ${inscripcionModal.name}`} onClose={() => setInscripcionModal(null)}>
           <div className="space-y-4">
-            {/* Buscador */}
             <input
               className="input"
               placeholder="Buscar jugador por nombre o club..."
               value={inscripcionSearch}
               onChange={e => setInscripcionSearch(e.target.value)}
             />
-
             {inscripcionLoading ? (
               <div className="text-center py-6 text-chalk/40">Cargando jugadores...</div>
             ) : (
               <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
-
-                {/* Inscriptos */}
                 <div>
                   <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">
                     Inscriptos ({inscripcionModal.players?.length ?? 0})
@@ -545,8 +560,6 @@ export default function FixturePage() {
                     </div>
                   )}
                 </div>
-
-                {/* Disponibles */}
                 <div>
                   <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">
                     Disponibles para inscribir
