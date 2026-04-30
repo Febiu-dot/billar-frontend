@@ -42,7 +42,16 @@ export interface Player {
   dni?: string;
   categoryId: number;
   category?: Category;
+  club?: string;
   active: boolean;
+}
+
+export interface CircuitPlayer {
+  id: number;
+  circuitId: number;
+  playerId: number;
+  player: Player;
+  createdAt: string;
 }
 
 export interface Tournament {
@@ -64,6 +73,7 @@ export interface Circuit {
   endDate?: string;
   active: boolean;
   phases?: Phase[];
+  players?: CircuitPlayer[];
 }
 
 export interface Phase {
