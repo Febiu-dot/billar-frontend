@@ -6,6 +6,17 @@ import { MatchStatusBadge, playerName, LoadingSpinner, EmptyState, Modal } from 
 const PHASE_TYPES = ['clasificatorio', 'segunda', 'primera', 'master'];
 const CATEGORY_ORDER: Record<string, number> = { master: 1, primera: 2, segunda: 3, tercera: 4 };
 
+interface PreviewSerie {
+  serie: number;
+  jugadores: { id: number; nombre: string; esClasificado?: boolean }[];
+}
+
+interface PreviewData {
+  inscriptos: { master: number; primera: number; segunda: number; tercera: number };
+  clasificatorio: { totalJugadores: number; totalSeries: number; series: PreviewSerie[] };
+  segunda: { totalJugadores: number; totalSeries: number; series: PreviewSerie[] };
+}
+
 export default function FixturePage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
@@ -36,6 +47,9 @@ export default function FixturePage() {
   const [inscribiendoClub, setInscribiendoClub] = useState<string | null>(null);
 
   const [generando, setGenerando] = useState<number | null>(null);
+  const [previewModal, setPreviewModal] = useState<{ circuit: Circuit; data: PreviewData } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState<number | null>(null);
+  const [previewTab, setPreviewTab] = useState<'clasificatorio' | 'segunda'>('clasificatorio');
 
   const fetchTournaments = () =>
     api.get('/tournaments').then(r => {
@@ -223,11 +237,7 @@ export default function FixturePage() {
     setInscribiendoClub(jugadores[0]?.club ?? 'Sin club');
     try {
       for (const p of jugadores) {
-        try {
-          await api.post(`/circuits/${circuit.id}/players`, { playerId: p.id });
-        } catch {
-          // ignorar duplicados
-        }
+        try { await api.post(`/circuits/${circuit.id}/players`, { playerId: p.id }); } catch { }
       }
       if (selectedTournament) {
         const res = await api.get(`/tournaments/${selectedTournament.id}`);
@@ -257,8 +267,23 @@ export default function FixturePage() {
     }
   };
 
-  const handleGenerarPartidos = async (circuit: Circuit) => {
-    if (!confirm(`¿Generar partidos para "${circuit.name}"?\n\nSi ya hay partidos creados, serán eliminados y regenerados.`)) return;
+  const handleAbrirPreview = async (circuit: Circuit) => {
+    setPreviewLoading(circuit.id);
+    try {
+      const res = await api.get(`/circuits/${circuit.id}/preview`);
+      setPreviewTab('clasificatorio');
+      setPreviewModal({ circuit, data: res.data });
+    } catch (err: any) {
+      alert(err?.response?.data?.error ?? 'Error al cargar la vista previa');
+    } finally {
+      setPreviewLoading(null);
+    }
+  };
+
+  const handleConfirmarGenerar = async () => {
+    if (!previewModal) return;
+    const circuit = previewModal.circuit;
+    setPreviewModal(null);
     setGenerando(circuit.id);
     try {
       const res = await api.post(`/circuits/${circuit.id}/generate`);
@@ -297,19 +322,13 @@ export default function FixturePage() {
         {tournaments.length > 0 && (
           <div className="flex items-center gap-3 flex-wrap">
             <label className="text-chalk/50 text-xs uppercase tracking-widest">Torneo:</label>
-            <select
-              className="input w-auto"
-              onChange={e => loadTournament(Number(e.target.value))}
-              value={selectedTournament?.id ?? ''}
-            >
+            <select className="input w-auto" onChange={e => loadTournament(Number(e.target.value))} value={selectedTournament?.id ?? ''}>
               {tournaments.map(t => <option key={t.id} value={t.id}>{t.name} ({t.year})</option>)}
             </select>
           </div>
         )}
 
-        {detailLoading ? (
-          <LoadingSpinner />
-        ) : !selectedTournament ? (
+        {detailLoading ? <LoadingSpinner /> : !selectedTournament ? (
           <EmptyState message="No hay torneos disponibles. Creá uno con el botón de arriba." />
         ) : (
           <div className="space-y-8">
@@ -317,35 +336,26 @@ export default function FixturePage() {
               <div>
                 <h2 className="font-display text-2xl text-gold">{selectedTournament.name}</h2>
                 <p className="text-chalk/40 text-sm">{selectedTournament.year}</p>
-                {selectedTournament.description && (
-                  <p className="text-chalk/50 text-sm mt-1">{selectedTournament.description}</p>
-                )}
+                {selectedTournament.description && <p className="text-chalk/50 text-sm mt-1">{selectedTournament.description}</p>}
               </div>
               <div className="flex items-center gap-2 flex-wrap justify-end">
                 <span className={`badge-status ${selectedTournament.active ? 'bg-green-900/40 text-green-400' : 'bg-chalk/10 text-chalk/40'}`}>
                   {selectedTournament.active ? 'Activo' : 'Finalizado'}
                 </span>
                 <button className="btn-secondary py-1 px-3 text-xs" onClick={() => openEditTournament(selectedTournament)}>Editar</button>
-                <button
-                  className="py-1 px-3 text-xs rounded-lg border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all"
-                  onClick={() => handleDeleteTournament(selectedTournament)}
-                >Eliminar</button>
+                <button className="py-1 px-3 text-xs rounded-lg border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all" onClick={() => handleDeleteTournament(selectedTournament)}>Eliminar</button>
                 <button className="btn-primary py-1 px-3 text-xs" onClick={() => openAddCircuit(selectedTournament)}>+ Circuito</button>
               </div>
             </div>
 
             {selectedTournament.circuits?.length === 0 ? (
-              <div className="card text-center text-chalk/30 py-8">
-                Sin circuitos. Agregá uno con el botón "+ Circuito".
-              </div>
+              <div className="card text-center text-chalk/30 py-8">Sin circuitos. Agregá uno con el botón "+ Circuito".</div>
             ) : (
               selectedTournament.circuits?.map(circuit => (
                 <div key={circuit.id}>
                   <div className="flex items-center gap-3 mb-4 flex-wrap">
                     <h3 className="font-display text-2xl text-chalk">{circuit.name}</h3>
-                    <span className={`badge-status ${circuit.active ? 'bg-blue-900/40 text-blue-300' : 'bg-chalk/10 text-chalk/30'}`}>
-                      Circuito {circuit.order}
-                    </span>
+                    <span className={`badge-status ${circuit.active ? 'bg-blue-900/40 text-blue-300' : 'bg-chalk/10 text-chalk/30'}`}>Circuito {circuit.order}</span>
                     {circuit.startDate && (
                       <span className="text-chalk/30 text-xs font-mono">
                         {new Date(circuit.startDate).toLocaleDateString('es-UY')}
@@ -353,24 +363,18 @@ export default function FixturePage() {
                       </span>
                     )}
                     <div className="flex gap-2 ml-auto flex-wrap">
-                      <button
-                        className="py-1 px-3 text-xs rounded-lg border border-blue-700/40 text-blue-300 hover:bg-blue-900/20 transition-all"
-                        onClick={() => openInscripcion(circuit)}
-                      >
+                      <button className="py-1 px-3 text-xs rounded-lg border border-blue-700/40 text-blue-300 hover:bg-blue-900/20 transition-all" onClick={() => openInscripcion(circuit)}>
                         👥 Inscripción ({circuit.players?.length ?? 0})
                       </button>
                       <button
                         className="py-1 px-3 text-xs rounded-lg border border-gold/40 text-gold hover:bg-gold/10 transition-all disabled:opacity-40"
-                        disabled={generando === circuit.id}
-                        onClick={() => handleGenerarPartidos(circuit)}
+                        disabled={previewLoading === circuit.id || generando === circuit.id}
+                        onClick={() => handleAbrirPreview(circuit)}
                       >
-                        {generando === circuit.id ? 'Generando...' : '⚡ Generar partidos'}
+                        {previewLoading === circuit.id ? 'Cargando...' : generando === circuit.id ? 'Generando...' : '⚡ Generar partidos'}
                       </button>
                       <button className="btn-primary py-1 px-3 text-xs" onClick={() => openAddPhase(circuit)}>+ Fase</button>
-                      <button
-                        className="py-1 px-3 text-xs rounded-lg border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all"
-                        onClick={() => handleDeleteCircuit(circuit)}
-                      >Eliminar</button>
+                      <button className="py-1 px-3 text-xs rounded-lg border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all" onClick={() => handleDeleteCircuit(circuit)}>Eliminar</button>
                     </div>
                   </div>
 
@@ -386,10 +390,7 @@ export default function FixturePage() {
                             <h4 className="font-semibold text-chalk/80 uppercase text-sm tracking-wider">{phase.name}</h4>
                             <span className="badge-status bg-felt-light/20 text-chalk/40 text-xs capitalize">{phase.type}</span>
                             <span className="text-chalk/20 text-xs font-mono">{phase.matches?.length ?? 0} partidos</span>
-                            <button
-                              className="ml-auto py-0.5 px-2 text-xs rounded border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all"
-                              onClick={() => handleDeletePhase(phase)}
-                            >Eliminar</button>
+                            <button className="ml-auto py-0.5 px-2 text-xs rounded border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all" onClick={() => handleDeletePhase(phase)}>Eliminar</button>
                           </div>
                           {rounds.length === 0 ? (
                             <p className="text-chalk/20 text-xs pl-2">Sin partidos en esta fase</p>
@@ -401,9 +402,7 @@ export default function FixturePage() {
                                     {round === 1 ? 'Fase de Grupos' : round === 99 ? 'Final' : `Ronda ${round}`}
                                   </p>
                                   <div className="space-y-2">
-                                    {matchesByRound[round].map(m => (
-                                      <MatchCard key={m.id} match={m} />
-                                    ))}
+                                    {matchesByRound[round].map(m => <MatchCard key={m.id} match={m} />)}
                                   </div>
                                 </div>
                               ))}
@@ -511,56 +510,41 @@ export default function FixturePage() {
       {inscripcionModal && (
         <Modal title={`INSCRIPCIÓN — ${inscripcionModal.name}`} onClose={() => setInscripcionModal(null)}>
           <div className="space-y-4">
-            <input
-              className="input"
-              placeholder="Buscar jugador por nombre o club..."
-              value={inscripcionSearch}
-              onChange={e => setInscripcionSearch(e.target.value)}
-            />
+            <input className="input" placeholder="Buscar jugador por nombre o club..." value={inscripcionSearch} onChange={e => setInscripcionSearch(e.target.value)} />
             {inscripcionLoading ? (
               <div className="text-center py-6 text-chalk/40">Cargando jugadores...</div>
             ) : (
               <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
-
-                {/* Inscriptos */}
                 <div>
-                  <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">
-                    Inscriptos ({inscripcionModal.players?.length ?? 0})
-                  </p>
+                  <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">Inscriptos ({inscripcionModal.players?.length ?? 0})</p>
                   {(inscripcionModal.players?.length ?? 0) === 0 ? (
                     <p className="text-chalk/20 text-sm pl-1">Sin jugadores inscriptos aún.</p>
                   ) : (
                     <div className="space-y-1">
-                      {inscripcionModal.players
-                        ?.filter(cp => {
-                          const nombre = `${cp.player.firstName} ${cp.player.lastName} ${cp.player.club ?? ''}`.toLowerCase();
-                          return nombre.includes(inscripcionSearch.toLowerCase());
-                        })
-                        .map(cp => (
-                          <div key={cp.player.id} className="flex items-center justify-between bg-blue-900/20 border border-blue-700/30 rounded-lg px-3 py-2">
-                            <div>
-                              <span className="text-chalk/90 text-sm font-medium">{cp.player.lastName}, {cp.player.firstName}</span>
-                              <span className="text-chalk/40 text-xs ml-2">{cp.player.club ?? ''}</span>
-                              <span className="text-blue-400/60 text-xs ml-2 capitalize">{cp.player.category?.name}</span>
-                            </div>
-                            <button
-                              className="py-0.5 px-2 text-xs rounded border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all disabled:opacity-40"
-                              disabled={inscripcionSaving === cp.player.id}
-                              onClick={() => handleDesinscribir(inscripcionModal, cp.player.id)}
-                            >
-                              {inscripcionSaving === cp.player.id ? '...' : 'Quitar'}
-                            </button>
+                      {inscripcionModal.players?.filter(cp => {
+                        const nombre = `${cp.player.firstName} ${cp.player.lastName} ${cp.player.club ?? ''}`.toLowerCase();
+                        return nombre.includes(inscripcionSearch.toLowerCase());
+                      }).map(cp => (
+                        <div key={cp.player.id} className="flex items-center justify-between bg-blue-900/20 border border-blue-700/30 rounded-lg px-3 py-2">
+                          <div>
+                            <span className="text-chalk/90 text-sm font-medium">{cp.player.lastName}, {cp.player.firstName}</span>
+                            <span className="text-chalk/40 text-xs ml-2">{cp.player.club ?? ''}</span>
+                            <span className="text-blue-400/60 text-xs ml-2 capitalize">{cp.player.category?.name}</span>
                           </div>
-                        ))}
+                          <button
+                            className="py-0.5 px-2 text-xs rounded border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all disabled:opacity-40"
+                            disabled={inscripcionSaving === cp.player.id}
+                            onClick={() => handleDesinscribir(inscripcionModal, cp.player.id)}
+                          >
+                            {inscripcionSaving === cp.player.id ? '...' : 'Quitar'}
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
-
-                {/* Disponibles por club */}
                 <div>
-                  <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">
-                    Disponibles para inscribir
-                  </p>
+                  <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">Disponibles para inscribir</p>
                   {(() => {
                     const inscriptosIds = new Set(inscripcionModal.players?.map(cp => cp.player.id) ?? []);
                     const disponibles = allPlayers.filter(p => {
@@ -568,9 +552,7 @@ export default function FixturePage() {
                       const nombre = `${p.firstName} ${p.lastName} ${p.club ?? ''}`.toLowerCase();
                       return nombre.includes(inscripcionSearch.toLowerCase());
                     });
-                    if (disponibles.length === 0) return (
-                      <p className="text-chalk/20 text-sm pl-1">No hay jugadores disponibles.</p>
-                    );
+                    if (disponibles.length === 0) return <p className="text-chalk/20 text-sm pl-1">No hay jugadores disponibles.</p>;
                     const porClub: Record<string, typeof disponibles> = {};
                     disponibles.forEach(p => {
                       const club = p.club ?? 'Sin club';
@@ -578,9 +560,7 @@ export default function FixturePage() {
                       porClub[club].push(p);
                     });
                     Object.values(porClub).forEach(jugadores =>
-                      jugadores.sort((a, b) =>
-                        (CATEGORY_ORDER[(a as any).category?.name] ?? 9) - (CATEGORY_ORDER[(b as any).category?.name] ?? 9)
-                      )
+                      jugadores.sort((a, b) => (CATEGORY_ORDER[(a as any).category?.name] ?? 9) - (CATEGORY_ORDER[(b as any).category?.name] ?? 9))
                     );
                     const clubsOrdenados = Object.keys(porClub).sort();
                     return (
@@ -630,6 +610,67 @@ export default function FixturePage() {
           </div>
         </Modal>
       )}
+
+      {/* Preview modal */}
+      {previewModal && (
+        <Modal title={`VISTA PREVIA — ${previewModal.circuit.name}`} onClose={() => setPreviewModal(null)}>
+          <div className="space-y-4">
+            {/* Resumen */}
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { label: 'Máster', val: previewModal.data.inscriptos.master, color: 'text-gold' },
+                { label: 'Primera', val: previewModal.data.inscriptos.primera, color: 'text-blue-400' },
+                { label: 'Segunda', val: previewModal.data.inscriptos.segunda, color: 'text-green-400' },
+                { label: 'Tercera', val: previewModal.data.inscriptos.tercera, color: 'text-chalk/60' },
+              ].map(({ label, val, color }) => (
+                <div key={label} className="bg-felt-dark/50 rounded-lg p-2 text-center">
+                  <p className={`font-display text-xl ${color}`}>{val}</p>
+                  <p className="text-chalk/40 text-xs uppercase">{label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-2">
+              <button
+                className={`py-1 px-3 text-xs rounded-lg border transition-all ${previewTab === 'clasificatorio' ? 'border-gold/40 text-gold bg-gold/10' : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'}`}
+                onClick={() => setPreviewTab('clasificatorio')}
+              >
+                Clasificatorio ({previewModal.data.clasificatorio.totalSeries} series)
+              </button>
+              <button
+                className={`py-1 px-3 text-xs rounded-lg border transition-all ${previewTab === 'segunda' ? 'border-gold/40 text-gold bg-gold/10' : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'}`}
+                onClick={() => setPreviewTab('segunda')}
+              >
+                Segunda ({previewModal.data.segunda.totalSeries} series)
+              </button>
+            </div>
+
+            {/* Series */}
+            <div className="max-h-[50vh] overflow-y-auto space-y-3 pr-1">
+              {(previewTab === 'clasificatorio' ? previewModal.data.clasificatorio.series : previewModal.data.segunda.series).map(serie => (
+                <div key={serie.serie} className="bg-felt-dark/40 border border-felt-light/10 rounded-lg p-3">
+                  <p className="text-chalk/40 text-xs uppercase tracking-widest font-mono mb-2">Serie {serie.serie}</p>
+                  <div className="space-y-1">
+                    {serie.jugadores.map((j, idx) => (
+                      <div key={j.id} className="flex items-center gap-2">
+                        <span className="text-chalk/20 text-xs font-mono w-4">{idx + 1}</span>
+                        <span className={`text-sm ${j.esClasificado ? 'text-gold/80' : 'text-chalk/70'}`}>{j.nombre}</span>
+                        {j.esClasificado && <span className="text-gold/40 text-xs font-mono">(clasificado)</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button className="btn-primary flex-1" onClick={handleConfirmarGenerar}>⚡ Confirmar y generar</button>
+              <button className="btn-secondary flex-1" onClick={() => setPreviewModal(null)}>Cancelar</button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
@@ -638,33 +679,19 @@ function MatchCard({ match }: { match: Match }) {
   const winnerA = match.result?.winnerId === match.playerAId;
   const winnerB = match.result?.winnerId === match.playerBId;
   const isFinished = match.status === 'finalizado' || match.status === 'wo';
-
   return (
     <div className={`rounded-lg border overflow-hidden text-sm transition-all ${
       match.status === 'en_juego' ? 'border-gold/40 bg-gold/5' :
       match.status === 'asignado' ? 'border-blue-700/40 bg-blue-900/10' :
-      isFinished ? 'border-felt-light/20 bg-felt/50' :
-      'border-felt-light/15 bg-felt-dark/30'
+      isFinished ? 'border-felt-light/20 bg-felt/50' : 'border-felt-light/15 bg-felt-dark/30'
     }`}>
       <div className={`flex items-center justify-between px-3 py-2 border-b border-felt-light/10 ${winnerA ? 'bg-gold/10' : ''}`}>
-        <span className={`font-medium truncate ${winnerA ? 'text-gold' : 'text-chalk/80'}`}>
-          {winnerA && '🏆 '}{playerName(match.playerA)}
-        </span>
-        {match.result && (
-          <span className={`font-mono font-bold ml-2 shrink-0 ${winnerA ? 'text-gold' : 'text-chalk/40'}`}>
-            {match.result.setsA}
-          </span>
-        )}
+        <span className={`font-medium truncate ${winnerA ? 'text-gold' : 'text-chalk/80'}`}>{winnerA && '🏆 '}{playerName(match.playerA)}</span>
+        {match.result && <span className={`font-mono font-bold ml-2 shrink-0 ${winnerA ? 'text-gold' : 'text-chalk/40'}`}>{match.result.setsA}</span>}
       </div>
       <div className={`flex items-center justify-between px-3 py-2 ${winnerB ? 'bg-gold/10' : ''}`}>
-        <span className={`font-medium truncate ${winnerB ? 'text-gold' : 'text-chalk/80'}`}>
-          {winnerB && '🏆 '}{playerName(match.playerB)}
-        </span>
-        {match.result && (
-          <span className={`font-mono font-bold ml-2 shrink-0 ${winnerB ? 'text-gold' : 'text-chalk/40'}`}>
-            {match.result.setsB}
-          </span>
-        )}
+        <span className={`font-medium truncate ${winnerB ? 'text-gold' : 'text-chalk/80'}`}>{winnerB && '🏆 '}{playerName(match.playerB)}</span>
+        {match.result && <span className={`font-mono font-bold ml-2 shrink-0 ${winnerB ? 'text-gold' : 'text-chalk/40'}`}>{match.result.setsB}</span>}
       </div>
       <div className="flex items-center justify-between px-3 py-1 bg-felt-dark/30 border-t border-felt-light/10">
         <MatchStatusBadge status={match.status} />
