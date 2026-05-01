@@ -8,13 +8,17 @@ const CATEGORY_ORDER: Record<string, number> = { master: 1, primera: 2, segunda:
 
 interface PreviewSerie {
   serie: number;
-  jugadores: { id: number; nombre: string; esClasificado?: boolean }[];
+  jugadores: { id: number; nombre: string; esLibre?: boolean; esClasificado?: boolean }[];
 }
 
 interface PreviewData {
   inscriptos: { master: number; primera: number; segunda: number; tercera: number };
-  clasificatorio: { totalJugadores: number; totalSeries: number; series: PreviewSerie[] };
-  segunda: { totalJugadores: number; totalSeries: number; series: PreviewSerie[] };
+  clasificatorio: {
+    totalJugadores: number;
+    totalSeries: number;
+    series: PreviewSerie[];
+    crucesReduccion: { cruce: number; slotA: string; slotB: string }[];
+  };
 }
 
 export default function FixturePage() {
@@ -395,11 +399,11 @@ export default function FixturePage() {
                           {rounds.length === 0 ? (
                             <p className="text-chalk/20 text-xs pl-2">Sin partidos en esta fase</p>
                           ) : (
-                            <div className={`flex gap-4 overflow-x-auto pb-2 ${rounds.length === 1 ? '' : 'items-start'}`}>
+                            <div className="flex gap-4 overflow-x-auto pb-2 items-start">
                               {rounds.map(round => (
                                 <div key={round} className="flex-shrink-0 w-64">
                                   <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2 font-mono">
-                                    {round === 1 ? 'Fase de Grupos' : round === 99 ? 'Final' : `Ronda ${round}`}
+                                    Ronda {round}
                                   </p>
                                   <div className="space-y-2">
                                     {matchesByRound[round].map(m => <MatchCard key={m.id} match={m} />)}
@@ -549,6 +553,7 @@ export default function FixturePage() {
                     const inscriptosIds = new Set(inscripcionModal.players?.map(cp => cp.player.id) ?? []);
                     const disponibles = allPlayers.filter(p => {
                       if (inscriptosIds.has(p.id)) return false;
+                      if ((p as any).dni === 'FEBIU000') return false;
                       const nombre = `${p.firstName} ${p.lastName} ${p.club ?? ''}`.toLowerCase();
                       return nombre.includes(inscripcionSearch.toLowerCase());
                     });
@@ -615,7 +620,6 @@ export default function FixturePage() {
       {previewModal && (
         <Modal title={`VISTA PREVIA — ${previewModal.circuit.name}`} onClose={() => setPreviewModal(null)}>
           <div className="space-y-4">
-            {/* Resumen */}
             <div className="grid grid-cols-4 gap-2">
               {[
                 { label: 'Máster', val: previewModal.data.inscriptos.master, color: 'text-gold' },
@@ -630,38 +634,49 @@ export default function FixturePage() {
               ))}
             </div>
 
-            {/* Tabs */}
             <div className="flex gap-2">
               <button
                 className={`py-1 px-3 text-xs rounded-lg border transition-all ${previewTab === 'clasificatorio' ? 'border-gold/40 text-gold bg-gold/10' : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'}`}
                 onClick={() => setPreviewTab('clasificatorio')}
               >
-                Clasificatorio ({previewModal.data.clasificatorio.totalSeries} series)
+                Series ({previewModal.data.clasificatorio.totalSeries})
               </button>
               <button
                 className={`py-1 px-3 text-xs rounded-lg border transition-all ${previewTab === 'segunda' ? 'border-gold/40 text-gold bg-gold/10' : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'}`}
                 onClick={() => setPreviewTab('segunda')}
               >
-                Segunda ({previewModal.data.segunda.totalSeries} series)
+                Cruces reducción ({previewModal.data.clasificatorio.crucesReduccion?.length ?? 0})
               </button>
             </div>
 
-            {/* Series */}
             <div className="max-h-[50vh] overflow-y-auto space-y-3 pr-1">
-              {(previewTab === 'clasificatorio' ? previewModal.data.clasificatorio.series : previewModal.data.segunda.series).map(serie => (
-                <div key={serie.serie} className="bg-felt-dark/40 border border-felt-light/10 rounded-lg p-3">
-                  <p className="text-chalk/40 text-xs uppercase tracking-widest font-mono mb-2">Serie {serie.serie}</p>
-                  <div className="space-y-1">
-                    {serie.jugadores.map((j, idx) => (
-                      <div key={j.id} className="flex items-center gap-2">
-                        <span className="text-chalk/20 text-xs font-mono w-4">{idx + 1}</span>
-                        <span className={`text-sm ${j.esClasificado ? 'text-gold/80' : 'text-chalk/70'}`}>{j.nombre}</span>
-                        {j.esClasificado && <span className="text-gold/40 text-xs font-mono">(clasificado)</span>}
-                      </div>
-                    ))}
+              {previewTab === 'clasificatorio' ? (
+                previewModal.data.clasificatorio.series.map(serie => (
+                  <div key={serie.serie} className="bg-felt-dark/40 border border-felt-light/10 rounded-lg p-3">
+                    <p className="text-chalk/40 text-xs uppercase tracking-widest font-mono mb-2">Serie {serie.serie}</p>
+                    <div className="space-y-1">
+                      {serie.jugadores.map((j, idx) => (
+                        <div key={j.id} className="flex items-center gap-2">
+                          <span className="text-chalk/20 text-xs font-mono w-4">{idx + 1}</span>
+                          <span className={`text-sm ${j.esLibre ? 'text-red-400/60 italic' : 'text-chalk/70'}`}>
+                            {j.nombre}
+                          </span>
+                          {j.esLibre && <span className="text-red-400/40 text-xs font-mono">(bye)</span>}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                previewModal.data.clasificatorio.crucesReduccion?.map(cruce => (
+                  <div key={cruce.cruce} className="bg-felt-dark/40 border border-felt-light/10 rounded-lg px-3 py-2 flex items-center gap-3">
+                    <span className="text-chalk/30 text-xs font-mono w-16">Cruce {cruce.cruce}</span>
+                    <span className="text-chalk/70 text-sm flex-1">{cruce.slotA}</span>
+                    <span className="text-chalk/30 text-xs">vs</span>
+                    <span className="text-chalk/70 text-sm flex-1 text-right">{cruce.slotB}</span>
+                  </div>
+                ))
+              )}
             </div>
 
             <div className="flex gap-3 pt-2">
@@ -686,11 +701,15 @@ function MatchCard({ match }: { match: Match }) {
       isFinished ? 'border-felt-light/20 bg-felt/50' : 'border-felt-light/15 bg-felt-dark/30'
     }`}>
       <div className={`flex items-center justify-between px-3 py-2 border-b border-felt-light/10 ${winnerA ? 'bg-gold/10' : ''}`}>
-        <span className={`font-medium truncate ${winnerA ? 'text-gold' : 'text-chalk/80'}`}>{winnerA && '🏆 '}{playerName(match.playerA)}</span>
+        <span className={`font-medium truncate ${winnerA ? 'text-gold' : 'text-chalk/80'}`}>
+          {winnerA && '🏆 '}{(match as any).slotA && !(match.playerA) ? (match as any).slotA : playerName(match.playerA)}
+        </span>
         {match.result && <span className={`font-mono font-bold ml-2 shrink-0 ${winnerA ? 'text-gold' : 'text-chalk/40'}`}>{match.result.setsA}</span>}
       </div>
       <div className={`flex items-center justify-between px-3 py-2 ${winnerB ? 'bg-gold/10' : ''}`}>
-        <span className={`font-medium truncate ${winnerB ? 'text-gold' : 'text-chalk/80'}`}>{winnerB && '🏆 '}{playerName(match.playerB)}</span>
+        <span className={`font-medium truncate ${winnerB ? 'text-gold' : 'text-chalk/80'}`}>
+          {winnerB && '🏆 '}{(match as any).slotB && !(match.playerB) ? (match as any).slotB : playerName(match.playerB)}
+        </span>
         {match.result && <span className={`font-mono font-bold ml-2 shrink-0 ${winnerB ? 'text-gold' : 'text-chalk/40'}`}>{match.result.setsB}</span>}
       </div>
       <div className="flex items-center justify-between px-3 py-1 bg-felt-dark/30 border-t border-felt-light/10">
