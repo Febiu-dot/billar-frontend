@@ -33,6 +33,7 @@ export default function FixturePage() {
   const [inscripcionLoading, setInscripcionLoading] = useState(false);
   const [inscripcionSearch, setInscripcionSearch] = useState('');
   const [inscripcionSaving, setInscripcionSaving] = useState<number | null>(null);
+  const [inscribiendoClub, setInscribiendoClub] = useState<string | null>(null);
 
   const [generando, setGenerando] = useState<number | null>(null);
 
@@ -215,6 +216,27 @@ export default function FixturePage() {
       alert(err?.response?.data?.error ?? 'Error al inscribir jugador');
     } finally {
       setInscripcionSaving(null);
+    }
+  };
+
+  const handleInscribirClub = async (circuit: Circuit, jugadores: Player[]) => {
+    setInscribiendoClub(jugadores[0]?.club ?? 'Sin club');
+    try {
+      for (const p of jugadores) {
+        try {
+          await api.post(`/circuits/${circuit.id}/players`, { playerId: p.id });
+        } catch {
+          // ignorar duplicados
+        }
+      }
+      if (selectedTournament) {
+        const res = await api.get(`/tournaments/${selectedTournament.id}`);
+        setSelectedTournament(res.data);
+        const updatedCircuit = res.data.circuits?.find((c: Circuit) => c.id === circuit.id);
+        if (updatedCircuit) setInscripcionModal(updatedCircuit);
+      }
+    } finally {
+      setInscribiendoClub(null);
     }
   };
 
@@ -549,14 +571,12 @@ export default function FixturePage() {
                     if (disponibles.length === 0) return (
                       <p className="text-chalk/20 text-sm pl-1">No hay jugadores disponibles.</p>
                     );
-                    // Agrupar por club
                     const porClub: Record<string, typeof disponibles> = {};
                     disponibles.forEach(p => {
                       const club = p.club ?? 'Sin club';
                       if (!porClub[club]) porClub[club] = [];
                       porClub[club].push(p);
                     });
-                    // Ordenar jugadores dentro de cada club por categoría
                     Object.values(porClub).forEach(jugadores =>
                       jugadores.sort((a, b) =>
                         (CATEGORY_ORDER[(a as any).category?.name] ?? 9) - (CATEGORY_ORDER[(b as any).category?.name] ?? 9)
@@ -567,8 +587,17 @@ export default function FixturePage() {
                       <div className="space-y-4">
                         {clubsOrdenados.map(club => (
                           <div key={club}>
-                            <p className="text-gold/60 text-xs uppercase tracking-widest font-mono mb-1 px-1 border-b border-gold/10 pb-1">{club}</p>
-                            <div className="space-y-1 mt-1">
+                            <div className="flex items-center justify-between border-b border-gold/10 pb-1 mb-1">
+                              <p className="text-gold/60 text-xs uppercase tracking-widest font-mono">{club} ({porClub[club].length})</p>
+                              <button
+                                className="py-0.5 px-2 text-xs rounded border border-gold/30 text-gold/70 hover:bg-gold/10 transition-all disabled:opacity-40"
+                                disabled={inscribiendoClub === club}
+                                onClick={() => handleInscribirClub(inscripcionModal, porClub[club])}
+                              >
+                                {inscribiendoClub === club ? 'Inscribiendo...' : '+ Inscribir todos'}
+                              </button>
+                            </div>
+                            <div className="space-y-1">
                               {porClub[club].map(p => (
                                 <div key={p.id} className="flex items-center justify-between bg-felt-dark/40 border border-felt-light/10 rounded-lg px-3 py-2">
                                   <div>
