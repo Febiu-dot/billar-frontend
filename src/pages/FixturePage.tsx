@@ -4,6 +4,7 @@ import { Tournament, Match, Phase, Circuit, Player } from '../types';
 import { MatchStatusBadge, playerName, LoadingSpinner, EmptyState, Modal } from '../components/ui';
 
 const PHASE_TYPES = ['clasificatorio', 'segunda', 'primera', 'master'];
+const CATEGORY_ORDER: Record<string, number> = { master: 1, primera: 2, segunda: 3, tercera: 4 };
 
 export default function FixturePage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -11,33 +12,28 @@ export default function FixturePage() {
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  // Tournament modal
   const [tournamentModal, setTournamentModal] = useState(false);
   const [editTournament, setEditTournament] = useState<Tournament | null>(null);
   const [tForm, setTForm] = useState({ name: '', year: new Date().getFullYear().toString(), description: '', active: true });
   const [tSaving, setTSaving] = useState(false);
   const [tError, setTError] = useState('');
 
-  // Circuit modal
   const [circuitModal, setCircuitModal] = useState<Tournament | null>(null);
   const [cForm, setCForm] = useState({ name: '', order: '1', startDate: '', endDate: '' });
   const [cSaving, setCSaving] = useState(false);
   const [cError, setCError] = useState('');
 
-  // Phase modal
   const [phaseModal, setPhaseModal] = useState<Circuit | null>(null);
   const [pForm, setPForm] = useState({ name: '', type: 'clasificatorio', order: '1' });
   const [pSaving, setPSaving] = useState(false);
   const [pError, setPError] = useState('');
 
-  // Inscripción modal
   const [inscripcionModal, setInscripcionModal] = useState<Circuit | null>(null);
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [inscripcionLoading, setInscripcionLoading] = useState(false);
   const [inscripcionSearch, setInscripcionSearch] = useState('');
   const [inscripcionSaving, setInscripcionSaving] = useState<number | null>(null);
 
-  // Generando partidos
   const [generando, setGenerando] = useState<number | null>(null);
 
   const fetchTournaments = () =>
@@ -68,7 +64,6 @@ export default function FixturePage() {
     fetchTournaments();
   };
 
-  // Tournament CRUD
   const openAddTournament = () => {
     setEditTournament(null);
     setTForm({ name: '', year: new Date().getFullYear().toString(), description: '', active: true });
@@ -118,7 +113,6 @@ export default function FixturePage() {
     }
   };
 
-  // Circuit CRUD
   const openAddCircuit = (t: Tournament) => {
     setCircuitModal(t);
     const nextOrder = (t.circuits?.length ?? 0) + 1;
@@ -157,7 +151,6 @@ export default function FixturePage() {
     }
   };
 
-  // Phase CRUD
   const openAddPhase = (circuit: Circuit) => {
     setPhaseModal(circuit);
     const nextOrder = (circuit.phases?.length ?? 0) + 1;
@@ -194,7 +187,6 @@ export default function FixturePage() {
     }
   };
 
-  // Inscripción
   const openInscripcion = async (circuit: Circuit) => {
     setInscripcionModal(circuit);
     setInscripcionSearch('');
@@ -243,7 +235,6 @@ export default function FixturePage() {
     }
   };
 
-  // Generar partidos
   const handleGenerarPartidos = async (circuit: Circuit) => {
     if (!confirm(`¿Generar partidos para "${circuit.name}"?\n\nSi ya hay partidos creados, serán eliminados y regenerados.`)) return;
     setGenerando(circuit.id);
@@ -312,18 +303,12 @@ export default function FixturePage() {
                 <span className={`badge-status ${selectedTournament.active ? 'bg-green-900/40 text-green-400' : 'bg-chalk/10 text-chalk/40'}`}>
                   {selectedTournament.active ? 'Activo' : 'Finalizado'}
                 </span>
-                <button className="btn-secondary py-1 px-3 text-xs" onClick={() => openEditTournament(selectedTournament)}>
-                  Editar
-                </button>
+                <button className="btn-secondary py-1 px-3 text-xs" onClick={() => openEditTournament(selectedTournament)}>Editar</button>
                 <button
                   className="py-1 px-3 text-xs rounded-lg border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all"
                   onClick={() => handleDeleteTournament(selectedTournament)}
-                >
-                  Eliminar
-                </button>
-                <button className="btn-primary py-1 px-3 text-xs" onClick={() => openAddCircuit(selectedTournament)}>
-                  + Circuito
-                </button>
+                >Eliminar</button>
+                <button className="btn-primary py-1 px-3 text-xs" onClick={() => openAddCircuit(selectedTournament)}>+ Circuito</button>
               </div>
             </div>
 
@@ -359,15 +344,11 @@ export default function FixturePage() {
                       >
                         {generando === circuit.id ? 'Generando...' : '⚡ Generar partidos'}
                       </button>
-                      <button className="btn-primary py-1 px-3 text-xs" onClick={() => openAddPhase(circuit)}>
-                        + Fase
-                      </button>
+                      <button className="btn-primary py-1 px-3 text-xs" onClick={() => openAddPhase(circuit)}>+ Fase</button>
                       <button
                         className="py-1 px-3 text-xs rounded-lg border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all"
                         onClick={() => handleDeleteCircuit(circuit)}
-                      >
-                        Eliminar
-                      </button>
+                      >Eliminar</button>
                     </div>
                   </div>
 
@@ -382,15 +363,11 @@ export default function FixturePage() {
                           <div className="flex items-center gap-2 mb-3">
                             <h4 className="font-semibold text-chalk/80 uppercase text-sm tracking-wider">{phase.name}</h4>
                             <span className="badge-status bg-felt-light/20 text-chalk/40 text-xs capitalize">{phase.type}</span>
-                            <span className="text-chalk/20 text-xs font-mono">
-                              {phase.matches?.length ?? 0} partidos
-                            </span>
+                            <span className="text-chalk/20 text-xs font-mono">{phase.matches?.length ?? 0} partidos</span>
                             <button
                               className="ml-auto py-0.5 px-2 text-xs rounded border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all"
                               onClick={() => handleDeletePhase(phase)}
-                            >
-                              Eliminar
-                            </button>
+                            >Eliminar</button>
                           </div>
                           {rounds.length === 0 ? (
                             <p className="text-chalk/20 text-xs pl-2">Sin partidos en esta fase</p>
@@ -438,13 +415,7 @@ export default function FixturePage() {
               <input className="input" value={tForm.description} onChange={e => setTForm({ ...tForm, description: e.target.value })} placeholder="Departamental, Regional, Nacional..." />
             </div>
             <div className="flex items-center gap-3 bg-felt-dark/50 rounded-lg px-3 py-2">
-              <input
-                type="checkbox"
-                id="active"
-                checked={tForm.active}
-                onChange={e => setTForm({ ...tForm, active: e.target.checked })}
-                className="w-4 h-4 accent-gold"
-              />
+              <input type="checkbox" id="active" checked={tForm.active} onChange={e => setTForm({ ...tForm, active: e.target.checked })} className="w-4 h-4 accent-gold" />
               <label htmlFor="active" className="text-chalk/80 text-sm cursor-pointer">Torneo activo</label>
             </div>
             {tError && <p className="text-red-400 text-sm">{tError}</p>}
@@ -528,6 +499,8 @@ export default function FixturePage() {
               <div className="text-center py-6 text-chalk/40">Cargando jugadores...</div>
             ) : (
               <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+
+                {/* Inscriptos */}
                 <div>
                   <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">
                     Inscriptos ({inscripcionModal.players?.length ?? 0})
@@ -560,6 +533,8 @@ export default function FixturePage() {
                     </div>
                   )}
                 </div>
+
+                {/* Disponibles por club */}
                 <div>
                   <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">
                     Disponibles para inscribir
@@ -574,22 +549,47 @@ export default function FixturePage() {
                     if (disponibles.length === 0) return (
                       <p className="text-chalk/20 text-sm pl-1">No hay jugadores disponibles.</p>
                     );
+                    // Agrupar por club
+                    const porClub: Record<string, typeof disponibles> = {};
+                    disponibles.forEach(p => {
+                      const club = p.club ?? 'Sin club';
+                      if (!porClub[club]) porClub[club] = [];
+                      porClub[club].push(p);
+                    });
+                    // Ordenar jugadores dentro de cada club por categoría
+                    Object.values(porClub).forEach(jugadores =>
+                      jugadores.sort((a, b) =>
+                        (CATEGORY_ORDER[(a as any).category?.name] ?? 9) - (CATEGORY_ORDER[(b as any).category?.name] ?? 9)
+                      )
+                    );
+                    const clubsOrdenados = Object.keys(porClub).sort();
                     return (
-                      <div className="space-y-1">
-                        {disponibles.map(p => (
-                          <div key={p.id} className="flex items-center justify-between bg-felt-dark/40 border border-felt-light/10 rounded-lg px-3 py-2">
-                            <div>
-                              <span className="text-chalk/70 text-sm">{p.lastName}, {p.firstName}</span>
-                              <span className="text-chalk/30 text-xs ml-2">{p.club ?? ''}</span>
-                              <span className="text-chalk/30 text-xs ml-2 capitalize">{(p as any).category?.name}</span>
+                      <div className="space-y-4">
+                        {clubsOrdenados.map(club => (
+                          <div key={club}>
+                            <p className="text-gold/60 text-xs uppercase tracking-widest font-mono mb-1 px-1 border-b border-gold/10 pb-1">{club}</p>
+                            <div className="space-y-1 mt-1">
+                              {porClub[club].map(p => (
+                                <div key={p.id} className="flex items-center justify-between bg-felt-dark/40 border border-felt-light/10 rounded-lg px-3 py-2">
+                                  <div>
+                                    <span className="text-chalk/70 text-sm">{p.lastName}, {p.firstName}</span>
+                                    <span className={`text-xs ml-2 capitalize font-mono ${
+                                      (p as any).category?.name === 'master' ? 'text-gold/60' :
+                                      (p as any).category?.name === 'primera' ? 'text-blue-400/60' :
+                                      (p as any).category?.name === 'segunda' ? 'text-green-400/60' :
+                                      'text-chalk/30'
+                                    }`}>{(p as any).category?.name}</span>
+                                  </div>
+                                  <button
+                                    className="py-0.5 px-2 text-xs rounded border border-green-700/40 text-green-400 hover:bg-green-900/20 transition-all disabled:opacity-40"
+                                    disabled={inscripcionSaving === p.id}
+                                    onClick={() => handleInscribir(inscripcionModal, p.id)}
+                                  >
+                                    {inscripcionSaving === p.id ? '...' : '+ Inscribir'}
+                                  </button>
+                                </div>
+                              ))}
                             </div>
-                            <button
-                              className="py-0.5 px-2 text-xs rounded border border-green-700/40 text-green-400 hover:bg-green-900/20 transition-all disabled:opacity-40"
-                              disabled={inscripcionSaving === p.id}
-                              onClick={() => handleInscribir(inscripcionModal, p.id)}
-                            >
-                              {inscripcionSaving === p.id ? '...' : '+ Inscribir'}
-                            </button>
                           </div>
                         ))}
                       </div>
@@ -612,13 +612,10 @@ function MatchCard({ match }: { match: Match }) {
 
   return (
     <div className={`rounded-lg border overflow-hidden text-sm transition-all ${
-      match.status === 'en_juego'
-        ? 'border-gold/40 bg-gold/5'
-        : match.status === 'asignado'
-        ? 'border-blue-700/40 bg-blue-900/10'
-        : isFinished
-        ? 'border-felt-light/20 bg-felt/50'
-        : 'border-felt-light/15 bg-felt-dark/30'
+      match.status === 'en_juego' ? 'border-gold/40 bg-gold/5' :
+      match.status === 'asignado' ? 'border-blue-700/40 bg-blue-900/10' :
+      isFinished ? 'border-felt-light/20 bg-felt/50' :
+      'border-felt-light/15 bg-felt-dark/30'
     }`}>
       <div className={`flex items-center justify-between px-3 py-2 border-b border-felt-light/10 ${winnerA ? 'bg-gold/10' : ''}`}>
         <span className={`font-medium truncate ${winnerA ? 'text-gold' : 'text-chalk/80'}`}>
@@ -642,12 +639,8 @@ function MatchCard({ match }: { match: Match }) {
       </div>
       <div className="flex items-center justify-between px-3 py-1 bg-felt-dark/30 border-t border-felt-light/10">
         <MatchStatusBadge status={match.status} />
-        {match.table && (
-          <span className="text-chalk/25 text-xs font-mono">Mesa {match.table.number}</span>
-        )}
-        {match.result?.isWO && (
-          <span className="text-red-400 text-xs font-mono">W.O.</span>
-        )}
+        {match.table && <span className="text-chalk/25 text-xs font-mono">Mesa {match.table.number}</span>}
+        {match.result?.isWO && <span className="text-red-400 text-xs font-mono">W.O.</span>}
       </div>
     </div>
   );
