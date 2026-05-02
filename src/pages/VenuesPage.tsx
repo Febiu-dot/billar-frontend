@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
-import { Venue, Table } from '../types';
+import { Venue, Table, Departamento } from '../types';
 import { PageHeader, TableStatusBadge, LoadingSpinner, Modal, EmptyState } from '../components/ui';
 
 export default function VenuesPage() {
   const [venues, setVenues] = useState<Venue[]>([]);
+  const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editVenue, setEditVenue] = useState<Venue | null>(null);
-  const [form, setForm] = useState({ name: '', address: '', city: '' });
+  const [form, setForm] = useState({ name: '', address: '', city: '', departamentoId: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  // Mesas modal
   const [tablesModal, setTablesModal] = useState<Venue | null>(null);
   const [newTableNumber, setNewTableNumber] = useState('');
   const [savingTable, setSavingTable] = useState(false);
@@ -21,18 +21,21 @@ export default function VenuesPage() {
   const fetchVenues = () =>
     api.get('/venues').then(r => { setVenues(r.data); setLoading(false); });
 
-  useEffect(() => { fetchVenues(); }, []);
+  useEffect(() => {
+    fetchVenues();
+    api.get('/departamentos').then(r => setDepartamentos(r.data));
+  }, []);
 
   const openAdd = () => {
     setEditVenue(null);
-    setForm({ name: '', address: '', city: '' });
+    setForm({ name: '', address: '', city: '', departamentoId: '' });
     setError('');
     setShowModal(true);
   };
 
   const openEdit = (v: Venue) => {
     setEditVenue(v);
-    setForm({ name: v.name, address: v.address ?? '', city: v.city ?? '' });
+    setForm({ name: v.name, address: v.address ?? '', city: v.city ?? '', departamentoId: v.departamentoId?.toString() ?? '' });
     setError('');
     setShowModal(true);
   };
@@ -42,13 +45,14 @@ export default function VenuesPage() {
     setSaving(true);
     setError('');
     try {
+      const payload = { ...form, departamentoId: form.departamentoId ? Number(form.departamentoId) : undefined };
       if (editVenue) {
-        await api.put(`/venues/${editVenue.id}`, form);
+        await api.put(`/venues/${editVenue.id}`, payload);
       } else {
-        await api.post('/venues', form);
+        await api.post('/venues', payload);
       }
       setShowModal(false);
-      setForm({ name: '', address: '', city: '' });
+      setForm({ name: '', address: '', city: '', departamentoId: '' });
       fetchVenues();
     } catch {
       setError('Error al guardar la sede');
@@ -127,6 +131,9 @@ export default function VenuesPage() {
                     <h3 className="font-semibold text-chalk text-lg">{v.name}</h3>
                     {v.address && <p className="text-chalk/50 text-sm">{v.address}</p>}
                     {v.city && <p className="text-chalk/40 text-xs">{v.city}</p>}
+                    {v.departamento && (
+                      <p className="text-gold/60 text-xs font-mono mt-1">{v.departamento.nombre}</p>
+                    )}
                   </div>
                   <span className="font-display text-3xl text-gold">{v._count?.tables ?? v.tables?.length ?? 0}</span>
                 </div>
@@ -148,24 +155,9 @@ export default function VenuesPage() {
                 </div>
 
                 <div className="border-t border-felt-light/20 pt-3 flex gap-2">
-                  <button
-                    className="btn-secondary py-1 px-3 text-xs flex-1"
-                    onClick={() => openTablesModal(v)}
-                  >
-                    🎱 Mesas
-                  </button>
-                  <button
-                    className="btn-secondary py-1 px-3 text-xs flex-1"
-                    onClick={() => openEdit(v)}
-                  >
-                    Editar
-                  </button>
-                  <button
-                    className="py-1 px-3 text-xs rounded-lg border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all"
-                    onClick={() => handleDelete(v)}
-                  >
-                    Eliminar
-                  </button>
+                  <button className="btn-secondary py-1 px-3 text-xs flex-1" onClick={() => openTablesModal(v)}>🎱 Mesas</button>
+                  <button className="btn-secondary py-1 px-3 text-xs flex-1" onClick={() => openEdit(v)}>Editar</button>
+                  <button className="py-1 px-3 text-xs rounded-lg border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all" onClick={() => handleDelete(v)}>Eliminar</button>
                 </div>
               </div>
             ))}
@@ -189,6 +181,13 @@ export default function VenuesPage() {
               <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Ciudad</label>
               <input className="input" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} placeholder="Montevideo" />
             </div>
+            <div>
+              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Departamento</label>
+              <select className="input" value={form.departamentoId} onChange={e => setForm({ ...form, departamentoId: e.target.value })}>
+                <option value="">Sin departamento</option>
+                {departamentos.map(d => <option key={d.id} value={d.id}>{d.nombre}</option>)}
+              </select>
+            </div>
             {error && <p className="text-red-400 text-sm">{error}</p>}
             <div className="flex gap-3 pt-2">
               <button type="submit" className="btn-primary flex-1" disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</button>
@@ -202,7 +201,6 @@ export default function VenuesPage() {
       {tablesModal && (
         <Modal title={`MESAS — ${tablesModal.name}`} onClose={() => setTablesModal(null)}>
           <div className="space-y-4">
-            {/* Lista de mesas */}
             {tablesModal.tables && tablesModal.tables.length > 0 ? (
               <div className="space-y-2">
                 {tablesModal.tables.sort((a, b) => a.number - b.number).map(t => (
@@ -211,35 +209,18 @@ export default function VenuesPage() {
                       <span className="font-display text-2xl text-gold">{t.number}</span>
                       <TableStatusBadge status={t.status} />
                     </div>
-                    <button
-                      className="py-1 px-3 text-xs rounded-lg border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all"
-                      onClick={() => handleDeleteTable(t)}
-                    >
-                      Eliminar
-                    </button>
+                    <button className="py-1 px-3 text-xs rounded-lg border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all" onClick={() => handleDeleteTable(t)}>Eliminar</button>
                   </div>
                 ))}
               </div>
             ) : (
               <p className="text-chalk/30 text-sm text-center py-4">Sin mesas registradas</p>
             )}
-
-            {/* Agregar mesa */}
             <div className="border-t border-felt-light/20 pt-4">
               <p className="text-chalk/60 text-xs uppercase tracking-widest mb-2">Agregar mesa</p>
               <form onSubmit={handleAddTable} className="flex gap-2">
-                <input
-                  type="number"
-                  min="1"
-                  className="input flex-1"
-                  placeholder="Número de mesa"
-                  value={newTableNumber}
-                  onChange={e => setNewTableNumber(e.target.value)}
-                  required
-                />
-                <button type="submit" className="btn-primary px-4" disabled={savingTable}>
-                  {savingTable ? '...' : '+ Agregar'}
-                </button>
+                <input type="number" min="1" className="input flex-1" placeholder="Número de mesa" value={newTableNumber} onChange={e => setNewTableNumber(e.target.value)} required />
+                <button type="submit" className="btn-primary px-4" disabled={savingTable}>{savingTable ? '...' : '+ Agregar'}</button>
               </form>
               {tableError && <p className="text-red-400 text-xs mt-1">{tableError}</p>}
             </div>
