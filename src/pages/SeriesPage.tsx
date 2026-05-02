@@ -27,6 +27,11 @@ export default function SeriesPage() {
       m.playerB !== null
     );
 
+  const getNumSerie = (id: string) => {
+    const match = id.match(/(\d+)$/);
+    return match ? parseInt(match[1]) : 0;
+  };
+
   const agruparEnSeries = (matches: any[]): Serie[] => {
     const seriesMap: Record<string, Serie> = {};
     for (const m of matches) {
@@ -40,7 +45,12 @@ export default function SeriesPage() {
       seriesMap[m.serieId].partidos.push(m);
     }
     Object.values(seriesMap).forEach(s => s.partidos.sort((a, b) => a.round - b.round));
-    return Object.values(seriesMap).sort((a, b) => a.serieId.localeCompare(b.serieId));
+    return Object.values(seriesMap).sort((a, b) => {
+      const faseA = a.serieId.split('-serie-')[0];
+      const faseB = b.serieId.split('-serie-')[0];
+      if (faseA !== faseB) return faseA.localeCompare(faseB);
+      return getNumSerie(a.serieId) - getNumSerie(b.serieId);
+    });
   };
 
   const cargarDatos = async () => {
@@ -100,7 +110,12 @@ export default function SeriesPage() {
   const pn = (player: any) => player ? `${player.lastName}, ${player.firstName}` : '—';
 
   const formatSerieId = (id: string) =>
-    id.replace('clasif-', 'Clasificatorio ').replace('segunda-', 'Segunda ').replace('primera-', 'Primera ').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    id
+      .replace('clasif-serie-', 'Clasificatorio Serie ')
+      .replace('segunda-serie-', 'Segunda Serie ')
+      .replace('primera-serie-', 'Primera Serie ')
+      .replace(/-/g, ' ')
+      .replace(/\b\w/g, c => c.toUpperCase());
 
   if (loading) return <LoadingSpinner />;
 
