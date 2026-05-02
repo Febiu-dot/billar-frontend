@@ -4,6 +4,11 @@ export type TableStatus = 'libre' | 'ocupada' | 'fuera_de_servicio';
 export type CategoryName = 'master' | 'primera' | 'segunda' | 'tercera';
 export type PhaseType = 'clasificatorio' | 'segunda' | 'primera' | 'master';
 
+export interface Departamento {
+  id: number;
+  nombre: string;
+}
+
 export interface User {
   id: number;
   username: string;
@@ -17,6 +22,8 @@ export interface Venue {
   name: string;
   address?: string;
   city?: string;
+  departamentoId?: number;
+  departamento?: Departamento;
   tables?: Table[];
   _count?: { tables: number };
 }
@@ -43,6 +50,8 @@ export interface Player {
   categoryId: number;
   category?: Category;
   club?: string;
+  departamentoId?: number;
+  departamento?: Departamento;
   active: boolean;
 }
 
@@ -60,6 +69,8 @@ export interface Tournament {
   year: number;
   description?: string;
   active: boolean;
+  departamentoId?: number;
+  departamento?: Departamento;
   circuits?: Circuit[];
 }
 
@@ -124,16 +135,19 @@ export interface Match {
   id: number;
   phaseId: number;
   phase?: Phase;
-  playerAId: number;
+  playerAId?: number;
   playerA?: Player;
-  playerBId: number;
+  playerBId?: number;
   playerB?: Player;
+  slotA?: string;
+  slotB?: string;
   tableId?: number;
   table?: Table;
   ruleSetId?: number;
   ruleSet?: RuleSet;
   status: MatchStatus;
   round: number;
+  serieId?: string;
   scheduledAt?: string;
   startedAt?: string;
   finishedAt?: string;
