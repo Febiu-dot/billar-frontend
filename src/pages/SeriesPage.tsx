@@ -6,7 +6,6 @@ interface Venue { id: number; name: string; tables?: { id: number; number: numbe
 interface Serie {
   serieId: string;
   fase: string;
-  circuitName: string;
   partidos: any[];
 }
 
@@ -18,31 +17,44 @@ export default function SeriesPage() {
   const [form, setForm] = useState({ venueId: '', tableId: '', scheduledAt: '', hora: '' });
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    Promise.all([
-      api.get('/venues'),
-      api.get('/matches?status=pendiente'),
-    ]).then(([vRes, mRes]) => {
-      setVenues(vRes.data);
-      // Agrupar partidos por serieId
-      const matches = mRes.data.filter((m: any) => m.serieId && (m.round % 10 === 1 || m.round % 10 === 2));
-      const seriesMap: Record<string, Serie> = {};
-      for (const m of matches) {
-        if (!seriesMap[m.serieId]) {
-          seriesMap[m.serieId] = {
-            serieId: m.serieId,
-            fase: m.phase?.type ?? '',
-            circuitName: m.phase?.circuit?.tournament?.name ?? '',
-            partidos: []
-          };
-        }
-        seriesMap[m.serieId].partidos.push(m);
+  const filtrarPartidos = (matches: any[]) =>
+    matches.filter((m: any) =>
+      m.serieId &&
+      (m.round % 10 === 1 || m.round % 10 === 2) &&
+      !m.serieId.includes('reduccion') &&
+      !m.serieId.includes('repechaje') &&
+      m.playerA !== null &&
+      m.playerB !== null
+    );
+
+  const agruparEnSeries = (matches: any[]): Serie[] => {
+    const seriesMap: Record<string, Serie> = {};
+    for (const m of matches) {
+      if (!seriesMap[m.serieId]) {
+        seriesMap[m.serieId] = {
+          serieId: m.serieId,
+          fase: m.phase?.type ?? '',
+          partidos: []
+        };
       }
-      // Ordenar partidos dentro de cada serie por round
-      Object.values(seriesMap).forEach(s => s.partidos.sort((a, b) => a.round - b.round));
-      setSeries(Object.values(seriesMap).sort((a, b) => a.serieId.localeCompare(b.serieId)));
-      setLoading(false);
-    }).catch(() => setLoading(false));
+      seriesMap[m.serieId].partidos.push(m);
+    }
+    Object.values(seriesMap).forEach(s => s.partidos.sort((a, b) => a.round - b.round));
+    return Object.values(seriesMap).sort((a, b) => a.serieId.localeCompare(b.serieId));
+  };
+
+  const cargarDatos = async () => {
+    const [vRes, mRes] = await Promise.all([
+      api.get('/venues'),
+      api.get('/matches'),
+    ]);
+    setVenues(vRes.data);
+    setSeries(agruparEnSeries(filtrarPartidos(mRes.data)));
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    cargarDatos().catch(() => setLoading(false));
   }, []);
 
   const abrirAsignacion = (serie: Serie, partido: any) => {
@@ -65,27 +77,14 @@ export default function SeriesPage() {
         : undefined;
 
       if (form.tableId) {
-        await api.put(`/matches/${partido.id}/assign`, {
-          tableId: parseInt(form.tableId)
-        });
+        await api.put(`/matches/${partido.id}/assign`, { tableId: parseInt(form.tableId) });
       }
       if (scheduledAt) {
         await api.put(`/matches/${partido.id}`, { scheduledAt });
       }
 
       setAsignandoModal(null);
-      // Refrescar
-      const mRes = await api.get('/matches?status=pendiente');
-      const matches = mRes.data.filter((m: any) => m.serieId && (m.round % 10 === 1 || m.round % 10 === 2));
-      const seriesMap: Record<string, Serie> = {};
-      for (const m of matches) {
-        if (!seriesMap[m.serieId]) {
-          seriesMap[m.serieId] = { serieId: m.serieId, fase: m.phase?.type ?? '', circuitName: m.phase?.circuit?.tournament?.name ?? '', partidos: [] };
-        }
-        seriesMap[m.serieId].partidos.push(m);
-      }
-      Object.values(seriesMap).forEach(s => s.partidos.sort((a, b) => a.round - b.round));
-      setSeries(Object.values(seriesMap).sort((a, b) => a.serieId.localeCompare(b.serieId)));
+      await cargarDatos();
     } catch (err: any) {
       alert(err?.response?.data?.error ?? 'Error al asignar');
     } finally {
@@ -99,6 +98,9 @@ export default function SeriesPage() {
   };
 
   const pn = (player: any) => player ? `${player.lastName}, ${player.firstName}` : '—';
+
+  const formatSerieId = (id: string) =>
+    id.replace('clasif-', 'Clasificatorio ').replace('segunda-', 'Segunda ').replace('primera-', 'Primera ').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
   if (loading) return <LoadingSpinner />;
 
@@ -116,9 +118,7 @@ export default function SeriesPage() {
           series.map(serie => (
             <div key={serie.serieId} className="card">
               <div className="flex items-center gap-3 mb-3">
-                <h3 className="font-display text-lg text-chalk capitalize">
-                  {serie.serieId.replace(/-/g, ' ').replace('clasif', 'Clasificatorio').replace('segunda', 'Segunda').replace('serie', 'Serie')}
-                </h3>
+                <h3 className="font-display text-lg text-chalk">{formatSerieId(serie.serieId)}</h3>
                 <span className="badge-status bg-felt-light/20 text-chalk/40 text-xs capitalize">{serie.fase}</span>
               </div>
 
@@ -164,7 +164,7 @@ export default function SeriesPage() {
 
       {/* Modal asignación */}
       {asignandoModal && (
-        <Modal title={`ASIGNAR — ${asignandoModal.serie.serieId.replace(/-/g, ' ')}`} onClose={() => setAsignandoModal(null)}>
+        <Modal title={`ASIGNAR — ${formatSerieId(asignandoModal.serie.serieId)}`} onClose={() => setAsignandoModal(null)}>
           <div className="space-y-4">
             <div>
               <p className="text-chalk/60 text-xs uppercase tracking-widest mb-1">Partido</p>
