@@ -48,6 +48,7 @@ export default function FixturePage() {
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [inscripcionLoading, setInscripcionLoading] = useState(false);
   const [inscripcionSearch, setInscripcionSearch] = useState('');
+  const [soloDepTorneo, setSoloDepTorneo] = useState(true);
   const [inscripcionSaving, setInscripcionSaving] = useState<number | null>(null);
   const [inscribiendoClub, setInscribiendoClub] = useState<string | null>(null);
 
@@ -211,6 +212,7 @@ export default function FixturePage() {
   const openInscripcion = async (circuit: Circuit) => {
     setInscripcionModal(circuit);
     setInscripcionSearch('');
+    setSoloDepTorneo(true);
     setInscripcionLoading(true);
     try {
       const res = await api.get('/players');
@@ -239,8 +241,8 @@ export default function FixturePage() {
     }
   };
 
-  const handleInscribirClub = async (circuit: Circuit, jugadores: Player[]) => {
-    setInscribiendoClub(jugadores[0]?.club ?? 'Sin club');
+  const handleInscribirTodos = async (circuit: Circuit, jugadores: Player[], label: string) => {
+    setInscribiendoClub(label);
     try {
       for (const p of jugadores) {
         try { await api.post(`/circuits/${circuit.id}/players`, { playerId: p.id }); } catch { }
@@ -522,11 +524,56 @@ export default function FixturePage() {
       {inscripcionModal && (
         <Modal title={`INSCRIPCIÓN — ${inscripcionModal.name}`} onClose={() => setInscripcionModal(null)}>
           <div className="space-y-4">
-            <input className="input" placeholder="Buscar jugador por nombre o club..." value={inscripcionSearch} onChange={e => setInscripcionSearch(e.target.value)} />
+            {/* Barra de búsqueda y filtros */}
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <input
+                  className="input flex-1"
+                  placeholder="Buscar jugador por nombre o club..."
+                  value={inscripcionSearch}
+                  onChange={e => setInscripcionSearch(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                {selectedTournament?.departamentoId && (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="soloDepTorneo"
+                        checked={soloDepTorneo}
+                        onChange={e => setSoloDepTorneo(e.target.checked)}
+                        className="w-4 h-4 accent-gold"
+                      />
+                      <label htmlFor="soloDepTorneo" className="text-chalk/60 text-xs cursor-pointer">
+                        Solo {selectedTournament.departamento?.nombre}
+                      </label>
+                    </div>
+                    <button
+                      className="py-1 px-3 text-xs rounded border border-gold/40 text-gold hover:bg-gold/10 transition-all disabled:opacity-40"
+                      disabled={inscribiendoClub === 'departamento'}
+                      onClick={() => {
+                        const inscriptosIds = new Set(inscripcionModal.players?.map(cp => cp.player.id) ?? []);
+                        const jugadoresDep = allPlayers.filter(p =>
+                          p.departamentoId === selectedTournament.departamentoId &&
+                          (p as any).dni !== 'FEBIU000' &&
+                          !inscriptosIds.has(p.id)
+                        );
+                        handleInscribirTodos(inscripcionModal, jugadoresDep, 'departamento');
+                      }}
+                    >
+                      {inscribiendoClub === 'departamento' ? 'Inscribiendo...' : '⚡ Inscribir todos del departamento'}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
             {inscripcionLoading ? (
               <div className="text-center py-6 text-chalk/40">Cargando jugadores...</div>
             ) : (
               <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+                {/* Inscriptos */}
                 <div>
                   <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">Inscriptos ({inscripcionModal.players?.length ?? 0})</p>
                   {(inscripcionModal.players?.length ?? 0) === 0 ? (
@@ -542,6 +589,9 @@ export default function FixturePage() {
                             <span className="text-chalk/90 text-sm font-medium">{cp.player.lastName}, {cp.player.firstName}</span>
                             <span className="text-chalk/40 text-xs ml-2">{cp.player.club ?? ''}</span>
                             <span className="text-blue-400/60 text-xs ml-2 capitalize">{cp.player.category?.name}</span>
+                            {(cp.player as any).departamento && (
+                              <span className="text-gold/40 text-xs ml-2">{(cp.player as any).departamento.nombre}</span>
+                            )}
                           </div>
                           <button
                             className="py-0.5 px-2 text-xs rounded border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all disabled:opacity-40"
@@ -555,6 +605,8 @@ export default function FixturePage() {
                     </div>
                   )}
                 </div>
+
+                {/* Disponibles */}
                 <div>
                   <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">Disponibles para inscribir</p>
                   {(() => {
@@ -563,9 +615,14 @@ export default function FixturePage() {
                       if (inscriptosIds.has(p.id)) return false;
                       if ((p as any).dni === 'FEBIU000') return false;
                       const nombre = `${p.firstName} ${p.lastName} ${p.club ?? ''}`.toLowerCase();
-                      return nombre.includes(inscripcionSearch.toLowerCase());
+                      const matchesSearch = nombre.includes(inscripcionSearch.toLowerCase());
+                      const matchesDep = soloDepTorneo && selectedTournament?.departamentoId
+                        ? p.departamentoId === selectedTournament.departamentoId
+                        : true;
+                      return matchesSearch && matchesDep;
                     });
                     if (disponibles.length === 0) return <p className="text-chalk/20 text-sm pl-1">No hay jugadores disponibles.</p>;
+
                     const porClub: Record<string, typeof disponibles> = {};
                     disponibles.forEach(p => {
                       const club = p.club ?? 'Sin club';
@@ -585,7 +642,7 @@ export default function FixturePage() {
                               <button
                                 className="py-0.5 px-2 text-xs rounded border border-gold/30 text-gold/70 hover:bg-gold/10 transition-all disabled:opacity-40"
                                 disabled={inscribiendoClub === club}
-                                onClick={() => handleInscribirClub(inscripcionModal, porClub[club])}
+                                onClick={() => handleInscribirTodos(inscripcionModal, porClub[club], club)}
                               >
                                 {inscribiendoClub === club ? 'Inscribiendo...' : '+ Inscribir todos'}
                               </button>
@@ -601,6 +658,9 @@ export default function FixturePage() {
                                       (p as any).category?.name === 'segunda' ? 'text-green-400/60' :
                                       'text-chalk/30'
                                     }`}>{(p as any).category?.name}</span>
+                                    {(p as any).departamento && (
+                                      <span className="text-gold/30 text-xs ml-2">{(p as any).departamento.nombre}</span>
+                                    )}
                                   </div>
                                   <button
                                     className="py-0.5 px-2 text-xs rounded border border-green-700/40 text-green-400 hover:bg-green-900/20 transition-all disabled:opacity-40"
