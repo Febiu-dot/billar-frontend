@@ -1,32 +1,26 @@
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
-import { Player, Category, CategoryName } from '../types';
+import { Player, Category, CategoryName, Departamento } from '../types';
 import { PageHeader, CategoryBadge, LoadingSpinner, Modal, EmptyState } from '../components/ui';
 
 const CLUBS = [
-  'CAPOLAVORO',
-  'FERIA FRANCA',
-  'YATAY',
-  'CABRERA',
-  'MODEL CENTER',
-  'NUEVO MALVIN',
-  'SPORTING UNION',
-  'CENTENARIO',
-  'CASA DEL BILLAR',
-  'PIEDRA HONDA',
+  'CAPOLAVORO', 'FERIA FRANCA', 'YATAY', 'CABRERA', 'MODEL CENTER',
+  'NUEVO MALVIN', 'SPORTING UNION', 'CENTENARIO', 'CASA DEL BILLAR', 'PIEDRA HONDA',
 ];
 
 export default function PlayersPage() {
-  const [players, setPlayers]       = useState<Player[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading]       = useState(true);
-  const [showModal, setShowModal]   = useState(false);
-  const [editPlayer, setEditPlayer] = useState<Player | null>(null);
-  const [form, setForm]             = useState({ firstName: '', lastName: '', dni: '', categoryId: '', club: '' });
-  const [saving, setSaving]         = useState(false);
-  const [error, setError]           = useState('');
-  const [filterCat, setFilterCat]   = useState('');
-  const [search, setSearch]         = useState('');
+  const [players, setPlayers]           = useState<Player[]>([]);
+  const [categories, setCategories]     = useState<Category[]>([]);
+  const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
+  const [loading, setLoading]           = useState(true);
+  const [showModal, setShowModal]       = useState(false);
+  const [editPlayer, setEditPlayer]     = useState<Player | null>(null);
+  const [form, setForm]                 = useState({ firstName: '', lastName: '', dni: '', categoryId: '', club: '', departamentoId: '' });
+  const [saving, setSaving]             = useState(false);
+  const [error, setError]               = useState('');
+  const [filterCat, setFilterCat]       = useState('');
+  const [filterDep, setFilterDep]       = useState('');
+  const [search, setSearch]             = useState('');
 
   const fetchPlayers = () =>
     api.get('/players').then(r => { setPlayers(r.data); setLoading(false); });
@@ -34,18 +28,26 @@ export default function PlayersPage() {
   useEffect(() => {
     fetchPlayers();
     api.get('/categories').then(r => setCategories(r.data));
+    api.get('/departamentos').then(r => setDepartamentos(r.data));
   }, []);
 
   const openAdd = () => {
     setEditPlayer(null);
-    setForm({ firstName: '', lastName: '', dni: '', categoryId: categories[0]?.id?.toString() ?? '', club: '' });
+    setForm({ firstName: '', lastName: '', dni: '', categoryId: categories[0]?.id?.toString() ?? '', club: '', departamentoId: '' });
     setError('');
     setShowModal(true);
   };
 
   const openEdit = (p: Player) => {
     setEditPlayer(p);
-    setForm({ firstName: p.firstName, lastName: p.lastName, dni: p.dni ?? '', categoryId: p.categoryId.toString(), club: p.club ?? '' });
+    setForm({
+      firstName: p.firstName,
+      lastName: p.lastName,
+      dni: p.dni ?? '',
+      categoryId: p.categoryId.toString(),
+      club: p.club ?? '',
+      departamentoId: p.departamentoId?.toString() ?? ''
+    });
     setError('');
     setShowModal(true);
   };
@@ -55,7 +57,13 @@ export default function PlayersPage() {
     setSaving(true);
     setError('');
     try {
-      const payload = { ...form, categoryId: Number(form.categoryId), dni: form.dni || undefined, club: form.club || undefined };
+      const payload = {
+        ...form,
+        categoryId: Number(form.categoryId),
+        dni: form.dni || undefined,
+        club: form.club || undefined,
+        departamentoId: form.departamentoId ? Number(form.departamentoId) : undefined
+      };
       if (editPlayer) {
         await api.put(`/players/${editPlayer.id}`, payload);
       } else {
@@ -73,12 +81,9 @@ export default function PlayersPage() {
   const handleToggleActive = async (p: Player) => {
     try {
       await api.put(`/players/${p.id}`, {
-        firstName: p.firstName,
-        lastName: p.lastName,
-        dni: p.dni,
-        categoryId: p.categoryId,
-        active: !p.active,
-        club: p.club,
+        firstName: p.firstName, lastName: p.lastName, dni: p.dni,
+        categoryId: p.categoryId, active: !p.active, club: p.club,
+        departamentoId: p.departamentoId
       });
       fetchPlayers();
     } catch {
@@ -90,10 +95,11 @@ export default function PlayersPage() {
 
   const filtered = players.filter(p => {
     const matchesCat = filterCat ? p.category?.name === filterCat : true;
+    const matchesDep = filterDep ? p.departamentoId?.toString() === filterDep : true;
     const matchesSearch = search
       ? `${p.firstName} ${p.lastName}`.toLowerCase().includes(search.toLowerCase())
       : true;
-    return matchesCat && matchesSearch;
+    return matchesCat && matchesDep && matchesSearch;
   });
 
   const grouped: Record<string, Player[]> = {};
@@ -121,6 +127,10 @@ export default function PlayersPage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
+          <select className="input w-48" value={filterDep} onChange={e => setFilterDep(e.target.value)}>
+            <option value="">Todos los departamentos</option>
+            {departamentos.map(d => <option key={d.id} value={d.id}>{d.nombre}</option>)}
+          </select>
           <div className="flex gap-2 flex-wrap">
             <button
               className={`badge-status cursor-pointer ${!filterCat ? 'bg-orange/20 text-orange' : 'bg-silver-muted/20 text-silver-dark'}`}
@@ -148,6 +158,7 @@ export default function PlayersPage() {
                     <tr className="border-b border-silver-muted/10 text-silver-dark text-xs uppercase tracking-widest">
                       <th className="text-left px-4 py-3">Jugador</th>
                       <th className="text-left px-4 py-3">Club</th>
+                      <th className="text-left px-4 py-3">Departamento</th>
                       <th className="text-left px-4 py-3">Categoria</th>
                       <th className="text-left px-4 py-3 hidden sm:table-cell">C.I.</th>
                       <th className="text-left px-4 py-3 hidden sm:table-cell">Estado</th>
@@ -157,18 +168,11 @@ export default function PlayersPage() {
                   <tbody>
                     {grouped[cat].map(p => (
                       <tr key={p.id} className="table-row">
-                        <td className="px-4 py-3 font-medium text-silver-light">
-                          {p.lastName}, {p.firstName}
-                        </td>
-                        <td className="px-4 py-3 text-silver-dark text-xs">
-                          {p.club ?? '-'}
-                        </td>
-                        <td className="px-4 py-3">
-                          {p.category && <CategoryBadge name={p.category.name} />}
-                        </td>
-                        <td className="px-4 py-3 text-silver-dark font-mono hidden sm:table-cell">
-                          {p.dni ?? '-'}
-                        </td>
+                        <td className="px-4 py-3 font-medium text-silver-light">{p.lastName}, {p.firstName}</td>
+                        <td className="px-4 py-3 text-silver-dark text-xs">{p.club ?? '-'}</td>
+                        <td className="px-4 py-3 text-silver-dark text-xs">{p.departamento?.nombre ?? '-'}</td>
+                        <td className="px-4 py-3">{p.category && <CategoryBadge name={p.category.name} />}</td>
+                        <td className="px-4 py-3 text-silver-dark font-mono hidden sm:table-cell">{p.dni ?? '-'}</td>
                         <td className="px-4 py-3 hidden sm:table-cell">
                           <span className={`badge-status ${p.active ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
                             {p.active ? 'Activo' : 'Inactivo'}
@@ -178,17 +182,13 @@ export default function PlayersPage() {
                           <div className="flex gap-2 justify-end">
                             <button
                               className={`py-1 px-3 text-xs rounded-lg border transition-all ${
-                                p.active
-                                  ? 'border-red-700/40 text-red-400 hover:bg-red-900/20'
-                                  : 'border-green-700/40 text-green-400 hover:bg-green-900/20'
+                                p.active ? 'border-red-700/40 text-red-400 hover:bg-red-900/20' : 'border-green-700/40 text-green-400 hover:bg-green-900/20'
                               }`}
                               onClick={() => handleToggleActive(p)}
                             >
                               {p.active ? 'Desactivar' : 'Activar'}
                             </button>
-                            <button className="btn-secondary py-1 px-3 text-xs" onClick={() => openEdit(p)}>
-                              Editar
-                            </button>
+                            <button className="btn-secondary py-1 px-3 text-xs" onClick={() => openEdit(p)}>Editar</button>
                           </div>
                         </td>
                       </tr>
@@ -219,6 +219,13 @@ export default function PlayersPage() {
               <select className="input" value={form.club} onChange={e => setForm({ ...form, club: e.target.value })}>
                 <option value="">Sin club</option>
                 {CLUBS.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-silver-dark text-xs uppercase tracking-widest mb-1.5">Departamento</label>
+              <select className="input" value={form.departamentoId} onChange={e => setForm({ ...form, departamentoId: e.target.value })}>
+                <option value="">Sin departamento</option>
+                {departamentos.map(d => <option key={d.id} value={d.id}>{d.nombre}</option>)}
               </select>
             </div>
             <div>
