@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
-import { Tournament, Match, Phase, Circuit, Player } from '../types';
+import { Tournament, Match, Phase, Circuit, Player, Departamento } from '../types';
 import { MatchStatusBadge, playerName, LoadingSpinner, EmptyState, Modal } from '../components/ui';
 
 const PHASE_TYPES = ['clasificatorio', 'segunda', 'primera', 'master'];
@@ -26,10 +26,11 @@ export default function FixturePage() {
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
 
   const [tournamentModal, setTournamentModal] = useState(false);
   const [editTournament, setEditTournament] = useState<Tournament | null>(null);
-  const [tForm, setTForm] = useState({ name: '', year: new Date().getFullYear().toString(), description: '', active: true });
+  const [tForm, setTForm] = useState({ name: '', year: new Date().getFullYear().toString(), description: '', active: true, departamentoId: '' });
   const [tSaving, setTSaving] = useState(false);
   const [tError, setTError] = useState('');
 
@@ -62,6 +63,7 @@ export default function FixturePage() {
     });
 
   useEffect(() => {
+    api.get('/departamentos').then(r => setDepartamentos(r.data));
     api.get('/tournaments').then(r => {
       setTournaments(r.data);
       if (r.data.length > 0) loadTournament(r.data[0].id);
@@ -85,14 +87,14 @@ export default function FixturePage() {
 
   const openAddTournament = () => {
     setEditTournament(null);
-    setTForm({ name: '', year: new Date().getFullYear().toString(), description: '', active: true });
+    setTForm({ name: '', year: new Date().getFullYear().toString(), description: '', active: true, departamentoId: '' });
     setTError('');
     setTournamentModal(true);
   };
 
   const openEditTournament = (t: Tournament) => {
     setEditTournament(t);
-    setTForm({ name: t.name, year: t.year.toString(), description: t.description ?? '', active: t.active });
+    setTForm({ name: t.name, year: t.year.toString(), description: t.description ?? '', active: t.active, departamentoId: t.departamentoId?.toString() ?? '' });
     setTError('');
     setTournamentModal(true);
   };
@@ -102,7 +104,7 @@ export default function FixturePage() {
     setTSaving(true);
     setTError('');
     try {
-      const payload = { ...tForm, year: Number(tForm.year) };
+      const payload = { ...tForm, year: Number(tForm.year), departamentoId: tForm.departamentoId ? Number(tForm.departamentoId) : undefined };
       if (editTournament) {
         await api.put(`/tournaments/${editTournament.id}`, payload);
       } else {
@@ -341,6 +343,7 @@ export default function FixturePage() {
                 <h2 className="font-display text-2xl text-gold">{selectedTournament.name}</h2>
                 <p className="text-chalk/40 text-sm">{selectedTournament.year}</p>
                 {selectedTournament.description && <p className="text-chalk/50 text-sm mt-1">{selectedTournament.description}</p>}
+                {selectedTournament.departamento && <p className="text-gold/50 text-xs font-mono mt-1">{selectedTournament.departamento.nombre}</p>}
               </div>
               <div className="flex items-center gap-2 flex-wrap justify-end">
                 <span className={`badge-status ${selectedTournament.active ? 'bg-green-900/40 text-green-400' : 'bg-chalk/10 text-chalk/40'}`}>
@@ -402,9 +405,7 @@ export default function FixturePage() {
                             <div className="flex gap-4 overflow-x-auto pb-2 items-start">
                               {rounds.map(round => (
                                 <div key={round} className="flex-shrink-0 w-64">
-                                  <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2 font-mono">
-                                    Ronda {round}
-                                  </p>
+                                  <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2 font-mono">Ronda {round}</p>
                                   <div className="space-y-2">
                                     {matchesByRound[round].map(m => <MatchCard key={m.id} match={m} />)}
                                   </div>
@@ -438,6 +439,13 @@ export default function FixturePage() {
             <div>
               <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Descripción</label>
               <input className="input" value={tForm.description} onChange={e => setTForm({ ...tForm, description: e.target.value })} placeholder="Departamental, Regional, Nacional..." />
+            </div>
+            <div>
+              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Departamento</label>
+              <select className="input" value={tForm.departamentoId} onChange={e => setTForm({ ...tForm, departamentoId: e.target.value })}>
+                <option value="">Sin departamento</option>
+                {departamentos.map(d => <option key={d.id} value={d.id}>{d.nombre}</option>)}
+              </select>
             </div>
             <div className="flex items-center gap-3 bg-felt-dark/50 rounded-lg px-3 py-2">
               <input type="checkbox" id="active" checked={tForm.active} onChange={e => setTForm({ ...tForm, active: e.target.checked })} className="w-4 h-4 accent-gold" />
@@ -658,9 +666,7 @@ export default function FixturePage() {
                       {serie.jugadores.map((j, idx) => (
                         <div key={j.id} className="flex items-center gap-2">
                           <span className="text-chalk/20 text-xs font-mono w-4">{idx + 1}</span>
-                          <span className={`text-sm ${j.esLibre ? 'text-red-400/60 italic' : 'text-chalk/70'}`}>
-                            {j.nombre}
-                          </span>
+                          <span className={`text-sm ${j.esLibre ? 'text-red-400/60 italic' : 'text-chalk/70'}`}>{j.nombre}</span>
                           {j.esLibre && <span className="text-red-400/40 text-xs font-mono">(bye)</span>}
                         </div>
                       ))}
