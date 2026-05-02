@@ -9,6 +9,7 @@ import MatchesPage from './pages/MatchesPage';
 import JudgePage from './pages/JudgePage';
 import PublicPage from './pages/PublicPage';
 import FixturePage from './pages/FixturePage';
+import SeriesPage from './pages/SeriesPage';
 import Layout from './components/layout/Layout';
 
 function ProtectedRoute({ children, roles }: { children: React.ReactNode; roles?: string[] }) {
@@ -21,13 +22,11 @@ function ProtectedRoute({ children, roles }: { children: React.ReactNode; roles?
 
 function AppRoutes() {
   const { user } = useAuth();
-
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/publico" element={<PublicPage />} />
       <Route path="/fixture" element={<FixturePage />} />
-
       <Route path="/" element={
         <ProtectedRoute>
           {user?.role === 'admin' ? <Navigate to="/admin" replace /> :
@@ -35,7 +34,6 @@ function AppRoutes() {
            <Navigate to="/publico" replace />}
         </ProtectedRoute>
       } />
-
       <Route path="/admin" element={<ProtectedRoute roles={['admin']}><Layout /></ProtectedRoute>}>
         <Route index element={<AdminDashboard />} />
         <Route path="sedes" element={<VenuesPage />} />
@@ -43,12 +41,11 @@ function AppRoutes() {
         <Route path="jugadores" element={<PlayersPage />} />
         <Route path="partidos" element={<MatchesPage />} />
         <Route path="fixture" element={<FixturePage />} />
+        <Route path="series" element={<SeriesPage />} />
       </Route>
-
       <Route path="/juez" element={<ProtectedRoute roles={['juez_sede', 'admin']}><Layout /></ProtectedRoute>}>
         <Route index element={<JudgePage />} />
       </Route>
-
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
