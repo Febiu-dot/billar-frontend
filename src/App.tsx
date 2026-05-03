@@ -58,3 +58,6 @@ export default function App() {
     </AuthProvider>
   );
 }
+import CrucesPage from './pages/CrucesPage';
+// ...
+<Route path="cruces" element={<CrucesPage />} />
