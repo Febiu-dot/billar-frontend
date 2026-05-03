@@ -24,6 +24,8 @@ export default function SeriesPage() {
       (m.round % 10 === 1 || m.round % 10 === 2) &&
       !m.serieId.includes('reduccion') &&
       !m.serieId.includes('repechaje') &&
+      !m.serieId.includes('primera') &&
+      !m.serieId.includes('master') &&
       (m.playerA !== null || m.slotA !== null) &&
       (m.playerB !== null || m.slotB !== null)
     );
@@ -236,21 +238,13 @@ export default function SeriesPage() {
               <div>
                 <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Hora (24hs)</label>
                 <div className="flex gap-2">
-                  <select
-                    className="input flex-1"
-                    value={form.hora}
-                    onChange={e => setForm({ ...form, hora: e.target.value })}
-                  >
+                  <select className="input flex-1" value={form.hora} onChange={e => setForm({ ...form, hora: e.target.value })}>
                     <option value="">HH</option>
                     {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')).map(h => (
                       <option key={h} value={h}>{h}</option>
                     ))}
                   </select>
-                  <select
-                    className="input flex-1"
-                    value={form.minutos}
-                    onChange={e => setForm({ ...form, minutos: e.target.value })}
-                  >
+                  <select className="input flex-1" value={form.minutos} onChange={e => setForm({ ...form, minutos: e.target.value })}>
                     <option value="">MM</option>
                     {['00', '15', '30', '45'].map(m => (
                       <option key={m} value={m}>{m}</option>
