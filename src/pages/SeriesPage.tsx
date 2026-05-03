@@ -2,17 +2,19 @@ import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { LoadingSpinner, EmptyState, Modal } from '../components/ui';
 
-interface Venue { id: number; name: string; tables?: { id: number; number: number; status: string }[]; }
+interface Venue { id: number; name: string; departamentoId?: number; tables?: { id: number; number: number; status: string }[]; }
 interface Serie {
   serieId: string;
   fase: string;
   partidos: any[];
+  torneoDepId?: number;
 }
 
 export default function SeriesPage() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [series, setSeries] = useState<Serie[]>([]);
   const [loading, setLoading] = useState(true);
+  const [torneoDepId, setTorneoDepId] = useState<number | null>(null);
   const [asignandoModal, setAsignandoModal] = useState<{ serie: Serie; partido: any } | null>(null);
   const [form, setForm] = useState({ venueId: '', tableId: '', scheduledAt: '', hora: '' });
   const [saving, setSaving] = useState(false);
@@ -54,12 +56,18 @@ export default function SeriesPage() {
   };
 
   const cargarDatos = async () => {
-    const [vRes, mRes] = await Promise.all([
+    const [vRes, mRes, tRes] = await Promise.all([
       api.get('/venues'),
       api.get('/matches'),
+      api.get('/tournaments'),
     ]);
     setVenues(vRes.data);
     setSeries(agruparEnSeries(filtrarPartidos(mRes.data)));
+
+    // Obtener departamento del torneo activo
+    const torneoActivo = tRes.data.find((t: any) => t.active) ?? tRes.data[0];
+    setTorneoDepId(torneoActivo?.departamentoId ?? null);
+
     setLoading(false);
   };
 
@@ -102,8 +110,13 @@ export default function SeriesPage() {
     }
   };
 
+  // Filtrar sedes por departamento del torneo
+  const sedesFiltradas = torneoDepId
+    ? venues.filter(v => v.departamentoId === torneoDepId)
+    : venues;
+
   const getTablasDeSede = (venueId: string) => {
-    const venue = venues.find(v => v.id === parseInt(venueId));
+    const venue = sedesFiltradas.find(v => v.id === parseInt(venueId));
     return venue?.tables ?? [];
   };
 
@@ -189,10 +202,12 @@ export default function SeriesPage() {
             </div>
 
             <div>
-              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Sede</label>
+              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">
+                Sede {torneoDepId ? '(filtradas por departamento del torneo)' : ''}
+              </label>
               <select className="input" value={form.venueId} onChange={e => setForm({ ...form, venueId: e.target.value, tableId: '' })}>
                 <option value="">Seleccionar sede...</option>
-                {venues.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                {sedesFiltradas.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
               </select>
             </div>
 
