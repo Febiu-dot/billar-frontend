@@ -36,6 +36,7 @@ export default function Layout() {
     { a: '/admin/jugadores', etiqueta: 'Jugadores', icono: 'j' },
     { a: '/admin/fixture', etiqueta: 'Fixture', icono: 'f' },
     { a: '/admin/series', etiqueta: 'Series', icono: 'r' },
+    { a: '/admin/cruces', etiqueta: 'Cruces', icono: 'c' },
   ];
 
   const juezLinks = [
