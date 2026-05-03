@@ -7,7 +7,6 @@ interface Serie {
   serieId: string;
   fase: string;
   partidos: any[];
-  torneoDepId?: number;
 }
 
 export default function SeriesPage() {
@@ -16,7 +15,7 @@ export default function SeriesPage() {
   const [loading, setLoading] = useState(true);
   const [torneoDepId, setTorneoDepId] = useState<number | null>(null);
   const [asignandoModal, setAsignandoModal] = useState<{ serie: Serie; partido: any } | null>(null);
-  const [form, setForm] = useState({ venueId: '', tableId: '', scheduledAt: '', hora: '' });
+  const [form, setForm] = useState({ venueId: '', tableId: '', scheduledAt: '', hora: '', minutos: '' });
   const [saving, setSaving] = useState(false);
 
   const filtrarPartidos = (matches: any[]) =>
@@ -63,11 +62,8 @@ export default function SeriesPage() {
     ]);
     setVenues(vRes.data);
     setSeries(agruparEnSeries(filtrarPartidos(mRes.data)));
-
-    // Obtener departamento del torneo activo
     const torneoActivo = tRes.data.find((t: any) => t.active) ?? tRes.data[0];
     setTorneoDepId(torneoActivo?.departamentoId ?? null);
-
     setLoading(false);
   };
 
@@ -77,11 +73,13 @@ export default function SeriesPage() {
 
   const abrirAsignacion = (serie: Serie, partido: any) => {
     setAsignandoModal({ serie, partido });
+    const horaCompleta = partido.scheduledAt ? partido.scheduledAt.split('T')[1]?.slice(0, 5) : '';
     setForm({
       venueId: partido.table?.venue?.id?.toString() ?? '',
       tableId: partido.tableId?.toString() ?? '',
       scheduledAt: partido.scheduledAt ? partido.scheduledAt.split('T')[0] : '',
-      hora: partido.scheduledAt ? partido.scheduledAt.split('T')[1]?.slice(0, 5) : ''
+      hora: horaCompleta.split(':')[0] ?? '',
+      minutos: horaCompleta.split(':')[1] ?? '00',
     });
   };
 
@@ -91,7 +89,7 @@ export default function SeriesPage() {
     try {
       const { partido } = asignandoModal;
       const scheduledAt = form.scheduledAt && form.hora
-        ? new Date(`${form.scheduledAt}T${form.hora}:00`).toISOString()
+        ? new Date(`${form.scheduledAt}T${form.hora}:${form.minutos || '00'}:00`).toISOString()
         : undefined;
 
       if (form.tableId) {
@@ -110,7 +108,6 @@ export default function SeriesPage() {
     }
   };
 
-  // Filtrar sedes por departamento del torneo
   const sedesFiltradas = torneoDepId
     ? venues.filter(v => v.departamentoId === torneoDepId)
     : venues;
@@ -171,7 +168,7 @@ export default function SeriesPage() {
                         )}
                         {partido.scheduledAt && (
                           <span className="text-chalk/40 text-xs font-mono">
-                            {new Date(partido.scheduledAt).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                            {new Date(partido.scheduledAt).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
                           </span>
                         )}
                         <button
@@ -229,8 +226,29 @@ export default function SeriesPage() {
                 <input type="date" className="input" value={form.scheduledAt} onChange={e => setForm({ ...form, scheduledAt: e.target.value })} />
               </div>
               <div>
-                <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Hora</label>
-                <input type="time" className="input" value={form.hora} onChange={e => setForm({ ...form, hora: e.target.value })} />
+                <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Hora (24hs)</label>
+                <div className="flex gap-2">
+                  <select
+                    className="input flex-1"
+                    value={form.hora}
+                    onChange={e => setForm({ ...form, hora: e.target.value })}
+                  >
+                    <option value="">HH</option>
+                    {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')).map(h => (
+                      <option key={h} value={h}>{h}</option>
+                    ))}
+                  </select>
+                  <select
+                    className="input flex-1"
+                    value={form.minutos}
+                    onChange={e => setForm({ ...form, minutos: e.target.value })}
+                  >
+                    <option value="">MM</option>
+                    {['00', '15', '30', '45'].map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 
