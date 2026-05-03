@@ -37,14 +37,17 @@ export default function CrucesPage() {
     ]);
     setVenues(vRes.data);
 
-    // Filtrar solo partidos de primera y master que NO son series (no tienen serieId con 'serie')
     const matchesCruces = mRes.data.filter((m: any) =>
-      m.phase?.type === 'primera' || m.phase?.type === 'master'
+      m.phase?.type === 'primera' ||
+      m.phase?.type === 'master' ||
+      (m.serieId && (m.serieId.includes('reduccion') || m.serieId.includes('repechaje')))
     ).map((m: any) => ({
       id: m.id,
       round: m.round,
       serieId: m.serieId,
-      fase: m.phase?.type ?? '',
+      fase: m.serieId?.includes('reduccion') || m.serieId?.includes('repechaje')
+        ? 'reduccion'
+        : m.phase?.type ?? '',
       phaseId: m.phaseId,
       playerA: m.playerA,
       playerB: m.playerB,
@@ -56,9 +59,9 @@ export default function CrucesPage() {
       status: m.status,
     }));
 
-    // Ordenar por fase (primera primero) y luego por fecha/round
     matchesCruces.sort((a: Cruce, b: Cruce) => {
-      if (a.fase !== b.fase) return a.fase === 'primera' ? -1 : 1;
+      const orden: Record<string, number> = { reduccion: 1, primera: 2, master: 3 };
+      if (a.fase !== b.fase) return (orden[a.fase] ?? 9) - (orden[b.fase] ?? 9);
       if (!a.scheduledAt && !b.scheduledAt) return a.round - b.round;
       if (!a.scheduledAt) return 1;
       if (!b.scheduledAt) return -1;
@@ -127,6 +130,13 @@ export default function CrucesPage() {
     return '—';
   };
 
+  const labelFase = (fase: string) => {
+    if (fase === 'reduccion') return 'Reducción Clasif.';
+    if (fase === 'primera') return 'Tercera Fase';
+    if (fase === 'master') return 'Fase Final';
+    return fase;
+  };
+
   const crucesFiltrados = filtroFase === 'todas' ? cruces : cruces.filter(c => c.fase === filtroFase);
 
   if (loading) return <LoadingSpinner />;
@@ -135,19 +145,18 @@ export default function CrucesPage() {
     <div>
       <div className="px-6 pt-6 pb-4 border-b border-felt-light/20">
         <h1 className="font-display text-4xl text-gold">CRUCES</h1>
-        <p className="text-chalk/50 text-sm mt-1">Asignación de sede, mesa, fecha y hora — Primera y Máster</p>
+        <p className="text-chalk/50 text-sm mt-1">Asignación de sede, mesa, fecha y hora — Reducción, Primera y Máster</p>
       </div>
 
       <div className="p-6 space-y-4">
-        {/* Filtro por fase */}
-        <div className="flex gap-2">
-          {['todas', 'primera', 'master'].map(f => (
+        <div className="flex gap-2 flex-wrap">
+          {['todas', 'reduccion', 'primera', 'master'].map(f => (
             <button
               key={f}
-              className={`py-1 px-3 text-xs rounded-lg border transition-all capitalize ${filtroFase === f ? 'border-gold/40 text-gold bg-gold/10' : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'}`}
+              className={`py-1 px-3 text-xs rounded-lg border transition-all ${filtroFase === f ? 'border-gold/40 text-gold bg-gold/10' : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'}`}
               onClick={() => setFiltroFase(f)}
             >
-              {f === 'todas' ? 'Todas' : f === 'primera' ? 'Tercera Fase' : 'Fase Final'}
+              {f === 'todas' ? 'Todas' : labelFase(f)}
             </button>
           ))}
           <span className="text-chalk/30 text-xs self-center ml-2">{crucesFiltrados.length} cruces</span>
@@ -175,11 +184,17 @@ export default function CrucesPage() {
                   return (
                     <tr key={cruce.id} className={`border-b border-felt-light/5 ${asignado ? 'bg-green-900/5' : ''}`}>
                       <td className="px-4 py-3">
-                        <span className="badge-status bg-felt-light/20 text-chalk/40 text-xs capitalize">
-                          {cruce.fase === 'primera' ? 'Tercera Fase' : 'Fase Final'}
+                        <span className={`badge-status text-xs ${
+                          cruce.fase === 'reduccion' ? 'bg-orange-900/30 text-orange-400' :
+                          cruce.fase === 'primera' ? 'bg-blue-900/30 text-blue-400' :
+                          'bg-gold/20 text-gold'
+                        }`}>
+                          {labelFase(cruce.fase)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-chalk/40 text-xs font-mono">#{cruce.round}</td>
+                      <td className="px-4 py-3 text-chalk/40 text-xs font-mono">
+                        {cruce.serieId?.includes('repechaje') ? 'Repechaje' : `#${cruce.round}`}
+                      </td>
                       <td className="px-4 py-3 text-chalk/80">{pn(cruce.playerA, cruce.slotA)}</td>
                       <td className="px-4 py-3 text-chalk/80">{pn(cruce.playerB, cruce.slotB)}</td>
                       <td className="px-4 py-3 hidden md:table-cell">
@@ -217,17 +232,13 @@ export default function CrucesPage() {
         )}
       </div>
 
-      {/* Modal asignación */}
       {asignandoModal && (
-        <Modal title={`ASIGNAR CRUCE #${asignandoModal.round}`} onClose={() => setAsignandoModal(null)}>
+        <Modal title={`ASIGNAR — ${labelFase(asignandoModal.fase)} ${asignandoModal.serieId?.includes('repechaje') ? 'Repechaje' : `#${asignandoModal.round}`}`} onClose={() => setAsignandoModal(null)}>
           <div className="space-y-4">
             <div>
               <p className="text-chalk/60 text-xs uppercase tracking-widest mb-1">Partido</p>
               <p className="text-chalk/80 text-sm">
                 {pn(asignandoModal.playerA, asignandoModal.slotA)} vs {pn(asignandoModal.playerB, asignandoModal.slotB)}
-              </p>
-              <p className="text-chalk/40 text-xs capitalize mt-1">
-                {asignandoModal.fase === 'primera' ? 'Tercera Fase' : 'Fase Final'}
               </p>
             </div>
 
