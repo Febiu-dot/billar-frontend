@@ -24,8 +24,8 @@ export default function SeriesPage() {
       (m.round % 10 === 1 || m.round % 10 === 2) &&
       !m.serieId.includes('reduccion') &&
       !m.serieId.includes('repechaje') &&
-      m.playerA !== null &&
-      m.playerB !== null
+      (m.playerA !== null || m.slotA !== null) &&
+      (m.playerB !== null || m.slotB !== null)
     );
 
   const getNumSerie = (id: string) => {
@@ -117,7 +117,11 @@ export default function SeriesPage() {
     return venue?.tables ?? [];
   };
 
-  const pn = (player: any) => player ? `${player.lastName}, ${player.firstName}` : '—';
+  const pn = (player: any, slot?: string) => {
+    if (player) return `${player.lastName}, ${player.firstName}`;
+    if (slot) return slot;
+    return '—';
+  };
 
   const formatSerieId = (id: string) =>
     id
@@ -155,9 +159,13 @@ export default function SeriesPage() {
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <span className="text-chalk/30 text-xs font-mono w-6">P{idx + 1}</span>
                         <div className="flex-1 min-w-0">
-                          <span className="text-chalk/80 text-sm">{pn(partido.playerA)}</span>
+                          <span className={`text-sm ${partido.playerA ? 'text-chalk/80' : 'text-gold/60 italic'}`}>
+                            {pn(partido.playerA, partido.slotA)}
+                          </span>
                           <span className="text-chalk/30 text-xs mx-2">vs</span>
-                          <span className="text-chalk/80 text-sm">{pn(partido.playerB)}</span>
+                          <span className={`text-sm ${partido.playerB ? 'text-chalk/80' : 'text-gold/60 italic'}`}>
+                            {pn(partido.playerB, partido.slotB)}
+                          </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
@@ -194,7 +202,7 @@ export default function SeriesPage() {
             <div>
               <p className="text-chalk/60 text-xs uppercase tracking-widest mb-1">Partido</p>
               <p className="text-chalk/80 text-sm">
-                {pn(asignandoModal.partido.playerA)} vs {pn(asignandoModal.partido.playerB)}
+                {pn(asignandoModal.partido.playerA, asignandoModal.partido.slotA)} vs {pn(asignandoModal.partido.playerB, asignandoModal.partido.slotB)}
               </p>
             </div>
 
