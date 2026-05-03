@@ -314,6 +314,21 @@ export default function FixturePage() {
     return rounds;
   };
 
+  const getRoundsSorted = (matchesByRound: Record<number, Match[]>) => {
+    const roundsConFecha = Object.keys(matchesByRound).map(Number).map(round => {
+      const partido = matchesByRound[round][0];
+      return { round, scheduledAt: (partido as any).scheduledAt };
+    });
+    return roundsConFecha
+      .sort((a, b) => {
+        if (!a.scheduledAt && !b.scheduledAt) return a.round - b.round;
+        if (!a.scheduledAt) return 1;
+        if (!b.scheduledAt) return -1;
+        return new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime();
+      })
+      .map(r => r.round);
+  };
+
   if (loading) return <LoadingSpinner />;
 
   return (
@@ -392,7 +407,7 @@ export default function FixturePage() {
                   ) : (
                     circuit.phases?.map((phase: Phase) => {
                       const matchesByRound = getMatchesByRound(phase.matches ?? []);
-                      const rounds = Object.keys(matchesByRound).map(Number).sort((a, b) => a - b);
+                      const rounds = getRoundsSorted(matchesByRound);
                       return (
                         <div key={phase.id} className="mb-6">
                           <div className="flex items-center gap-2 mb-3">
@@ -407,7 +422,11 @@ export default function FixturePage() {
                             <div className="flex gap-4 overflow-x-auto pb-2 items-start">
                               {rounds.map(round => (
                                 <div key={round} className="flex-shrink-0 w-64">
-                                  <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2 font-mono">Ronda {round}</p>
+                                  <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2 font-mono">
+                                    {matchesByRound[round][0]?.scheduledAt
+                                      ? new Date(matchesByRound[round][0].scheduledAt!).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
+                                      : `Ronda ${round}`}
+                                  </p>
                                   <div className="space-y-2">
                                     {matchesByRound[round].map(m => <MatchCard key={m.id} match={m} />)}
                                   </div>
@@ -524,7 +543,6 @@ export default function FixturePage() {
       {inscripcionModal && (
         <Modal title={`INSCRIPCIÓN — ${inscripcionModal.name}`} onClose={() => setInscripcionModal(null)}>
           <div className="space-y-4">
-            {/* Barra de búsqueda y filtros */}
             <div className="space-y-2">
               <div className="flex gap-2">
                 <input
@@ -573,7 +591,6 @@ export default function FixturePage() {
               <div className="text-center py-6 text-chalk/40">Cargando jugadores...</div>
             ) : (
               <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
-                {/* Inscriptos */}
                 <div>
                   <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">Inscriptos ({inscripcionModal.players?.length ?? 0})</p>
                   {(inscripcionModal.players?.length ?? 0) === 0 ? (
@@ -605,8 +622,6 @@ export default function FixturePage() {
                     </div>
                   )}
                 </div>
-
-                {/* Disponibles */}
                 <div>
                   <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">Disponibles para inscribir</p>
                   {(() => {
@@ -622,7 +637,6 @@ export default function FixturePage() {
                       return matchesSearch && matchesDep;
                     });
                     if (disponibles.length === 0) return <p className="text-chalk/20 text-sm pl-1">No hay jugadores disponibles.</p>;
-
                     const porClub: Record<string, typeof disponibles> = {};
                     disponibles.forEach(p => {
                       const club = p.club ?? 'Sin club';
