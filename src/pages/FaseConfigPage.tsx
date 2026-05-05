@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { LoadingSpinner, EmptyState, Modal } from '../components/ui';
 
-interface Venue { id: number; name: string; tables?: { id: number; number: number }[]; }
+interface Venue { id: number; name: string; departamentoId?: number; tables?: { id: number; number: number }[]; }
 interface Phase { id: number; name: string; type: string; order: number; }
 interface Circuit { id: number; name: string; phases?: Phase[]; }
-interface Tournament { id: number; name: string; year: number; circuits?: Circuit[]; }
+interface Tournament { id: number; name: string; year: number; departamentoId?: number; circuits?: Circuit[]; }
 
 interface HorarioMesa {
   mesaId: number;
@@ -27,7 +27,23 @@ interface FaseConfigData {
   };
 }
 
-const HORAS = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`);
+// Horarios para series: 10:30 a 21:45, cada 45 min
+const HORAS_SERIES = (() => {
+  const horas: string[] = [];
+  let h = 10, m = 30;
+  while (h < 22 || (h === 21 && m <= 45)) {
+    horas.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+    m += 45;
+    if (m >= 60) { h += Math.floor(m / 60); m = m % 60; }
+    if (h > 21 || (h === 21 && m > 45)) break;
+  }
+  return horas;
+})();
+
+// Horarios para cruces: 10:00 a 22:00, cada 60 min
+const HORAS_CRUCES = Array.from({ length: 13 }, (_, i) => `${String(i + 10).padStart(2, '0')}:00`);
+
+const esFaseDeSeries = (type: string) => type === 'clasificatorio' || type === 'segunda';
 
 export default function FaseConfigPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -40,7 +56,6 @@ export default function FaseConfigPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  // Modal agregar fecha
   const [fechaModal, setFechaModal] = useState(false);
   const [nuevaFecha, setNuevaFecha] = useState('');
 
@@ -77,6 +92,14 @@ export default function FaseConfigPage() {
       });
     });
   }, [selectedPhase]);
+
+  // Filtrar sedes por departamento del torneo
+  const sedesFiltradas = selectedTournament?.departamentoId
+    ? venues.filter(v => v.departamentoId === selectedTournament.departamentoId)
+    : venues;
+
+  // Horarios según tipo de fase
+  const horasDisponibles = selectedPhase ? (esFaseDeSeries(selectedPhase.type) ? HORAS_SERIES : HORAS_CRUCES) : HORAS_SERIES;
 
   const handleSave = async () => {
     if (!selectedPhase) return;
@@ -189,6 +212,34 @@ export default function FaseConfigPage() {
     }));
   };
 
+  const seleccionarTodosHorarios = (fecha: string, venueId: number, mesaId: number) => {
+    setConfig(prev => ({
+      ...prev,
+      configuracion: {
+        fechas: prev.configuracion.fechas.map(f => {
+          if (f.fecha !== fecha) return f;
+          return {
+            ...f,
+            sedes: f.sedes.map(s => {
+              if (s.venueId !== venueId) return s;
+              return {
+                ...s,
+                mesas: s.mesas.map(m => {
+                  if (m.mesaId !== mesaId) return m;
+                  const todosSeleccionados = horasDisponibles.every(h => m.horarios.includes(h));
+                  return {
+                    ...m,
+                    horarios: todosSeleccionados ? [] : [...horasDisponibles]
+                  };
+                })
+              };
+            })
+          };
+        })
+      }
+    }));
+  };
+
   const getVenue = (id: number) => venues.find(v => v.id === id);
 
   if (loading) return <LoadingSpinner />;
@@ -197,7 +248,7 @@ export default function FaseConfigPage() {
     <div>
       <div className="px-6 pt-6 pb-4 border-b border-felt-light/20 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-4xl text-gold">CONFIGURACIÓN DE FASES</h1>
+          <h1 className="font-display text-4xl text-gold">PROGRAMACIÓN</h1>
           <p className="text-chalk/50 text-sm mt-1">Fechas, sedes, mesas y horarios disponibles por fase</p>
         </div>
         <button
@@ -210,7 +261,7 @@ export default function FaseConfigPage() {
       </div>
 
       <div className="p-6 space-y-6">
-        {/* Selección de torneo / circuito / fase */}
+        {/* Selección */}
         <div className="card space-y-4">
           <h2 className="font-display text-lg text-chalk">Selección</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -246,19 +297,33 @@ export default function FaseConfigPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div>
-              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Duración entre P1 y P2 (minutos)</label>
-              <input
-                type="number"
-                min="15"
-                max="120"
-                className="input w-32"
-                value={config.duracionSerie}
-                onChange={e => setConfig({ ...config, duracionSerie: Number(e.target.value) })}
-              />
+          {selectedPhase && (
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className={`badge-status text-xs ${esFaseDeSeries(selectedPhase.type) ? 'bg-blue-900/30 text-blue-400' : 'bg-gold/20 text-gold'}`}>
+                  {esFaseDeSeries(selectedPhase.type) ? '🎱 Fase de Series — Horarios cada 45 min (10:30 a 21:45)' : '⚔️ Fase de Cruces — Horarios cada 60 min (10:00 a 22:00)'}
+                </span>
+              </div>
+              {esFaseDeSeries(selectedPhase.type) && (
+                <div>
+                  <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Duración entre P1 y P2 (min)</label>
+                  <input
+                    type="number"
+                    min="15"
+                    max="120"
+                    className="input w-24"
+                    value={config.duracionSerie}
+                    onChange={e => setConfig({ ...config, duracionSerie: Number(e.target.value) })}
+                  />
+                </div>
+              )}
+              {selectedTournament?.departamentoId && (
+                <span className="text-gold/50 text-xs font-mono">
+                  Mostrando sedes de: {sedesFiltradas.length} sede{sedesFiltradas.length !== 1 ? 's' : ''} del departamento
+                </span>
+              )}
             </div>
-          </div>
+          )}
         </div>
 
         {/* Fechas */}
@@ -290,11 +355,11 @@ export default function FaseConfigPage() {
                       </button>
                     </div>
 
-                    {/* Sedes */}
+                    {/* Sedes filtradas por departamento */}
                     <div>
                       <p className="text-chalk/60 text-xs uppercase tracking-widest mb-2">Sedes disponibles</p>
                       <div className="flex flex-wrap gap-2">
-                        {venues.map(v => {
+                        {sedesFiltradas.map(v => {
                           const activa = cfecha.sedes.find(s => s.venueId === v.id);
                           return (
                             <button
@@ -339,13 +404,22 @@ export default function FaseConfigPage() {
                           {csede.mesas.map(cmesa => {
                             const mesa = venue.tables?.find(t => t.id === cmesa.mesaId);
                             if (!mesa) return null;
+                            const todosSeleccionados = horasDisponibles.every(h => cmesa.horarios.includes(h));
                             return (
                               <div key={cmesa.mesaId} className="bg-felt-dark/60 rounded-lg p-3">
-                                <p className="text-chalk/50 text-xs uppercase tracking-widest mb-2">
-                                  Mesa {mesa.number} — Horarios disponibles
-                                </p>
+                                <div className="flex items-center justify-between mb-2">
+                                  <p className="text-chalk/50 text-xs uppercase tracking-widest">
+                                    Mesa {mesa.number} — Horarios
+                                  </p>
+                                  <button
+                                    onClick={() => seleccionarTodosHorarios(cfecha.fecha, csede.venueId, cmesa.mesaId)}
+                                    className="text-xs text-gold/60 hover:text-gold transition-all"
+                                  >
+                                    {todosSeleccionados ? 'Quitar todos' : 'Seleccionar todos'}
+                                  </button>
+                                </div>
                                 <div className="flex flex-wrap gap-1">
-                                  {HORAS.map(hora => {
+                                  {horasDisponibles.map(hora => {
                                     const activo = cmesa.horarios.includes(hora);
                                     return (
                                       <button
@@ -360,7 +434,7 @@ export default function FaseConfigPage() {
                                 </div>
                                 {cmesa.horarios.length > 0 && (
                                   <p className="text-green-400/60 text-xs mt-2">
-                                    {cmesa.horarios.length} horario{cmesa.horarios.length > 1 ? 's' : ''} seleccionado{cmesa.horarios.length > 1 ? 's' : ''}: {cmesa.horarios.join(', ')}
+                                    {cmesa.horarios.length} horario{cmesa.horarios.length > 1 ? 's' : ''}: {cmesa.horarios.join(', ')}
                                   </p>
                                 )}
                               </div>
