@@ -47,8 +47,8 @@ export default function FaseConfigPage() {
 
   // Asignación automática
   const [asignarModal, setAsignarModal] = useState(false);
-  const [horaP1, setHoraP1] = useState('10:30');
-  const [horaP2, setHoraP2] = useState('11:15');
+  const [horaP1, setHoraP1] = useState('19:30');
+  const [horaP2, setHoraP2] = useState('20:15');
   const [horaInicio, setHoraInicio] = useState('10:00');
   const [crucesPerMesa, setCrucesPerMesa] = useState(4);
   const [asignando, setAsignando] = useState(false);
@@ -203,7 +203,6 @@ export default function FaseConfigPage() {
       </div>
 
       <div className="p-6 space-y-6">
-        {/* Selección */}
         <div className="card space-y-4">
           <h2 className="font-display text-lg text-chalk">Selección</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -258,7 +257,6 @@ export default function FaseConfigPage() {
           )}
         </div>
 
-        {/* Fechas */}
         {selectedPhase && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -357,7 +355,6 @@ export default function FaseConfigPage() {
         )}
       </div>
 
-      {/* Modal agregar fecha */}
       {fechaModal && (
         <Modal title="AGREGAR FECHA" onClose={() => setFechaModal(false)}>
           <div className="space-y-4">
@@ -373,7 +370,6 @@ export default function FaseConfigPage() {
         </Modal>
       )}
 
-      {/* Modal asignación automática */}
       {asignarModal && selectedPhase && (
         <Modal title="⚡ ASIGNACIÓN AUTOMÁTICA" onClose={() => setAsignarModal(false)}>
           <div className="space-y-4">
