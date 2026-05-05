@@ -7,31 +7,20 @@ interface Phase { id: number; name: string; type: string; order: number; }
 interface Circuit { id: number; name: string; phases?: Phase[]; }
 interface Tournament { id: number; name: string; year: number; departamentoId?: number; circuits?: Circuit[]; }
 
-interface HorarioMesa {
-  mesaId: number;
-  horarios: string[];
-}
-
+interface HorarioMesa { mesaId: number; horarios: string[]; }
 interface ConfigFecha {
   fecha: string;
-  sedes: {
-    venueId: number;
-    mesas: HorarioMesa[];
-  }[];
+  sedes: { venueId: number; mesas: HorarioMesa[]; }[];
 }
-
 interface FaseConfigData {
   duracionSerie: number;
-  configuracion: {
-    fechas: ConfigFecha[];
-  };
+  configuracion: { fechas: ConfigFecha[]; };
 }
 
-// Horarios para series: 10:30 a 21:45, cada 45 min
 const HORAS_SERIES = (() => {
   const horas: string[] = [];
   let h = 10, m = 30;
-  while (h < 22 || (h === 21 && m <= 45)) {
+  while (true) {
     horas.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
     m += 45;
     if (m >= 60) { h += Math.floor(m / 60); m = m % 60; }
@@ -40,9 +29,7 @@ const HORAS_SERIES = (() => {
   return horas;
 })();
 
-// Horarios para cruces: 10:00 a 22:00, cada 60 min
 const HORAS_CRUCES = Array.from({ length: 13 }, (_, i) => `${String(i + 10).padStart(2, '0')}:00`);
-
 const esFaseDeSeries = (type: string) => type === 'clasificatorio' || type === 'segunda';
 
 export default function FaseConfigPage() {
@@ -55,15 +42,20 @@ export default function FaseConfigPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-
   const [fechaModal, setFechaModal] = useState(false);
   const [nuevaFecha, setNuevaFecha] = useState('');
 
+  // Asignación automática
+  const [asignarModal, setAsignarModal] = useState(false);
+  const [horaP1, setHoraP1] = useState('10:30');
+  const [horaP2, setHoraP2] = useState('11:15');
+  const [horaInicio, setHoraInicio] = useState('10:00');
+  const [crucesPerMesa, setCrucesPerMesa] = useState(4);
+  const [asignando, setAsignando] = useState(false);
+  const [asignadoMsg, setAsignadoMsg] = useState('');
+
   useEffect(() => {
-    Promise.all([
-      api.get('/tournaments'),
-      api.get('/venues'),
-    ]).then(([tRes, vRes]) => {
+    Promise.all([api.get('/tournaments'), api.get('/venues')]).then(([tRes, vRes]) => {
       setTournaments(tRes.data);
       setVenues(vRes.data);
       if (tRes.data.length > 0) {
@@ -72,9 +64,7 @@ export default function FaseConfigPage() {
         if (t.circuits?.length > 0) {
           const c = t.circuits[0];
           setSelectedCircuit(c);
-          if (c.phases?.length > 0) {
-            setSelectedPhase(c.phases[0]);
-          }
+          if (c.phases?.length > 0) setSelectedPhase(c.phases[0]);
         }
       }
       setLoading(false);
@@ -86,19 +76,15 @@ export default function FaseConfigPage() {
     api.get(`/faseconfig/${selectedPhase.id}`).then(r => {
       setConfig({
         duracionSerie: r.data.duracionSerie ?? 45,
-        configuracion: r.data.configuracion?.fechas
-          ? r.data.configuracion
-          : { fechas: [] }
+        configuracion: r.data.configuracion?.fechas ? r.data.configuracion : { fechas: [] }
       });
     });
   }, [selectedPhase]);
 
-  // Filtrar sedes por departamento del torneo
   const sedesFiltradas = selectedTournament?.departamentoId
     ? venues.filter(v => v.departamentoId === selectedTournament.departamentoId)
     : venues;
 
-  // Horarios según tipo de fase
   const horasDisponibles = selectedPhase ? (esFaseDeSeries(selectedPhase.type) ? HORAS_SERIES : HORAS_CRUCES) : HORAS_SERIES;
 
   const handleSave = async () => {
@@ -108,137 +94,90 @@ export default function FaseConfigPage() {
       await api.put(`/faseconfig/${selectedPhase.id}`, config);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    } catch {
-      alert('Error al guardar la configuración');
+    } catch { alert('Error al guardar la configuración'); }
+    finally { setSaving(false); }
+  };
+
+  const handleAsignar = async () => {
+    if (!selectedPhase) return;
+    setAsignando(true);
+    setAsignadoMsg('');
+    try {
+      const esSeries = esFaseDeSeries(selectedPhase.type);
+      const body = esSeries
+        ? { horaP1, horaP2 }
+        : { horaInicio, crucesPerMesa };
+      const res = await api.post(`/faseconfig/${selectedPhase.id}/asignar`, body);
+      setAsignadoMsg(`✅ ${res.data.message} — ${res.data.asignados} de ${res.data.total} asignados`);
+    } catch (err: any) {
+      setAsignadoMsg(`❌ ${err?.response?.data?.error ?? 'Error al asignar'}`);
     } finally {
-      setSaving(false);
+      setAsignando(false);
     }
   };
 
   const agregarFecha = () => {
     if (!nuevaFecha) return;
-    if (config.configuracion.fechas.find(f => f.fecha === nuevaFecha)) {
-      alert('Esa fecha ya existe');
-      return;
-    }
-    setConfig({
-      ...config,
-      configuracion: {
-        fechas: [...config.configuracion.fechas, { fecha: nuevaFecha, sedes: [] }]
-      }
-    });
+    if (config.configuracion.fechas.find(f => f.fecha === nuevaFecha)) { alert('Esa fecha ya existe'); return; }
+    setConfig({ ...config, configuracion: { fechas: [...config.configuracion.fechas, { fecha: nuevaFecha, sedes: [] }] } });
     setNuevaFecha('');
     setFechaModal(false);
   };
 
-  const eliminarFecha = (fecha: string) => {
-    setConfig({
-      ...config,
-      configuracion: {
-        fechas: config.configuracion.fechas.filter(f => f.fecha !== fecha)
-      }
-    });
-  };
+  const eliminarFecha = (fecha: string) =>
+    setConfig({ ...config, configuracion: { fechas: config.configuracion.fechas.filter(f => f.fecha !== fecha) } });
 
-  const toggleSede = (fecha: string, venueId: number) => {
+  const toggleSede = (fecha: string, venueId: number) =>
     setConfig(prev => ({
-      ...prev,
-      configuracion: {
-        fechas: prev.configuracion.fechas.map(f => {
-          if (f.fecha !== fecha) return f;
-          const exists = f.sedes.find(s => s.venueId === venueId);
-          return {
-            ...f,
-            sedes: exists
-              ? f.sedes.filter(s => s.venueId !== venueId)
-              : [...f.sedes, { venueId, mesas: [] }]
-          };
+      ...prev, configuracion: {
+        fechas: prev.configuracion.fechas.map(f => f.fecha !== fecha ? f : {
+          ...f, sedes: f.sedes.find(s => s.venueId === venueId)
+            ? f.sedes.filter(s => s.venueId !== venueId)
+            : [...f.sedes, { venueId, mesas: [] }]
         })
       }
     }));
-  };
 
-  const toggleMesa = (fecha: string, venueId: number, mesaId: number) => {
+  const toggleMesa = (fecha: string, venueId: number, mesaId: number) =>
     setConfig(prev => ({
-      ...prev,
-      configuracion: {
-        fechas: prev.configuracion.fechas.map(f => {
-          if (f.fecha !== fecha) return f;
-          return {
-            ...f,
-            sedes: f.sedes.map(s => {
-              if (s.venueId !== venueId) return s;
-              const exists = s.mesas.find(m => m.mesaId === mesaId);
-              return {
-                ...s,
-                mesas: exists
-                  ? s.mesas.filter(m => m.mesaId !== mesaId)
-                  : [...s.mesas, { mesaId, horarios: [] }]
-              };
+      ...prev, configuracion: {
+        fechas: prev.configuracion.fechas.map(f => f.fecha !== fecha ? f : {
+          ...f, sedes: f.sedes.map(s => s.venueId !== venueId ? s : {
+            ...s, mesas: s.mesas.find(m => m.mesaId === mesaId)
+              ? s.mesas.filter(m => m.mesaId !== mesaId)
+              : [...s.mesas, { mesaId, horarios: [] }]
+          })
+        })
+      }
+    }));
+
+  const toggleHorario = (fecha: string, venueId: number, mesaId: number, hora: string) =>
+    setConfig(prev => ({
+      ...prev, configuracion: {
+        fechas: prev.configuracion.fechas.map(f => f.fecha !== fecha ? f : {
+          ...f, sedes: f.sedes.map(s => s.venueId !== venueId ? s : {
+            ...s, mesas: s.mesas.map(m => m.mesaId !== mesaId ? m : {
+              ...m, horarios: m.horarios.includes(hora)
+                ? m.horarios.filter(h => h !== hora)
+                : [...m.horarios, hora].sort()
             })
-          };
+          })
         })
       }
     }));
-  };
 
-  const toggleHorario = (fecha: string, venueId: number, mesaId: number, hora: string) => {
+  const seleccionarTodosHorarios = (fecha: string, venueId: number, mesaId: number) =>
     setConfig(prev => ({
-      ...prev,
-      configuracion: {
-        fechas: prev.configuracion.fechas.map(f => {
-          if (f.fecha !== fecha) return f;
-          return {
-            ...f,
-            sedes: f.sedes.map(s => {
-              if (s.venueId !== venueId) return s;
-              return {
-                ...s,
-                mesas: s.mesas.map(m => {
-                  if (m.mesaId !== mesaId) return m;
-                  const exists = m.horarios.includes(hora);
-                  return {
-                    ...m,
-                    horarios: exists
-                      ? m.horarios.filter(h => h !== hora)
-                      : [...m.horarios, hora].sort()
-                  };
-                })
-              };
+      ...prev, configuracion: {
+        fechas: prev.configuracion.fechas.map(f => f.fecha !== fecha ? f : {
+          ...f, sedes: f.sedes.map(s => s.venueId !== venueId ? s : {
+            ...s, mesas: s.mesas.map(m => m.mesaId !== mesaId ? m : {
+              ...m, horarios: horasDisponibles.every(h => m.horarios.includes(h)) ? [] : [...horasDisponibles]
             })
-          };
+          })
         })
       }
     }));
-  };
-
-  const seleccionarTodosHorarios = (fecha: string, venueId: number, mesaId: number) => {
-    setConfig(prev => ({
-      ...prev,
-      configuracion: {
-        fechas: prev.configuracion.fechas.map(f => {
-          if (f.fecha !== fecha) return f;
-          return {
-            ...f,
-            sedes: f.sedes.map(s => {
-              if (s.venueId !== venueId) return s;
-              return {
-                ...s,
-                mesas: s.mesas.map(m => {
-                  if (m.mesaId !== mesaId) return m;
-                  const todosSeleccionados = horasDisponibles.every(h => m.horarios.includes(h));
-                  return {
-                    ...m,
-                    horarios: todosSeleccionados ? [] : [...horasDisponibles]
-                  };
-                })
-              };
-            })
-          };
-        })
-      }
-    }));
-  };
 
   const getVenue = (id: number) => venues.find(v => v.id === id);
 
@@ -246,18 +185,21 @@ export default function FaseConfigPage() {
 
   return (
     <div>
-      <div className="px-6 pt-6 pb-4 border-b border-felt-light/20 flex items-center justify-between">
+      <div className="px-6 pt-6 pb-4 border-b border-felt-light/20 flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="font-display text-4xl text-gold">PROGRAMACIÓN</h1>
           <p className="text-chalk/50 text-sm mt-1">Fechas, sedes, mesas y horarios disponibles por fase</p>
         </div>
-        <button
-          className="btn-primary"
-          disabled={saving || !selectedPhase}
-          onClick={handleSave}
-        >
-          {saving ? 'Guardando...' : saved ? '✅ Guardado' : 'Guardar'}
-        </button>
+        <div className="flex gap-2">
+          {selectedPhase && (
+            <button className="btn-secondary" onClick={() => { setAsignarModal(true); setAsignadoMsg(''); }}>
+              ⚡ Asignar automáticamente
+            </button>
+          )}
+          <button className="btn-primary" disabled={saving || !selectedPhase} onClick={handleSave}>
+            {saving ? 'Guardando...' : saved ? '✅ Guardado' : 'Guardar'}
+          </button>
+        </div>
       </div>
 
       <div className="p-6 space-y-6">
@@ -299,28 +241,18 @@ export default function FaseConfigPage() {
 
           {selectedPhase && (
             <div className="flex items-center gap-4 flex-wrap">
-              <div className="flex items-center gap-2">
-                <span className={`badge-status text-xs ${esFaseDeSeries(selectedPhase.type) ? 'bg-blue-900/30 text-blue-400' : 'bg-gold/20 text-gold'}`}>
-                  {esFaseDeSeries(selectedPhase.type) ? '🎱 Fase de Series — Horarios cada 45 min (10:30 a 21:45)' : '⚔️ Fase de Cruces — Horarios cada 60 min (10:00 a 22:00)'}
-                </span>
-              </div>
+              <span className={`badge-status text-xs ${esFaseDeSeries(selectedPhase.type) ? 'bg-blue-900/30 text-blue-400' : 'bg-gold/20 text-gold'}`}>
+                {esFaseDeSeries(selectedPhase.type) ? '🎱 Series — Horarios cada 45 min (10:30-21:45)' : '⚔️ Cruces — Horarios cada 60 min (10:00-22:00)'}
+              </span>
               {esFaseDeSeries(selectedPhase.type) && (
                 <div>
                   <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Duración entre P1 y P2 (min)</label>
-                  <input
-                    type="number"
-                    min="15"
-                    max="120"
-                    className="input w-24"
-                    value={config.duracionSerie}
-                    onChange={e => setConfig({ ...config, duracionSerie: Number(e.target.value) })}
-                  />
+                  <input type="number" min="15" max="120" className="input w-24" value={config.duracionSerie}
+                    onChange={e => setConfig({ ...config, duracionSerie: Number(e.target.value) })} />
                 </div>
               )}
               {selectedTournament?.departamentoId && (
-                <span className="text-gold/50 text-xs font-mono">
-                  Mostrando sedes de: {sedesFiltradas.length} sede{sedesFiltradas.length !== 1 ? 's' : ''} del departamento
-                </span>
+                <span className="text-gold/50 text-xs font-mono">{sedesFiltradas.length} sede{sedesFiltradas.length !== 1 ? 's' : ''} del departamento</span>
               )}
             </div>
           )}
@@ -331,120 +263,95 @@ export default function FaseConfigPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-xl text-chalk">Fechas disponibles</h2>
-              <button className="btn-primary py-1 px-3 text-xs" onClick={() => setFechaModal(true)}>
-                + Agregar fecha
-              </button>
+              <button className="btn-primary py-1 px-3 text-xs" onClick={() => setFechaModal(true)}>+ Agregar fecha</button>
             </div>
 
             {config.configuracion.fechas.length === 0 ? (
               <EmptyState message="No hay fechas configuradas. Agregá una fecha para comenzar." />
             ) : (
-              config.configuracion.fechas
-                .sort((a, b) => a.fecha.localeCompare(b.fecha))
-                .map(cfecha => (
-                  <div key={cfecha.fecha} className="card space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-display text-lg text-gold">
-                        {new Date(cfecha.fecha + 'T12:00:00').toLocaleDateString('es-UY', { weekday: 'long', day: 'numeric', month: 'long' })}
-                      </h3>
-                      <button
-                        className="py-0.5 px-2 text-xs rounded border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all"
-                        onClick={() => eliminarFecha(cfecha.fecha)}
-                      >
-                        Eliminar fecha
-                      </button>
-                    </div>
+              config.configuracion.fechas.sort((a, b) => a.fecha.localeCompare(b.fecha)).map(cfecha => (
+                <div key={cfecha.fecha} className="card space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-display text-lg text-gold">
+                      {new Date(cfecha.fecha + 'T12:00:00').toLocaleDateString('es-UY', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    </h3>
+                    <button className="py-0.5 px-2 text-xs rounded border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all"
+                      onClick={() => eliminarFecha(cfecha.fecha)}>Eliminar fecha</button>
+                  </div>
 
-                    {/* Sedes filtradas por departamento */}
-                    <div>
-                      <p className="text-chalk/60 text-xs uppercase tracking-widest mb-2">Sedes disponibles</p>
-                      <div className="flex flex-wrap gap-2">
-                        {sedesFiltradas.map(v => {
-                          const activa = cfecha.sedes.find(s => s.venueId === v.id);
+                  <div>
+                    <p className="text-chalk/60 text-xs uppercase tracking-widest mb-2">Sedes disponibles</p>
+                    <div className="flex flex-wrap gap-2">
+                      {sedesFiltradas.map(v => {
+                        const activa = cfecha.sedes.find(s => s.venueId === v.id);
+                        return (
+                          <button key={v.id} onClick={() => toggleSede(cfecha.fecha, v.id)}
+                            className={`py-1 px-3 text-xs rounded-lg border transition-all ${activa ? 'border-gold/40 text-gold bg-gold/10' : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'}`}>
+                            {v.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {cfecha.sedes.map(csede => {
+                    const venue = getVenue(csede.venueId);
+                    if (!venue) return null;
+                    return (
+                      <div key={csede.venueId} className="bg-felt-dark/40 rounded-lg p-4 space-y-3">
+                        <p className="text-chalk/80 text-sm font-semibold">{venue.name}</p>
+                        <div>
+                          <p className="text-chalk/50 text-xs uppercase tracking-widest mb-2">Mesas disponibles</p>
+                          <div className="flex flex-wrap gap-2">
+                            {venue.tables?.sort((a, b) => a.number - b.number).map(t => {
+                              const activa = csede.mesas.find(m => m.mesaId === t.id);
+                              return (
+                                <button key={t.id} onClick={() => toggleMesa(cfecha.fecha, csede.venueId, t.id)}
+                                  className={`py-1 px-3 text-xs rounded-lg border transition-all ${activa ? 'border-blue-400/40 text-blue-400 bg-blue-900/20' : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'}`}>
+                                  Mesa {t.number}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {csede.mesas.map(cmesa => {
+                          const mesa = venue.tables?.find(t => t.id === cmesa.mesaId);
+                          if (!mesa) return null;
+                          const todosSeleccionados = horasDisponibles.every(h => cmesa.horarios.includes(h));
                           return (
-                            <button
-                              key={v.id}
-                              onClick={() => toggleSede(cfecha.fecha, v.id)}
-                              className={`py-1 px-3 text-xs rounded-lg border transition-all ${activa ? 'border-gold/40 text-gold bg-gold/10' : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'}`}
-                            >
-                              {v.name}
-                            </button>
+                            <div key={cmesa.mesaId} className="bg-felt-dark/60 rounded-lg p-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <p className="text-chalk/50 text-xs uppercase tracking-widest">Mesa {mesa.number} — Horarios</p>
+                                <button onClick={() => seleccionarTodosHorarios(cfecha.fecha, csede.venueId, cmesa.mesaId)}
+                                  className="text-xs text-gold/60 hover:text-gold transition-all">
+                                  {todosSeleccionados ? 'Quitar todos' : 'Seleccionar todos'}
+                                </button>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {horasDisponibles.map(hora => {
+                                  const activo = cmesa.horarios.includes(hora);
+                                  return (
+                                    <button key={hora} onClick={() => toggleHorario(cfecha.fecha, csede.venueId, cmesa.mesaId, hora)}
+                                      className={`py-0.5 px-2 text-xs rounded border transition-all font-mono ${activo ? 'border-green-400/40 text-green-400 bg-green-900/20' : 'border-felt-light/10 text-chalk/30 hover:border-chalk/20'}`}>
+                                      {hora}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                              {cmesa.horarios.length > 0 && (
+                                <p className="text-green-400/60 text-xs mt-2">
+                                  {cmesa.horarios.length} horario{cmesa.horarios.length > 1 ? 's' : ''}: {cmesa.horarios.join(', ')}
+                                </p>
+                              )}
+                            </div>
                           );
                         })}
                       </div>
-                    </div>
-
-                    {/* Mesas y horarios por sede */}
-                    {cfecha.sedes.map(csede => {
-                      const venue = getVenue(csede.venueId);
-                      if (!venue) return null;
-                      return (
-                        <div key={csede.venueId} className="bg-felt-dark/40 rounded-lg p-4 space-y-3">
-                          <p className="text-chalk/80 text-sm font-semibold">{venue.name}</p>
-
-                          <div>
-                            <p className="text-chalk/50 text-xs uppercase tracking-widest mb-2">Mesas disponibles</p>
-                            <div className="flex flex-wrap gap-2">
-                              {venue.tables?.sort((a, b) => a.number - b.number).map(t => {
-                                const activa = csede.mesas.find(m => m.mesaId === t.id);
-                                return (
-                                  <button
-                                    key={t.id}
-                                    onClick={() => toggleMesa(cfecha.fecha, csede.venueId, t.id)}
-                                    className={`py-1 px-3 text-xs rounded-lg border transition-all ${activa ? 'border-blue-400/40 text-blue-400 bg-blue-900/20' : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'}`}
-                                  >
-                                    Mesa {t.number}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-
-                          {/* Horarios por mesa */}
-                          {csede.mesas.map(cmesa => {
-                            const mesa = venue.tables?.find(t => t.id === cmesa.mesaId);
-                            if (!mesa) return null;
-                            const todosSeleccionados = horasDisponibles.every(h => cmesa.horarios.includes(h));
-                            return (
-                              <div key={cmesa.mesaId} className="bg-felt-dark/60 rounded-lg p-3">
-                                <div className="flex items-center justify-between mb-2">
-                                  <p className="text-chalk/50 text-xs uppercase tracking-widest">
-                                    Mesa {mesa.number} — Horarios
-                                  </p>
-                                  <button
-                                    onClick={() => seleccionarTodosHorarios(cfecha.fecha, csede.venueId, cmesa.mesaId)}
-                                    className="text-xs text-gold/60 hover:text-gold transition-all"
-                                  >
-                                    {todosSeleccionados ? 'Quitar todos' : 'Seleccionar todos'}
-                                  </button>
-                                </div>
-                                <div className="flex flex-wrap gap-1">
-                                  {horasDisponibles.map(hora => {
-                                    const activo = cmesa.horarios.includes(hora);
-                                    return (
-                                      <button
-                                        key={hora}
-                                        onClick={() => toggleHorario(cfecha.fecha, csede.venueId, cmesa.mesaId, hora)}
-                                        className={`py-0.5 px-2 text-xs rounded border transition-all font-mono ${activo ? 'border-green-400/40 text-green-400 bg-green-900/20' : 'border-felt-light/10 text-chalk/30 hover:border-chalk/20'}`}
-                                      >
-                                        {hora}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                                {cmesa.horarios.length > 0 && (
-                                  <p className="text-green-400/60 text-xs mt-2">
-                                    {cmesa.horarios.length} horario{cmesa.horarios.length > 1 ? 's' : ''}: {cmesa.horarios.join(', ')}
-                                  </p>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))
+                    );
+                  })}
+                </div>
+              ))
             )}
           </div>
         )}
@@ -456,16 +363,68 @@ export default function FaseConfigPage() {
           <div className="space-y-4">
             <div>
               <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Fecha</label>
-              <input
-                type="date"
-                className="input"
-                value={nuevaFecha}
-                onChange={e => setNuevaFecha(e.target.value)}
-              />
+              <input type="date" className="input" value={nuevaFecha} onChange={e => setNuevaFecha(e.target.value)} />
             </div>
             <div className="flex gap-3 pt-2">
               <button className="btn-primary flex-1" onClick={agregarFecha}>Agregar</button>
               <button className="btn-secondary flex-1" onClick={() => setFechaModal(false)}>Cancelar</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal asignación automática */}
+      {asignarModal && selectedPhase && (
+        <Modal title="⚡ ASIGNACIÓN AUTOMÁTICA" onClose={() => setAsignarModal(false)}>
+          <div className="space-y-4">
+            <div className="bg-felt-dark/50 rounded-lg px-3 py-2">
+              <p className="text-chalk/60 text-xs uppercase tracking-widest">Fase</p>
+              <p className="text-chalk/80 text-sm font-medium">{selectedPhase.name}</p>
+              <p className="text-chalk/40 text-xs capitalize">{selectedPhase.type}</p>
+            </div>
+
+            {esFaseDeSeries(selectedPhase.type) ? (
+              <>
+                <div>
+                  <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Hora Partido 1</label>
+                  <select className="input" value={horaP1} onChange={e => setHoraP1(e.target.value)}>
+                    {HORAS_SERIES.map(h => <option key={h} value={h}>{h}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Hora Partido 2</label>
+                  <select className="input" value={horaP2} onChange={e => setHoraP2(e.target.value)}>
+                    {HORAS_SERIES.map(h => <option key={h} value={h}>{h}</option>)}
+                  </select>
+                </div>
+                <p className="text-chalk/40 text-xs">Los partidos 3, 4 y 5 se juegan a continuación sin horario fijo.</p>
+              </>
+            ) : (
+              <>
+                <div>
+                  <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Hora del primer cruce</label>
+                  <select className="input" value={horaInicio} onChange={e => setHoraInicio(e.target.value)}>
+                    {HORAS_CRUCES.map(h => <option key={h} value={h}>{h}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Máximo de cruces por mesa</label>
+                  <input type="number" min="1" max="13" className="input" value={crucesPerMesa}
+                    onChange={e => setCrucesPerMesa(Number(e.target.value))} />
+                </div>
+                <p className="text-chalk/40 text-xs">Los siguientes cruces se asignan con diferencia de 1 hora.</p>
+              </>
+            )}
+
+            {asignadoMsg && (
+              <p className={`text-sm ${asignadoMsg.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>{asignadoMsg}</p>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <button className="btn-primary flex-1" disabled={asignando} onClick={handleAsignar}>
+                {asignando ? 'Asignando...' : '⚡ Asignar'}
+              </button>
+              <button className="btn-secondary flex-1" onClick={() => setAsignarModal(false)}>Cerrar</button>
             </div>
           </div>
         </Modal>
