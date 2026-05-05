@@ -12,6 +12,7 @@ import FixturePage from './pages/FixturePage';
 import SeriesPage from './pages/SeriesPage';
 import CrucesPage from './pages/CrucesPage';
 import UsersPage from './pages/UsersPage';
+import FaseConfigPage from './pages/FaseConfigPage';
 import Layout from './components/layout/Layout';
 
 function ProtectedRoute({ children, roles }: { children: React.ReactNode; roles?: string[] }) {
@@ -46,6 +47,7 @@ function AppRoutes() {
         <Route path="series" element={<SeriesPage />} />
         <Route path="cruces" element={<CrucesPage />} />
         <Route path="usuarios" element={<UsersPage />} />
+        <Route path="faseconfig" element={<FaseConfigPage />} />
       </Route>
       <Route path="/juez" element={<ProtectedRoute roles={['juez_sede', 'admin']}><Layout /></ProtectedRoute>}>
         <Route index element={<JudgePage />} />
