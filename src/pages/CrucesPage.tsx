@@ -28,6 +28,8 @@ export default function CrucesPage() {
   const [form, setForm] = useState({ venueId: '', tableId: '', scheduledAt: '', hora: '', minutos: '' });
   const [saving, setSaving] = useState(false);
   const [filtroFase, setFiltroFase] = useState<string>('todas');
+  const [disparando, setDisparando] = useState(false);
+  const [disparoMsg, setDisparoMsg] = useState('');
 
   const cargarDatos = async () => {
     const [vRes, mRes, tRes] = await Promise.all([
@@ -78,6 +80,20 @@ export default function CrucesPage() {
   useEffect(() => {
     cargarDatos().catch(() => setLoading(false));
   }, []);
+
+  const handleDispararReduccion = async () => {
+    setDisparando(true);
+    setDisparoMsg('');
+    try {
+      const res = await api.post('/matches/trigger-reduccion/30');
+      setDisparoMsg(`✅ ${res.data.message}`);
+      await cargarDatos();
+    } catch (err: any) {
+      setDisparoMsg(`❌ ${err?.response?.data?.error ?? 'Error al disparar reducción'}`);
+    } finally {
+      setDisparando(false);
+    }
+  };
 
   const abrirAsignacion = (cruce: Cruce) => {
     setAsignandoModal(cruce);
@@ -143,9 +159,25 @@ export default function CrucesPage() {
 
   return (
     <div>
-      <div className="px-6 pt-6 pb-4 border-b border-felt-light/20">
-        <h1 className="font-display text-4xl text-gold">CRUCES</h1>
-        <p className="text-chalk/50 text-sm mt-1">Asignación de sede, mesa, fecha y hora — Reducción, Primera y Máster</p>
+      <div className="px-6 pt-6 pb-4 border-b border-felt-light/20 flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="font-display text-4xl text-gold">CRUCES</h1>
+          <p className="text-chalk/50 text-sm mt-1">Asignación de sede, mesa, fecha y hora — Reducción, Primera y Máster</p>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <button
+            className="btn-secondary text-xs py-1.5 px-3"
+            disabled={disparando}
+            onClick={handleDispararReduccion}
+          >
+            {disparando ? 'Procesando...' : '⚡ Rellenar cruces de reducción'}
+          </button>
+          {disparoMsg && (
+            <span className={`text-xs ${disparoMsg.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>
+              {disparoMsg}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="p-6 space-y-4">
