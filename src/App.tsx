@@ -13,6 +13,7 @@ import SeriesPage from './pages/SeriesPage';
 import CrucesPage from './pages/CrucesPage';
 import UsersPage from './pages/UsersPage';
 import FaseConfigPage from './pages/FaseConfigPage';
+import RankingPage from './pages/RankingPage';
 import Layout from './components/layout/Layout';
 
 function ProtectedRoute({ children, roles }: { children: React.ReactNode; roles?: string[] }) {
@@ -30,6 +31,7 @@ function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/publico" element={<PublicPage />} />
       <Route path="/fixture" element={<FixturePage />} />
+      <Route path="/ranking" element={<RankingPage />} />
       <Route path="/" element={
         <ProtectedRoute>
           {user?.role === 'admin' ? <Navigate to="/admin" replace /> :
@@ -48,6 +50,7 @@ function AppRoutes() {
         <Route path="cruces" element={<CrucesPage />} />
         <Route path="usuarios" element={<UsersPage />} />
         <Route path="faseconfig" element={<FaseConfigPage />} />
+        <Route path="ranking" element={<RankingPage />} />
       </Route>
       <Route path="/juez" element={<ProtectedRoute roles={['juez_sede', 'admin']}><Layout /></ProtectedRoute>}>
         <Route index element={<JudgePage />} />
