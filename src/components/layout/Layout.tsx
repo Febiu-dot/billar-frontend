@@ -38,8 +38,8 @@ export default function Layout() {
     { a: '/admin/series', etiqueta: 'Series', icono: 'r' },
     { a: '/admin/cruces', etiqueta: 'Cruces', icono: 'c' },
     { a: '/admin/faseconfig', etiqueta: 'Programación', icono: 'g' },
-{ a: '/admin/ranking', etiqueta: 'Ranking', icono: 'k' },
-{ a: '/admin/usuarios', etiqueta: 'Jueces', icono: 'u' },
+    { a: '/admin/ranking', etiqueta: 'Ranking', icono: 'k' },
+    { a: '/admin/usuarios', etiqueta: 'Jueces', icono: 'u' },
   ];
 
   const juezLinks = [
@@ -65,6 +65,7 @@ export default function Layout() {
         {!isJuez && (
           <div className="pt-3 border-t border-gray-700 mt-3">
             <NavItem a="/publico" etiqueta="Vista Publica" icono="p" />
+            <NavItem a="/ranking" etiqueta="Ranking Público" icono="🏆" />
           </div>
         )}
       </nav>
