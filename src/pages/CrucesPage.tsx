@@ -71,7 +71,6 @@ export default function CrucesPage() {
     });
 
     setCruces(matchesCruces);
-
     const torneoActivo = tRes.data.find((t: any) => t.active) ?? tRes.data[0];
     setTorneoDepId(torneoActivo?.departamentoId ?? null);
     setLoading(false);
@@ -90,6 +89,20 @@ export default function CrucesPage() {
       await cargarDatos();
     } catch (err: any) {
       setDisparoMsg(`❌ ${err?.response?.data?.error ?? 'Error al disparar reducción'}`);
+    } finally {
+      setDisparando(false);
+    }
+  };
+
+  const handleDispararSegunda = async () => {
+    setDisparando(true);
+    setDisparoMsg('');
+    try {
+      const res = await api.post('/matches/trigger-segunda/31');
+      setDisparoMsg(`✅ ${res.data.message}`);
+      await cargarDatos();
+    } catch (err: any) {
+      setDisparoMsg(`❌ ${err?.response?.data?.error ?? 'Error al disparar Segunda'}`);
     } finally {
       setDisparando(false);
     }
@@ -165,13 +178,22 @@ export default function CrucesPage() {
           <p className="text-chalk/50 text-sm mt-1">Asignación de sede, mesa, fecha y hora — Reducción, Primera y Máster</p>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <button
-            className="btn-secondary text-xs py-1.5 px-3"
-            disabled={disparando}
-            onClick={handleDispararReduccion}
-          >
-            {disparando ? 'Procesando...' : '⚡ Rellenar cruces de reducción'}
-          </button>
+          <div className="flex gap-2 flex-wrap justify-end">
+            <button
+              className="btn-secondary text-xs py-1.5 px-3"
+              disabled={disparando}
+              onClick={handleDispararReduccion}
+            >
+              {disparando ? 'Procesando...' : '⚡ Rellenar cruces de reducción'}
+            </button>
+            <button
+              className="btn-secondary text-xs py-1.5 px-3"
+              disabled={disparando}
+              onClick={handleDispararSegunda}
+            >
+              {disparando ? 'Procesando...' : '⚡ Rellenar slots de Primera'}
+            </button>
+          </div>
           {disparoMsg && (
             <span className={`text-xs ${disparoMsg.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>
               {disparoMsg}
