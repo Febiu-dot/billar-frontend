@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { api } from '../services/api';
 import { Player, Category, CategoryName, Departamento } from '../types';
 import { PageHeader, CategoryBadge, LoadingSpinner, Modal, EmptyState } from '../components/ui';
@@ -9,18 +9,21 @@ const CLUBS = [
 ];
 
 export default function PlayersPage() {
-  const [players, setPlayers]           = useState<Player[]>([]);
-  const [categories, setCategories]     = useState<Category[]>([]);
+  const [players, setPlayers]             = useState<Player[]>([]);
+  const [categories, setCategories]       = useState<Category[]>([]);
   const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
-  const [loading, setLoading]           = useState(true);
-  const [showModal, setShowModal]       = useState(false);
-  const [editPlayer, setEditPlayer]     = useState<Player | null>(null);
-  const [form, setForm]                 = useState({ firstName: '', lastName: '', dni: '', categoryId: '', club: '', departamentoId: '' });
-  const [saving, setSaving]             = useState(false);
-  const [error, setError]               = useState('');
-  const [filterCat, setFilterCat]       = useState('');
-  const [filterDep, setFilterDep]       = useState('');
-  const [search, setSearch]             = useState('');
+  const [loading, setLoading]             = useState(true);
+  const [showModal, setShowModal]         = useState(false);
+  const [editPlayer, setEditPlayer]       = useState<Player | null>(null);
+  const [form, setForm]                   = useState({ firstName: '', lastName: '', dni: '', categoryId: '', club: '', departamentoId: '' });
+  const [saving, setSaving]               = useState(false);
+  const [error, setError]                 = useState('');
+  const [filterCat, setFilterCat]         = useState('');
+  const [filterDep, setFilterDep]         = useState('');
+  const [search, setSearch]               = useState('');
+  const [importando, setImportando]       = useState(false);
+  const [importMsg, setImportMsg]         = useState('');
+  const fileInputRef                      = useRef<HTMLInputElement>(null);
 
   const fetchPlayers = () =>
     api.get('/players').then(r => { setPlayers(r.data); setLoading(false); });
@@ -30,6 +33,90 @@ export default function PlayersPage() {
     api.get('/categories').then(r => setCategories(r.data));
     api.get('/departamentos').then(r => setDepartamentos(r.data));
   }, []);
+
+  // -------------------------------------------------------
+  // Descargar plantilla CSV
+  // -------------------------------------------------------
+  const handleDescargarPlantilla = () => {
+    const header = ['ID', 'Apellido', 'Nombre', 'CI', 'Club', 'Departamento'];
+    const filas = players.map(p => [
+      p.id,
+      p.lastName,
+      p.firstName,
+      p.dni ?? '',
+      p.club ?? '',
+      p.departamento?.nombre ?? '',
+    ]);
+    const csv = [header, ...filas].map(r => r.join(';')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'jugadores_departamentos.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // -------------------------------------------------------
+  // Importar CSV con departamentos
+  // -------------------------------------------------------
+  const handleImportar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportando(true);
+    setImportMsg('');
+
+    try {
+      const text = await file.text();
+      const filas = text.split('\n').slice(1).filter(r => r.trim());
+
+      let actualizados = 0;
+      let errores = 0;
+      let sinDep = 0;
+
+      for (const fila of filas) {
+        const cols = fila.split(';');
+        const playerId = parseInt(cols[0]);
+        const depNombre = cols[5]?.trim().replace(/\r/g, '');
+
+        if (!playerId || isNaN(playerId)) continue;
+
+        const player = players.find(p => p.id === playerId);
+        if (!player) continue;
+
+        if (!depNombre) { sinDep++; continue; }
+
+        const dep = departamentos.find(d =>
+          d.nombre.toLowerCase() === depNombre.toLowerCase()
+        );
+
+        if (!dep) { errores++; continue; }
+
+        try {
+          await api.put(`/players/${playerId}`, {
+            firstName: player.firstName,
+            lastName: player.lastName,
+            dni: player.dni,
+            categoryId: player.categoryId,
+            active: player.active,
+            club: player.club ?? cols[4]?.trim() ?? '',
+            departamentoId: dep.id,
+          });
+          actualizados++;
+        } catch {
+          errores++;
+        }
+      }
+
+      await fetchPlayers();
+      setImportMsg(`✅ ${actualizados} actualizados${sinDep > 0 ? `, ${sinDep} sin departamento` : ''}${errores > 0 ? `, ${errores} errores` : ''}`);
+    } catch {
+      setImportMsg('❌ Error al leer el archivo');
+    } finally {
+      setImportando(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const openAdd = () => {
     setEditPlayer(null);
@@ -116,8 +203,35 @@ export default function PlayersPage() {
       <PageHeader
         title="JUGADORES"
         subtitle={`${players.length} jugadores registrados`}
-        action={<button className="btn-primary" onClick={openAdd}>+ Nuevo Jugador</button>}
+        action={
+          <div className="flex gap-2 flex-wrap">
+            <button className="btn-secondary text-xs py-1.5 px-3" onClick={handleDescargarPlantilla}>
+              ⬇ Plantilla CSV
+            </button>
+            <button
+              className="btn-secondary text-xs py-1.5 px-3"
+              disabled={importando}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {importando ? 'Importando...' : '⬆ Importar departamentos'}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={handleImportar}
+            />
+            <button className="btn-primary" onClick={openAdd}>+ Nuevo Jugador</button>
+          </div>
+        }
       />
+
+      {importMsg && (
+        <div className={`mx-6 mt-2 px-4 py-2 rounded-lg text-sm ${importMsg.startsWith('✅') ? 'bg-green-900/20 text-green-400' : 'bg-red-900/20 text-red-400'}`}>
+          {importMsg}
+        </div>
+      )}
 
       <div className="p-6 space-y-5">
         <div className="flex flex-wrap gap-3 items-center">
@@ -146,6 +260,15 @@ export default function PlayersPage() {
           </div>
         </div>
 
+        <div className="bg-felt-dark/30 border border-felt-light/10 rounded-lg px-4 py-3 text-xs text-chalk/50 space-y-1">
+          <p className="font-semibold text-chalk/70">¿Cómo importar departamentos?</p>
+          <p>1. Descargá la plantilla CSV con el botón <strong>⬇ Plantilla CSV</strong></p>
+          <p>2. Abrila en Excel, completá la columna <strong>Departamento</strong> con el nombre exacto del departamento</p>
+          <p>3. Guardá el archivo como CSV (separado por punto y coma)</p>
+          <p>4. Subilo con el botón <strong>⬆ Importar departamentos</strong></p>
+          <p className="text-chalk/40">Departamentos disponibles: {departamentos.map(d => d.nombre).join(', ')}</p>
+        </div>
+
         {filtered.length === 0 ? (
           <EmptyState message="No se encontraron jugadores" />
         ) : (
@@ -170,7 +293,12 @@ export default function PlayersPage() {
                       <tr key={p.id} className="table-row">
                         <td className="px-4 py-3 font-medium text-silver-light">{p.lastName}, {p.firstName}</td>
                         <td className="px-4 py-3 text-silver-dark text-xs">{p.club ?? '-'}</td>
-                        <td className="px-4 py-3 text-silver-dark text-xs">{p.departamento?.nombre ?? '-'}</td>
+                        <td className="px-4 py-3 text-silver-dark text-xs">
+                          {p.departamento?.nombre
+                            ? <span className="badge-status bg-blue-900/20 text-blue-400 text-xs">{p.departamento.nombre}</span>
+                            : <span className="text-chalk/20">—</span>
+                          }
+                        </td>
                         <td className="px-4 py-3">{p.category && <CategoryBadge name={p.category.name} />}</td>
                         <td className="px-4 py-3 text-silver-dark font-mono hidden sm:table-cell">{p.dni ?? '-'}</td>
                         <td className="px-4 py-3 hidden sm:table-cell">
