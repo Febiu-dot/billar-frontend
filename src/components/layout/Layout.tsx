@@ -38,7 +38,8 @@ export default function Layout() {
     { a: '/admin/series', etiqueta: 'Series', icono: 'r' },
     { a: '/admin/cruces', etiqueta: 'Cruces', icono: 'c' },
     { a: '/admin/faseconfig', etiqueta: 'Programación', icono: 'g' },
-    { a: '/admin/usuarios', etiqueta: 'Jueces', icono: 'u' },
+{ a: '/admin/ranking', etiqueta: 'Ranking', icono: 'k' },
+{ a: '/admin/usuarios', etiqueta: 'Jueces', icono: 'u' },
   ];
 
   const juezLinks = [
