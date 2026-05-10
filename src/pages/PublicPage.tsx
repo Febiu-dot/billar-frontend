@@ -88,7 +88,10 @@ export default function PublicPage() {
               En vivo
             </div>
             <p className="text-silver-dark text-xs font-mono">{lastUpdate.toLocaleTimeString('es-UY')}</p>
-            <a href="/login" className="text-orange/70 text-xs hover:text-orange">Ingresar →</a>
+            <div className="flex flex-col items-end gap-1">
+  <a href="/ranking" className="text-gold text-xs hover:text-gold/80 font-medium">🏆 Ver Ranking</a>
+  <a href="/login" className="text-orange/70 text-xs hover:text-orange">Ingresar →</a>
+</div>
           </div>
         </div>
       </header>
