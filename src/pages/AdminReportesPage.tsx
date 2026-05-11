@@ -20,6 +20,8 @@ export default function AdminReportesPage() {
   const [loading, setLoading] = useState(true);
   const [copiado, setCopiado] = useState<number | null>(null);
   const [accion, setAccion] = useState<number | null>(null);
+  const [regenerando, setRegenerando] = useState(false);
+  const [msg, setMsg] = useState('');
 
   const cargar = () => {
     api.get('/reports/admin').then(r => { setReports(r.data); setLoading(false); }).catch(() => setLoading(false));
@@ -69,20 +71,47 @@ export default function AdminReportesPage() {
     finally { setAccion(null); }
   };
 
+  const regenerarTodo = async () => {
+    if (!confirm('¿Generar reportes de todos los partidos ya finalizados? Puede tardar unos segundos.')) return;
+    setRegenerando(true);
+    setMsg('');
+    try {
+      const res = await api.post('/reports/regenerar-todo');
+      setMsg(`✅ ${res.data.message}`);
+      cargar();
+    } catch (e: any) {
+      setMsg(`❌ ${e?.response?.data?.error ?? 'Error'}`);
+    } finally {
+      setRegenerando(false);
+    }
+  };
+
   const formatFecha = (d: string) => new Date(d).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
 
   if (loading) return <LoadingSpinner />;
 
   return (
     <div>
-      <div className="px-6 pt-6 pb-4 border-b border-felt-light/20">
-        <h1 className="font-display text-4xl text-gold">REPORTES</h1>
-        <p className="text-chalk/50 text-sm mt-1">{reports.length} reportes — visibles en /reportes</p>
+      <div className="px-6 pt-6 pb-4 border-b border-felt-light/20 flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="font-display text-4xl text-gold">REPORTES</h1>
+          <p className="text-chalk/50 text-sm mt-1">{reports.length} reportes — visibles en /reportes</p>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <button
+            className="btn-secondary text-xs py-1.5 px-3"
+            disabled={regenerando}
+            onClick={regenerarTodo}
+          >
+            {regenerando ? 'Generando...' : '⚡ Generar todos los reportes'}
+          </button>
+          {msg && <span className={`text-xs ${msg.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>{msg}</span>}
+        </div>
       </div>
 
       <div className="p-6">
         {reports.length === 0 ? (
-          <EmptyState message="No hay reportes aún. Se generan automáticamente al terminar partidos." />
+          <EmptyState message="No hay reportes aún. Usá el botón para generar todos los partidos finalizados." />
         ) : (
           <div className="space-y-3">
             {reports.map(report => (
