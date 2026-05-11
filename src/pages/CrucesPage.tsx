@@ -141,14 +141,12 @@ export default function CrucesPage() {
       const scheduledAt = form.scheduledAt && form.hora
         ? new Date(`${form.scheduledAt}T${form.hora}:${form.minutos || '00'}:00`).toISOString()
         : undefined;
-
       if (form.tableId) {
         await api.put(`/matches/${asignandoModal.id}/assign`, { tableId: parseInt(form.tableId) });
       }
       if (scheduledAt) {
         await api.put(`/matches/${asignandoModal.id}`, { scheduledAt });
       }
-
       setAsignandoModal(null);
       await cargarDatos();
     } catch (err: any) {
@@ -173,11 +171,54 @@ export default function CrucesPage() {
     return '—';
   };
 
-  const labelFase = (fase: string) => {
+  // Etiqueta de fase para filtros
+  const labelFaseFiltro = (fase: string) => {
+    if (fase === 'todas') return 'Todas';
     if (fase === 'reduccion') return 'Reducción Clasif.';
     if (fase === 'primera') return 'Tercera Fase';
     if (fase === 'master') return 'Fase Final';
     return fase;
+  };
+
+  // Etiqueta detallada por cruce (incluye sub-ronda para master)
+  const labelCruce = (cruce: Cruce): string => {
+    if (cruce.fase === 'reduccion') return 'Reducción Clasif.';
+    if (cruce.fase === 'primera') return 'Tercera Fase';
+    if (cruce.fase === 'master') {
+      if (cruce.round <= 16) return 'Cruce Master';
+      if (cruce.round <= 24) return 'Octavos';
+      if (cruce.round <= 28) return 'Cuartos';
+      if (cruce.round <= 30) return 'Semifinal';
+      return 'Final';
+    }
+    return cruce.fase;
+  };
+
+  // Color de badge por sub-ronda master
+  const badgeColor = (cruce: Cruce): string => {
+    if (cruce.fase === 'reduccion') return 'bg-orange-900/30 text-orange-400';
+    if (cruce.fase === 'primera') return 'bg-blue-900/30 text-blue-400';
+    if (cruce.fase === 'master') {
+      if (cruce.round <= 16) return 'bg-purple-900/30 text-purple-400';
+      if (cruce.round <= 24) return 'bg-gold/10 text-gold';
+      if (cruce.round <= 28) return 'bg-gold/20 text-gold';
+      if (cruce.round <= 30) return 'bg-gold/30 text-gold';
+      return 'bg-gold/40 text-gold font-bold';
+    }
+    return 'bg-felt-light/20 text-chalk/40';
+  };
+
+  // Número de cruce a mostrar
+  const numeroCruce = (cruce: Cruce): string => {
+    if (cruce.serieId?.includes('repechaje')) return 'Repechaje';
+    if (cruce.fase === 'master') {
+      if (cruce.round <= 16) return `Cruce ${cruce.round}`;
+      if (cruce.round <= 24) return `Octavo ${cruce.round - 16}`;
+      if (cruce.round <= 28) return `Cuarto ${cruce.round - 24}`;
+      if (cruce.round <= 30) return `Semi ${cruce.round - 28}`;
+      return 'Final';
+    }
+    return `#${cruce.round}`;
   };
 
   const crucesFiltrados = filtroFase === 'todas' ? cruces : cruces.filter(c => c.fase === filtroFase);
@@ -189,29 +230,17 @@ export default function CrucesPage() {
       <div className="px-6 pt-6 pb-4 border-b border-felt-light/20 flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="font-display text-4xl text-gold">CRUCES</h1>
-          <p className="text-chalk/50 text-sm mt-1">Asignación de sede, mesa, fecha y hora — Reducción, Primera y Máster</p>
+          <p className="text-chalk/50 text-sm mt-1">Reducción, Tercera Fase y Fase Final</p>
         </div>
         <div className="flex flex-col items-end gap-1">
           <div className="flex gap-2 flex-wrap justify-end">
-            <button
-              className="btn-secondary text-xs py-1.5 px-3"
-              disabled={disparando}
-              onClick={handleDispararReduccion}
-            >
+            <button className="btn-secondary text-xs py-1.5 px-3" disabled={disparando} onClick={handleDispararReduccion}>
               {disparando ? 'Procesando...' : '⚡ Rellenar cruces de reducción'}
             </button>
-            <button
-              className="btn-secondary text-xs py-1.5 px-3"
-              disabled={disparando}
-              onClick={handleDispararSegunda}
-            >
+            <button className="btn-secondary text-xs py-1.5 px-3" disabled={disparando} onClick={handleDispararSegunda}>
               {disparando ? 'Procesando...' : '⚡ Rellenar slots de Primera'}
             </button>
-            <button
-              className="btn-secondary text-xs py-1.5 px-3"
-              disabled={disparando}
-              onClick={handleDispararPrimera}
-            >
+            <button className="btn-secondary text-xs py-1.5 px-3" disabled={disparando} onClick={handleDispararPrimera}>
               {disparando ? 'Procesando...' : '⚡ Rellenar slots de Master'}
             </button>
           </div>
@@ -231,7 +260,7 @@ export default function CrucesPage() {
               className={`py-1 px-3 text-xs rounded-lg border transition-all ${filtroFase === f ? 'border-gold/40 text-gold bg-gold/10' : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'}`}
               onClick={() => setFiltroFase(f)}
             >
-              {f === 'todas' ? 'Todas' : labelFase(f)}
+              {labelFaseFiltro(f)}
             </button>
           ))}
           <span className="text-chalk/30 text-xs self-center ml-2">{crucesFiltrados.length} cruces</span>
@@ -259,16 +288,12 @@ export default function CrucesPage() {
                   return (
                     <tr key={cruce.id} className={`border-b border-felt-light/5 ${asignado ? 'bg-green-900/5' : ''}`}>
                       <td className="px-4 py-3">
-                        <span className={`badge-status text-xs ${
-                          cruce.fase === 'reduccion' ? 'bg-orange-900/30 text-orange-400' :
-                          cruce.fase === 'primera' ? 'bg-blue-900/30 text-blue-400' :
-                          'bg-gold/20 text-gold'
-                        }`}>
-                          {labelFase(cruce.fase)}
+                        <span className={`badge-status text-xs ${badgeColor(cruce)}`}>
+                          {labelCruce(cruce)}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-chalk/40 text-xs font-mono">
-                        {cruce.serieId?.includes('repechaje') ? 'Repechaje' : `#${cruce.round}`}
+                        {numeroCruce(cruce)}
                       </td>
                       <td className="px-4 py-3 text-chalk/80">{pn(cruce.playerA, cruce.slotA)}</td>
                       <td className="px-4 py-3 text-chalk/80">{pn(cruce.playerB, cruce.slotB)}</td>
@@ -308,7 +333,10 @@ export default function CrucesPage() {
       </div>
 
       {asignandoModal && (
-        <Modal title={`ASIGNAR — ${labelFase(asignandoModal.fase)} ${asignandoModal.serieId?.includes('repechaje') ? 'Repechaje' : `#${asignandoModal.round}`}`} onClose={() => setAsignandoModal(null)}>
+        <Modal
+          title={`ASIGNAR — ${labelCruce(asignandoModal)} ${numeroCruce(asignandoModal)}`}
+          onClose={() => setAsignandoModal(null)}
+        >
           <div className="space-y-4">
             <div>
               <p className="text-chalk/60 text-xs uppercase tracking-widest mb-1">Partido</p>
