@@ -122,6 +122,20 @@ export default function CrucesPage() {
     }
   };
 
+  const handleDispararMaster = async () => {
+    setDisparando(true);
+    setDisparoMsg('');
+    try {
+      const res = await api.post('/matches/trigger-master/33');
+      setDisparoMsg(`✅ ${res.data.message}`);
+      await cargarDatos();
+    } catch (err: any) {
+      setDisparoMsg(`❌ ${err?.response?.data?.error ?? 'Error al rellenar Octavos'}`);
+    } finally {
+      setDisparando(false);
+    }
+  };
+
   const abrirAsignacion = (cruce: Cruce) => {
     setAsignandoModal(cruce);
     const horaCompleta = cruce.scheduledAt ? cruce.scheduledAt.split('T')[1]?.slice(0, 5) : '';
@@ -171,7 +185,6 @@ export default function CrucesPage() {
     return '—';
   };
 
-  // Etiqueta de fase para filtros
   const labelFaseFiltro = (fase: string) => {
     if (fase === 'todas') return 'Todas';
     if (fase === 'reduccion') return 'Reducción Clasif.';
@@ -180,7 +193,6 @@ export default function CrucesPage() {
     return fase;
   };
 
-  // Etiqueta detallada por cruce (incluye sub-ronda para master)
   const labelCruce = (cruce: Cruce): string => {
     if (cruce.fase === 'reduccion') return 'Reducción Clasif.';
     if (cruce.fase === 'primera') return 'Tercera Fase';
@@ -194,7 +206,6 @@ export default function CrucesPage() {
     return cruce.fase;
   };
 
-  // Color de badge por sub-ronda master
   const badgeColor = (cruce: Cruce): string => {
     if (cruce.fase === 'reduccion') return 'bg-orange-900/30 text-orange-400';
     if (cruce.fase === 'primera') return 'bg-blue-900/30 text-blue-400';
@@ -208,7 +219,6 @@ export default function CrucesPage() {
     return 'bg-felt-light/20 text-chalk/40';
   };
 
-  // Número de cruce a mostrar
   const numeroCruce = (cruce: Cruce): string => {
     if (cruce.serieId?.includes('repechaje')) return 'Repechaje';
     if (cruce.fase === 'master') {
@@ -242,6 +252,9 @@ export default function CrucesPage() {
             </button>
             <button className="btn-secondary text-xs py-1.5 px-3" disabled={disparando} onClick={handleDispararPrimera}>
               {disparando ? 'Procesando...' : '⚡ Rellenar slots de Master'}
+            </button>
+            <button className="btn-secondary text-xs py-1.5 px-3" disabled={disparando} onClick={handleDispararMaster}>
+              {disparando ? 'Procesando...' : '⚡ Rellenar Octavos'}
             </button>
           </div>
           {disparoMsg && (
