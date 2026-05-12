@@ -34,20 +34,21 @@ export default function SeriesPage() {
   };
 
   const agruparEnSeries = (matches: any[]): Serie[] => {
-    const seriesMap: Record<string, Serie> = {};
-    for (const m of matches) {
-      if (!seriesMap[m.serieId]) {
-        seriesMap[m.serieId] = {
-          serieId: m.serieId,
-          fase: m.phase?.type ?? '',
-          circuitId: m.phase?.circuit?.id ?? 0,
-          circuitName: m.phase?.circuit?.name ?? 'Sin circuito',
-          circuitOrder: m.phase?.circuit?.order ?? 0,
-          partidos: []
-        };
-      }
-      seriesMap[m.serieId].partidos.push(m);
+  const seriesMap: Record<string, Serie> = {};
+  for (const m of matches) {
+    const key = `${m.phase?.circuit?.id ?? 0}-${m.serieId}`;
+    if (!seriesMap[key]) {
+      seriesMap[key] = {
+        serieId: m.serieId,
+        fase: m.phase?.type ?? '',
+        circuitId: m.phase?.circuit?.id ?? 0,
+        circuitName: m.phase?.circuit?.name ?? 'Sin circuito',
+        circuitOrder: m.phase?.circuit?.order ?? 0,
+        partidos: []
+      };
     }
+    seriesMap[key].partidos.push(m);
+  }
     Object.values(seriesMap).forEach(s => s.partidos.sort((a, b) => a.round - b.round));
     return Object.values(seriesMap).sort((a, b) => {
       if (a.circuitOrder !== b.circuitOrder) return a.circuitOrder - b.circuitOrder;
