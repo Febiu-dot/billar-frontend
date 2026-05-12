@@ -14,6 +14,7 @@ import CrucesPage from './pages/CrucesPage';
 import UsersPage from './pages/UsersPage';
 import FaseConfigPage from './pages/FaseConfigPage';
 import RankingPage from './pages/RankingPage';
+import RankingFinalPage from './pages/RankingFinalPage';
 import ReportesPage from './pages/ReportesPage';
 import AdminReportesPage from './pages/AdminReportesPage';
 import Layout from './components/layout/Layout';
@@ -34,6 +35,7 @@ function AppRoutes() {
       <Route path="/publico" element={<PublicPage />} />
       <Route path="/fixture" element={<FixturePage />} />
       <Route path="/ranking" element={<RankingPage />} />
+      <Route path="/ranking-final" element={<RankingFinalPage />} />
       <Route path="/reportes" element={<ReportesPage />} />
       <Route path="/" element={
         <ProtectedRoute>
@@ -54,6 +56,7 @@ function AppRoutes() {
         <Route path="usuarios" element={<UsersPage />} />
         <Route path="faseconfig" element={<FaseConfigPage />} />
         <Route path="ranking" element={<RankingPage />} />
+        <Route path="ranking-final" element={<RankingFinalPage />} />
         <Route path="reportes" element={<AdminReportesPage />} />
       </Route>
       <Route path="/juez" element={<ProtectedRoute roles={['juez_sede', 'admin']}><Layout /></ProtectedRoute>}>
