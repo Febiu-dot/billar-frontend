@@ -3,11 +3,7 @@ import { api } from '../services/api';
 import { LoadingSpinner, EmptyState, Modal } from '../components/ui';
 
 interface Venue { id: number; name: string; departamentoId?: number; tables?: { id: number; number: number; status: string }[]; }
-interface Serie {
-  serieId: string;
-  fase: string;
-  partidos: any[];
-}
+interface Serie { serieId: string; fase: string; circuitId: number; circuitName: string; circuitOrder: number; partidos: any[]; }
 
 export default function SeriesPage() {
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -17,6 +13,8 @@ export default function SeriesPage() {
   const [asignandoModal, setAsignandoModal] = useState<{ serie: Serie; partido: any } | null>(null);
   const [form, setForm] = useState({ venueId: '', tableId: '', scheduledAt: '', hora: '', minutos: '' });
   const [saving, setSaving] = useState(false);
+  const [circuitosOcultos, setCircuitosOcultos] = useState<Set<number>>(new Set());
+  const [circuitoSeleccionado, setCircuitoSeleccionado] = useState<number | null>(null);
 
   const filtrarPartidos = (matches: any[]) =>
     matches.filter((m: any) =>
@@ -42,6 +40,9 @@ export default function SeriesPage() {
         seriesMap[m.serieId] = {
           serieId: m.serieId,
           fase: m.phase?.type ?? '',
+          circuitId: m.phase?.circuit?.id ?? 0,
+          circuitName: m.phase?.circuit?.name ?? 'Sin circuito',
+          circuitOrder: m.phase?.circuit?.order ?? 0,
           partidos: []
         };
       }
@@ -49,6 +50,7 @@ export default function SeriesPage() {
     }
     Object.values(seriesMap).forEach(s => s.partidos.sort((a, b) => a.round - b.round));
     return Object.values(seriesMap).sort((a, b) => {
+      if (a.circuitOrder !== b.circuitOrder) return a.circuitOrder - b.circuitOrder;
       const faseA = a.serieId.split('-serie-')[0];
       const faseB = b.serieId.split('-serie-')[0];
       if (faseA !== faseB) return faseA.localeCompare(faseB);
@@ -63,7 +65,23 @@ export default function SeriesPage() {
       api.get('/tournaments'),
     ]);
     setVenues(vRes.data);
-    setSeries(agruparEnSeries(filtrarPartidos(mRes.data)));
+    const seriesData = agruparEnSeries(filtrarPartidos(mRes.data));
+    setSeries(seriesData);
+
+    // Detectar circuitos disponibles y seleccionar el más reciente por defecto
+    const circuitIds = [...new Set(seriesData.map(s => s.circuitId))];
+    const maxCircuitOrder = Math.max(...seriesData.map(s => s.circuitOrder));
+    const circuitMasReciente = seriesData.find(s => s.circuitOrder === maxCircuitOrder)?.circuitId ?? null;
+
+    if (circuitoSeleccionado === null && circuitMasReciente) {
+      setCircuitoSeleccionado(circuitMasReciente);
+      // Ocultar todos los anteriores por defecto
+      const anteriores: Set<number> = new Set(
+        seriesData.filter(s => s.circuitId !== circuitMasReciente).map(s => s.circuitId)
+      );
+      setCircuitosOcultos(anteriores);
+    }
+
     const torneoActivo = tRes.data.find((t: any) => t.active) ?? tRes.data[0];
     setTorneoDepId(torneoActivo?.departamentoId ?? null);
     setLoading(false);
@@ -72,6 +90,19 @@ export default function SeriesPage() {
   useEffect(() => {
     cargarDatos().catch(() => setLoading(false));
   }, []);
+
+  const toggleCircuito = (circuitId: number) => {
+    setCircuitosOcultos(prev => {
+      const next: Set<number> = new Set(prev);
+      if (next.has(circuitId)) next.delete(circuitId);
+      else next.add(circuitId);
+      return next;
+    });
+  };
+
+  // Agrupar series por circuito
+  const circuitos = [...new Map(series.map(s => [s.circuitId, { id: s.circuitId, name: s.circuitName, order: s.circuitOrder }])).values()]
+    .sort((a, b) => a.order - b.order);
 
   const abrirAsignacion = (serie: Serie, partido: any) => {
     setAsignandoModal({ serie, partido });
@@ -93,14 +124,8 @@ export default function SeriesPage() {
       const scheduledAt = form.scheduledAt && form.hora
         ? new Date(`${form.scheduledAt}T${form.hora}:${form.minutos || '00'}:00`).toISOString()
         : undefined;
-
-      if (form.tableId) {
-        await api.put(`/matches/${partido.id}/assign`, { tableId: parseInt(form.tableId) });
-      }
-      if (scheduledAt) {
-        await api.put(`/matches/${partido.id}`, { scheduledAt });
-      }
-
+      if (form.tableId) await api.put(`/matches/${partido.id}/assign`, { tableId: parseInt(form.tableId) });
+      if (scheduledAt) await api.put(`/matches/${partido.id}`, { scheduledAt });
       setAsignandoModal(null);
       await cargarDatos();
     } catch (err: any) {
@@ -110,14 +135,8 @@ export default function SeriesPage() {
     }
   };
 
-  const sedesFiltradas = torneoDepId
-    ? venues.filter(v => v.departamentoId === torneoDepId)
-    : venues;
-
-  const getTablasDeSede = (venueId: string) => {
-    const venue = sedesFiltradas.find(v => v.id === parseInt(venueId));
-    return venue?.tables ?? [];
-  };
+  const sedesFiltradas = torneoDepId ? venues.filter(v => v.departamentoId === torneoDepId) : venues;
+  const getTablasDeSede = (venueId: string) => sedesFiltradas.find(v => v.id === parseInt(venueId))?.tables ?? [];
 
   const pn = (player: any, slot?: string) => {
     if (player) return `${player.lastName}, ${player.firstName}`;
@@ -142,58 +161,76 @@ export default function SeriesPage() {
         <p className="text-chalk/50 text-sm mt-1">Asignación de sede, mesa, fecha y hora por serie</p>
       </div>
 
-      <div className="p-6 space-y-4">
+      <div className="p-6 space-y-6">
         {series.length === 0 ? (
-          <EmptyState message="No hay series pendientes. Generá los partidos desde Fixture primero." />
+          <EmptyState message="No hay series. Generá los partidos desde Fixture primero." />
         ) : (
-          series.map(serie => (
-            <div key={serie.serieId} className="card">
-              <div className="flex items-center gap-3 mb-3">
-                <h3 className="font-display text-lg text-chalk">{formatSerieId(serie.serieId)}</h3>
-                <span className="badge-status bg-felt-light/20 text-chalk/40 text-xs capitalize">{serie.fase}</span>
-              </div>
+          circuitos.map(circuito => {
+            const seriesCircuito = series.filter(s => s.circuitId === circuito.id);
+            const oculto = circuitosOcultos.has(circuito.id);
+            const totalSeries = seriesCircuito.length;
+            const asignadas = seriesCircuito.filter(s => s.partidos.some(p => p.tableId || p.scheduledAt)).length;
 
-              <div className="space-y-2">
-                {serie.partidos.map((partido: any, idx: number) => {
-                  const asignado = partido.tableId || partido.scheduledAt;
-                  return (
-                    <div key={partido.id} className={`flex items-center justify-between rounded-lg px-3 py-2 border ${asignado ? 'border-green-700/30 bg-green-900/10' : 'border-felt-light/10 bg-felt-dark/30'}`}>
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <span className="text-chalk/30 text-xs font-mono w-6">P{idx + 1}</span>
-                        <div className="flex-1 min-w-0">
-                          <span className={`text-sm ${partido.playerA ? 'text-chalk/80' : 'text-gold/60 italic'}`}>
-                            {pn(partido.playerA, partido.slotA)}
-                          </span>
-                          <span className="text-chalk/30 text-xs mx-2">vs</span>
-                          <span className={`text-sm ${partido.playerB ? 'text-chalk/80' : 'text-gold/60 italic'}`}>
-                            {pn(partido.playerB, partido.slotB)}
-                          </span>
+            return (
+              <div key={circuito.id}>
+                {/* Header circuito */}
+                <div className="flex items-center gap-3 mb-3 pb-2 border-b border-felt-light/15">
+                  <h2 className="font-display text-2xl text-gold">{circuito.name}</h2>
+                  <span className="text-chalk/30 text-xs font-mono">
+                    {asignadas}/{totalSeries} series asignadas
+                  </span>
+                  <button
+                    className={`ml-auto py-1 px-3 text-xs rounded-lg border transition-all ${
+                      oculto
+                        ? 'border-gold/30 text-gold/70 hover:bg-gold/10'
+                        : 'border-chalk/20 text-chalk/40 hover:border-chalk/40'
+                    }`}
+                    onClick={() => toggleCircuito(circuito.id)}
+                  >
+                    {oculto ? '👁 Mostrar' : '🙈 Ocultar'}
+                  </button>
+                </div>
+
+                {/* Series del circuito */}
+                {!oculto && (
+                  <div className="space-y-4">
+                    {seriesCircuito.map(serie => (
+                      <div key={serie.serieId} className="card">
+                        <div className="flex items-center gap-3 mb-3">
+                          <h3 className="font-display text-lg text-chalk">{formatSerieId(serie.serieId)}</h3>
+                          <span className="badge-status bg-felt-light/20 text-chalk/40 text-xs capitalize">{serie.fase}</span>
+                        </div>
+                        <div className="space-y-2">
+                          {serie.partidos.map((partido: any, idx: number) => {
+                            const asignado = partido.tableId || partido.scheduledAt;
+                            return (
+                              <div key={partido.id} className={`flex items-center justify-between rounded-lg px-3 py-2 border ${asignado ? 'border-green-700/30 bg-green-900/10' : 'border-felt-light/10 bg-felt-dark/30'}`}>
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                  <span className="text-chalk/30 text-xs font-mono w-6">P{idx + 1}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <span className={`text-sm ${partido.playerA ? 'text-chalk/80' : 'text-gold/60 italic'}`}>{pn(partido.playerA, partido.slotA)}</span>
+                                    <span className="text-chalk/30 text-xs mx-2">vs</span>
+                                    <span className={`text-sm ${partido.playerB ? 'text-chalk/80' : 'text-gold/60 italic'}`}>{pn(partido.playerB, partido.slotB)}</span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3 shrink-0">
+                                  {partido.table && <span className="text-green-400/60 text-xs font-mono">{partido.table.venue?.name} — Mesa {partido.table.number}</span>}
+                                  {partido.scheduledAt && <span className="text-chalk/40 text-xs font-mono">{new Date(partido.scheduledAt).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}</span>}
+                                  <button className="py-0.5 px-2 text-xs rounded border border-gold/30 text-gold/70 hover:bg-gold/10 transition-all" onClick={() => abrirAsignacion(serie, partido)}>
+                                    {asignado ? 'Editar' : 'Asignar'}
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        {partido.table && (
-                          <span className="text-green-400/60 text-xs font-mono">
-                            {partido.table.venue?.name} — Mesa {partido.table.number}
-                          </span>
-                        )}
-                        {partido.scheduledAt && (
-                          <span className="text-chalk/40 text-xs font-mono">
-                            {new Date(partido.scheduledAt).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
-                          </span>
-                        )}
-                        <button
-                          className="py-0.5 px-2 text-xs rounded border border-gold/30 text-gold/70 hover:bg-gold/10 transition-all"
-                          onClick={() => abrirAsignacion(serie, partido)}
-                        >
-                          {asignado ? 'Editar' : 'Asignar'}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -203,33 +240,24 @@ export default function SeriesPage() {
           <div className="space-y-4">
             <div>
               <p className="text-chalk/60 text-xs uppercase tracking-widest mb-1">Partido</p>
-              <p className="text-chalk/80 text-sm">
-                {pn(asignandoModal.partido.playerA, asignandoModal.partido.slotA)} vs {pn(asignandoModal.partido.playerB, asignandoModal.partido.slotB)}
-              </p>
+              <p className="text-chalk/80 text-sm">{pn(asignandoModal.partido.playerA, asignandoModal.partido.slotA)} vs {pn(asignandoModal.partido.playerB, asignandoModal.partido.slotB)}</p>
             </div>
-
             <div>
-              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">
-                Sede {torneoDepId ? '(filtradas por departamento del torneo)' : ''}
-              </label>
+              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Sede {torneoDepId ? '(filtradas por departamento)' : ''}</label>
               <select className="input" value={form.venueId} onChange={e => setForm({ ...form, venueId: e.target.value, tableId: '' })}>
                 <option value="">Seleccionar sede...</option>
                 {sedesFiltradas.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
               </select>
             </div>
-
             {form.venueId && (
               <div>
                 <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Mesa</label>
                 <select className="input" value={form.tableId} onChange={e => setForm({ ...form, tableId: e.target.value })}>
                   <option value="">Seleccionar mesa...</option>
-                  {getTablasDeSede(form.venueId).map((t: any) => (
-                    <option key={t.id} value={t.id}>Mesa {t.number} — {t.status}</option>
-                  ))}
+                  {getTablasDeSede(form.venueId).map((t: any) => <option key={t.id} value={t.id}>Mesa {t.number} — {t.status}</option>)}
                 </select>
               </div>
             )}
-
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Fecha</label>
@@ -240,24 +268,17 @@ export default function SeriesPage() {
                 <div className="flex gap-2">
                   <select className="input flex-1" value={form.hora} onChange={e => setForm({ ...form, hora: e.target.value })}>
                     <option value="">HH</option>
-                    {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')).map(h => (
-                      <option key={h} value={h}>{h}</option>
-                    ))}
+                    {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')).map(h => <option key={h} value={h}>{h}</option>)}
                   </select>
                   <select className="input flex-1" value={form.minutos} onChange={e => setForm({ ...form, minutos: e.target.value })}>
                     <option value="">MM</option>
-                    {['00', '15', '30', '45'].map(m => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
+                    {['00', '15', '30', '45'].map(m => <option key={m} value={m}>{m}</option>)}
                   </select>
                 </div>
               </div>
             </div>
-
             <div className="flex gap-3 pt-2">
-              <button className="btn-primary flex-1" disabled={saving} onClick={handleGuardar}>
-                {saving ? 'Guardando...' : 'Guardar'}
-              </button>
+              <button className="btn-primary flex-1" disabled={saving} onClick={handleGuardar}>{saving ? 'Guardando...' : 'Guardar'}</button>
               <button className="btn-secondary flex-1" onClick={() => setAsignandoModal(null)}>Cancelar</button>
             </div>
           </div>
