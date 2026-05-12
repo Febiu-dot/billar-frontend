@@ -34,80 +34,46 @@ export default function PlayersPage() {
     api.get('/departamentos').then(r => setDepartamentos(r.data));
   }, []);
 
-  // -------------------------------------------------------
-  // Descargar plantilla CSV
-  // -------------------------------------------------------
   const handleDescargarPlantilla = () => {
     const header = ['ID', 'Apellido', 'Nombre', 'CI', 'Club', 'Departamento'];
     const filas = players.map(p => [
-      p.id,
-      p.lastName,
-      p.firstName,
-      p.dni ?? '',
-      p.club ?? '',
-      p.departamento?.nombre ?? '',
+      p.id, p.lastName, p.firstName, p.dni ?? '', p.club ?? '', p.departamento?.nombre ?? '',
     ]);
     const csv = [header, ...filas].map(r => r.join(';')).join('\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = 'jugadores_departamentos.csv';
-    a.click();
+    a.href = url; a.download = 'jugadores_departamentos.csv'; a.click();
     URL.revokeObjectURL(url);
   };
 
-  // -------------------------------------------------------
-  // Importar CSV con departamentos
-  // -------------------------------------------------------
   const handleImportar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setImportando(true);
-    setImportMsg('');
-
+    setImportando(true); setImportMsg('');
     try {
       const text = await file.text();
       const filas = text.split('\n').slice(1).filter(r => r.trim());
-
-      let actualizados = 0;
-      let errores = 0;
-      let sinDep = 0;
-
+      let actualizados = 0, errores = 0, sinDep = 0;
       for (const fila of filas) {
         const cols = fila.split(';');
         const playerId = parseInt(cols[0]);
         const depNombre = cols[5]?.trim().replace(/\r/g, '');
-
         if (!playerId || isNaN(playerId)) continue;
-
         const player = players.find(p => p.id === playerId);
         if (!player) continue;
-
         if (!depNombre) { sinDep++; continue; }
-
-        const dep = departamentos.find(d =>
-          d.nombre.toLowerCase() === depNombre.toLowerCase()
-        );
-
+        const dep = departamentos.find(d => d.nombre.toLowerCase() === depNombre.toLowerCase());
         if (!dep) { errores++; continue; }
-
         try {
           await api.put(`/players/${playerId}`, {
-            firstName: player.firstName,
-            lastName: player.lastName,
-            dni: player.dni,
-            categoryId: player.categoryId,
-            active: player.active,
-            club: player.club ?? cols[4]?.trim() ?? '',
-            departamentoId: dep.id,
+            firstName: player.firstName, lastName: player.lastName, dni: player.dni,
+            categoryId: player.categoryId, active: player.active,
+            club: player.club ?? cols[4]?.trim() ?? '', departamentoId: dep.id,
           });
           actualizados++;
-        } catch {
-          errores++;
-        }
+        } catch { errores++; }
       }
-
       await fetchPlayers();
       setImportMsg(`✅ ${actualizados} actualizados${sinDep > 0 ? `, ${sinDep} sin departamento` : ''}${errores > 0 ? `, ${errores} errores` : ''}`);
     } catch {
@@ -121,61 +87,31 @@ export default function PlayersPage() {
   const openAdd = () => {
     setEditPlayer(null);
     setForm({ firstName: '', lastName: '', dni: '', categoryId: categories[0]?.id?.toString() ?? '', club: '', departamentoId: '' });
-    setError('');
-    setShowModal(true);
+    setError(''); setShowModal(true);
   };
 
   const openEdit = (p: Player) => {
     setEditPlayer(p);
-    setForm({
-      firstName: p.firstName,
-      lastName: p.lastName,
-      dni: p.dni ?? '',
-      categoryId: p.categoryId.toString(),
-      club: p.club ?? '',
-      departamentoId: p.departamentoId?.toString() ?? ''
-    });
-    setError('');
-    setShowModal(true);
+    setForm({ firstName: p.firstName, lastName: p.lastName, dni: p.dni ?? '', categoryId: p.categoryId.toString(), club: p.club ?? '', departamentoId: p.departamentoId?.toString() ?? '' });
+    setError(''); setShowModal(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setError('');
+    e.preventDefault(); setSaving(true); setError('');
     try {
-      const payload = {
-        ...form,
-        categoryId: Number(form.categoryId),
-        dni: form.dni || undefined,
-        club: form.club || undefined,
-        departamentoId: form.departamentoId ? Number(form.departamentoId) : undefined
-      };
-      if (editPlayer) {
-        await api.put(`/players/${editPlayer.id}`, payload);
-      } else {
-        await api.post('/players', payload);
-      }
-      setShowModal(false);
-      fetchPlayers();
-    } catch {
-      setError('Error al guardar el jugador');
-    } finally {
-      setSaving(false);
-    }
+      const payload = { ...form, categoryId: Number(form.categoryId), dni: form.dni || undefined, club: form.club || undefined, departamentoId: form.departamentoId ? Number(form.departamentoId) : undefined };
+      if (editPlayer) { await api.put(`/players/${editPlayer.id}`, payload); }
+      else { await api.post('/players', payload); }
+      setShowModal(false); fetchPlayers();
+    } catch { setError('Error al guardar el jugador'); }
+    finally { setSaving(false); }
   };
 
   const handleToggleActive = async (p: Player) => {
     try {
-      await api.put(`/players/${p.id}`, {
-        firstName: p.firstName, lastName: p.lastName, dni: p.dni,
-        categoryId: p.categoryId, active: !p.active, club: p.club,
-        departamentoId: p.departamentoId
-      });
+      await api.put(`/players/${p.id}`, { firstName: p.firstName, lastName: p.lastName, dni: p.dni, categoryId: p.categoryId, active: !p.active, club: p.club, departamentoId: p.departamentoId });
       fetchPlayers();
-    } catch {
-      alert('Error al cambiar el estado del jugador');
-    }
+    } catch { alert('Error al cambiar el estado del jugador'); }
   };
 
   const catOrder: CategoryName[] = ['master', 'primera', 'segunda', 'tercera'];
@@ -183,17 +119,26 @@ export default function PlayersPage() {
   const filtered = players.filter(p => {
     const matchesCat = filterCat ? p.category?.name === filterCat : true;
     const matchesDep = filterDep ? p.departamentoId?.toString() === filterDep : true;
-    const matchesSearch = search
-      ? `${p.firstName} ${p.lastName}`.toLowerCase().includes(search.toLowerCase())
-      : true;
+    const matchesSearch = search ? `${p.firstName} ${p.lastName}`.toLowerCase().includes(search.toLowerCase()) : true;
     return matchesCat && matchesDep && matchesSearch;
   });
 
+  // Agrupar por categoría y ordenar por club dentro de cada grupo
   const grouped: Record<string, Player[]> = {};
   filtered.forEach(p => {
     const cat = p.category?.name ?? 'sin_categoria';
     if (!grouped[cat]) grouped[cat] = [];
     grouped[cat].push(p);
+  });
+
+  // Ordenar cada grupo por club (alfabético), luego por apellido dentro del mismo club
+  Object.keys(grouped).forEach(cat => {
+    grouped[cat].sort((a, b) => {
+      const clubA = (a.club ?? '').toUpperCase();
+      const clubB = (b.club ?? '').toUpperCase();
+      if (clubA !== clubB) return clubA.localeCompare(clubB);
+      return a.lastName.localeCompare(b.lastName);
+    });
   });
 
   if (loading) return <LoadingSpinner />;
@@ -205,23 +150,11 @@ export default function PlayersPage() {
         subtitle={`${players.length} jugadores registrados`}
         action={
           <div className="flex gap-2 flex-wrap">
-            <button className="btn-secondary text-xs py-1.5 px-3" onClick={handleDescargarPlantilla}>
-              ⬇ Plantilla CSV
-            </button>
-            <button
-              className="btn-secondary text-xs py-1.5 px-3"
-              disabled={importando}
-              onClick={() => fileInputRef.current?.click()}
-            >
+            <button className="btn-secondary text-xs py-1.5 px-3" onClick={handleDescargarPlantilla}>⬇ Plantilla CSV</button>
+            <button className="btn-secondary text-xs py-1.5 px-3" disabled={importando} onClick={() => fileInputRef.current?.click()}>
               {importando ? 'Importando...' : '⬆ Importar departamentos'}
             </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv"
-              className="hidden"
-              onChange={handleImportar}
-            />
+            <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleImportar} />
             <button className="btn-primary" onClick={openAdd}>+ Nuevo Jugador</button>
           </div>
         }
@@ -235,27 +168,15 @@ export default function PlayersPage() {
 
       <div className="p-6 space-y-5">
         <div className="flex flex-wrap gap-3 items-center">
-          <input
-            className="input w-48"
-            placeholder="Buscar jugador..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+          <input className="input w-48" placeholder="Buscar jugador..." value={search} onChange={e => setSearch(e.target.value)} />
           <select className="input w-48" value={filterDep} onChange={e => setFilterDep(e.target.value)}>
             <option value="">Todos los departamentos</option>
             {departamentos.map(d => <option key={d.id} value={d.id}>{d.nombre}</option>)}
           </select>
           <div className="flex gap-2 flex-wrap">
-            <button
-              className={`badge-status cursor-pointer ${!filterCat ? 'bg-orange/20 text-orange' : 'bg-silver-muted/20 text-silver-dark'}`}
-              onClick={() => setFilterCat('')}
-            >Todos</button>
+            <button className={`badge-status cursor-pointer ${!filterCat ? 'bg-orange/20 text-orange' : 'bg-silver-muted/20 text-silver-dark'}`} onClick={() => setFilterCat('')}>Todos</button>
             {catOrder.map(c => (
-              <button
-                key={c}
-                className={`badge-status cursor-pointer capitalize ${filterCat === c ? 'bg-orange/20 text-orange' : 'bg-silver-muted/20 text-silver-dark'}`}
-                onClick={() => setFilterCat(filterCat === c ? '' : c)}
-              >{c}</button>
+              <button key={c} className={`badge-status cursor-pointer capitalize ${filterCat === c ? 'bg-orange/20 text-orange' : 'bg-silver-muted/20 text-silver-dark'}`} onClick={() => setFilterCat(filterCat === c ? '' : c)}>{c}</button>
             ))}
           </div>
         </div>
@@ -292,12 +213,11 @@ export default function PlayersPage() {
                     {grouped[cat].map(p => (
                       <tr key={p.id} className="table-row">
                         <td className="px-4 py-3 font-medium text-silver-light">{p.lastName}, {p.firstName}</td>
-                        <td className="px-4 py-3 text-silver-dark text-xs">{p.club ?? '-'}</td>
+                        <td className="px-4 py-3 text-silver-dark text-xs font-semibold">{p.club ?? '-'}</td>
                         <td className="px-4 py-3 text-silver-dark text-xs">
                           {p.departamento?.nombre
                             ? <span className="badge-status bg-blue-900/20 text-blue-400 text-xs">{p.departamento.nombre}</span>
-                            : <span className="text-chalk/20">—</span>
-                          }
+                            : <span className="text-chalk/20">—</span>}
                         </td>
                         <td className="px-4 py-3">{p.category && <CategoryBadge name={p.category.name} />}</td>
                         <td className="px-4 py-3 text-silver-dark font-mono hidden sm:table-cell">{p.dni ?? '-'}</td>
@@ -309,9 +229,7 @@ export default function PlayersPage() {
                         <td className="px-4 py-3 text-right hidden sm:table-cell">
                           <div className="flex gap-2 justify-end">
                             <button
-                              className={`py-1 px-3 text-xs rounded-lg border transition-all ${
-                                p.active ? 'border-red-700/40 text-red-400 hover:bg-red-900/20' : 'border-green-700/40 text-green-400 hover:bg-green-900/20'
-                              }`}
+                              className={`py-1 px-3 text-xs rounded-lg border transition-all ${p.active ? 'border-red-700/40 text-red-400 hover:bg-red-900/20' : 'border-green-700/40 text-green-400 hover:bg-green-900/20'}`}
                               onClick={() => handleToggleActive(p)}
                             >
                               {p.active ? 'Desactivar' : 'Activar'}
