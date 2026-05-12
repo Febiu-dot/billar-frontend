@@ -31,7 +31,7 @@ const CAT_LABEL: Record<string, string> = {
 };
 
 // circuitId del primer circuito — ajustar si cambia
-const CIRCUIT_ID_PRIMERO = 9;
+const CIRCUIT_ID_PRIMERO = 8;
 
 export default function RankingFinalPage() {
   const { user } = useAuth();
