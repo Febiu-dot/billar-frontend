@@ -36,6 +36,7 @@ export default function Layout() {
     { a: '/admin/cruces', etiqueta: 'Cruces', icono: 'c' },
     { a: '/admin/faseconfig', etiqueta: 'Programación', icono: 'g' },
     { a: '/admin/ranking', etiqueta: 'Ranking', icono: 'k' },
+    { a: '/admin/ranking-final', etiqueta: 'Ranking Final', icono: '🏆' },
     { a: '/admin/reportes', etiqueta: 'Reportes', icono: '📋' },
     { a: '/admin/usuarios', etiqueta: 'Jueces', icono: 'u' },
   ];
@@ -64,6 +65,7 @@ export default function Layout() {
           <div className="pt-3 border-t border-gray-700 mt-3">
             <NavItem a="/publico" etiqueta="Vista Publica" icono="p" />
             <NavItem a="/ranking" etiqueta="Ranking Público" icono="🏆" />
+            <NavItem a="/ranking-final" etiqueta="Ranking Final" icono="🥇" />
             <NavItem a="/reportes" etiqueta="Reportes Públicos" icono="📰" />
           </div>
         )}
