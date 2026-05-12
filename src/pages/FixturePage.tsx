@@ -58,10 +58,7 @@ export default function FixturePage() {
   const [previewTab, setPreviewTab] = useState<'clasificatorio' | 'segunda'>('clasificatorio');
 
   const fetchTournaments = () =>
-    api.get('/tournaments').then(r => {
-      setTournaments(r.data);
-      setLoading(false);
-    });
+    api.get('/tournaments').then(r => { setTournaments(r.data); setLoading(false); });
 
   useEffect(() => {
     api.get('/departamentos').then(r => setDepartamentos(r.data));
@@ -89,50 +86,31 @@ export default function FixturePage() {
   const openAddTournament = () => {
     setEditTournament(null);
     setTForm({ name: '', year: new Date().getFullYear().toString(), description: '', active: true, departamentoId: '' });
-    setTError('');
-    setTournamentModal(true);
+    setTError(''); setTournamentModal(true);
   };
 
   const openEditTournament = (t: Tournament) => {
     setEditTournament(t);
     setTForm({ name: t.name, year: t.year.toString(), description: t.description ?? '', active: t.active, departamentoId: t.departamentoId?.toString() ?? '' });
-    setTError('');
-    setTournamentModal(true);
+    setTError(''); setTournamentModal(true);
   };
 
   const handleTournamentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setTSaving(true);
-    setTError('');
+    e.preventDefault(); setTSaving(true); setTError('');
     try {
       const payload = { ...tForm, year: Number(tForm.year), departamentoId: tForm.departamentoId ? Number(tForm.departamentoId) : undefined };
-      if (editTournament) {
-        await api.put(`/tournaments/${editTournament.id}`, payload);
-      } else {
-        const res = await api.post('/tournaments', payload);
-        loadTournament(res.data.id);
-      }
-      setTournamentModal(false);
-      fetchTournaments();
-      if (editTournament && selectedTournament?.id === editTournament.id) {
-        loadTournament(editTournament.id);
-      }
-    } catch {
-      setTError('Error al guardar el torneo');
-    } finally {
-      setTSaving(false);
-    }
+      if (editTournament) { await api.put(`/tournaments/${editTournament.id}`, payload); }
+      else { const res = await api.post('/tournaments', payload); loadTournament(res.data.id); }
+      setTournamentModal(false); fetchTournaments();
+      if (editTournament && selectedTournament?.id === editTournament.id) loadTournament(editTournament.id);
+    } catch { setTError('Error al guardar el torneo'); }
+    finally { setTSaving(false); }
   };
 
   const handleDeleteTournament = async (t: Tournament) => {
     if (!confirm(`¿Eliminar el torneo "${t.name}"?`)) return;
-    try {
-      await api.delete(`/tournaments/${t.id}`);
-      setSelectedTournament(null);
-      fetchTournaments();
-    } catch (err: any) {
-      alert(err?.response?.data?.error ?? 'Error al eliminar el torneo');
-    }
+    try { await api.delete(`/tournaments/${t.id}`); setSelectedTournament(null); fetchTournaments(); }
+    catch (err: any) { alert(err?.response?.data?.error ?? 'Error al eliminar el torneo'); }
   };
 
   const openAddCircuit = (t: Tournament) => {
@@ -143,34 +121,18 @@ export default function FixturePage() {
   };
 
   const handleCircuitSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!circuitModal) return;
-    setCSaving(true);
-    setCError('');
+    e.preventDefault(); if (!circuitModal) return; setCSaving(true); setCError('');
     try {
-      await api.post(`/tournaments/${circuitModal.id}/circuits`, {
-        ...cForm,
-        order: Number(cForm.order),
-        startDate: cForm.startDate || undefined,
-        endDate: cForm.endDate || undefined,
-      });
-      setCircuitModal(null);
-      refreshSelected();
-    } catch {
-      setCError('Error al crear el circuito');
-    } finally {
-      setCSaving(false);
-    }
+      await api.post(`/tournaments/${circuitModal.id}/circuits`, { ...cForm, order: Number(cForm.order), startDate: cForm.startDate || undefined, endDate: cForm.endDate || undefined });
+      setCircuitModal(null); refreshSelected();
+    } catch { setCError('Error al crear el circuito'); }
+    finally { setCSaving(false); }
   };
 
   const handleDeleteCircuit = async (circuit: Circuit) => {
     if (!confirm(`¿Eliminar el circuito "${circuit.name}"?`)) return;
-    try {
-      await api.delete(`/tournaments/circuits/${circuit.id}`);
-      refreshSelected();
-    } catch (err: any) {
-      alert(err?.response?.data?.error ?? 'Error al eliminar el circuito');
-    }
+    try { await api.delete(`/tournaments/circuits/${circuit.id}`); refreshSelected(); }
+    catch (err: any) { alert(err?.response?.data?.error ?? 'Error al eliminar el circuito'); }
   };
 
   const openAddPhase = (circuit: Circuit) => {
@@ -181,47 +143,25 @@ export default function FixturePage() {
   };
 
   const handlePhaseSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!phaseModal) return;
-    setPSaving(true);
-    setPError('');
+    e.preventDefault(); if (!phaseModal) return; setPSaving(true); setPError('');
     try {
-      await api.post(`/tournaments/circuits/${phaseModal.id}/phases`, {
-        ...pForm,
-        order: Number(pForm.order),
-      });
-      setPhaseModal(null);
-      refreshSelected();
-    } catch {
-      setPError('Error al crear la fase');
-    } finally {
-      setPSaving(false);
-    }
+      await api.post(`/tournaments/circuits/${phaseModal.id}/phases`, { ...pForm, order: Number(pForm.order) });
+      setPhaseModal(null); refreshSelected();
+    } catch { setPError('Error al crear la fase'); }
+    finally { setPSaving(false); }
   };
 
   const handleDeletePhase = async (phase: Phase) => {
     if (!confirm(`¿Eliminar la fase "${phase.name}"?`)) return;
-    try {
-      await api.delete(`/tournaments/phases/${phase.id}`);
-      refreshSelected();
-    } catch (err: any) {
-      alert(err?.response?.data?.error ?? 'Error al eliminar la fase');
-    }
+    try { await api.delete(`/tournaments/phases/${phase.id}`); refreshSelected(); }
+    catch (err: any) { alert(err?.response?.data?.error ?? 'Error al eliminar la fase'); }
   };
 
   const openInscripcion = async (circuit: Circuit) => {
-    setInscripcionModal(circuit);
-    setInscripcionSearch('');
-    setSoloDepTorneo(true);
-    setInscripcionLoading(true);
-    try {
-      const res = await api.get('/players');
-      setAllPlayers(res.data);
-    } catch {
-      setAllPlayers([]);
-    } finally {
-      setInscripcionLoading(false);
-    }
+    setInscripcionModal(circuit); setInscripcionSearch(''); setSoloDepTorneo(true); setInscripcionLoading(true);
+    try { const res = await api.get('/players'); setAllPlayers(res.data); }
+    catch { setAllPlayers([]); }
+    finally { setInscripcionLoading(false); }
   };
 
   const handleInscribir = async (circuit: Circuit, playerId: number) => {
@@ -234,28 +174,21 @@ export default function FixturePage() {
         const updatedCircuit = res.data.circuits?.find((c: Circuit) => c.id === circuit.id);
         if (updatedCircuit) setInscripcionModal(updatedCircuit);
       }
-    } catch (err: any) {
-      alert(err?.response?.data?.error ?? 'Error al inscribir jugador');
-    } finally {
-      setInscripcionSaving(null);
-    }
+    } catch (err: any) { alert(err?.response?.data?.error ?? 'Error al inscribir jugador'); }
+    finally { setInscripcionSaving(null); }
   };
 
   const handleInscribirTodos = async (circuit: Circuit, jugadores: Player[], label: string) => {
     setInscribiendoClub(label);
     try {
-      for (const p of jugadores) {
-        try { await api.post(`/circuits/${circuit.id}/players`, { playerId: p.id }); } catch { }
-      }
+      for (const p of jugadores) { try { await api.post(`/circuits/${circuit.id}/players`, { playerId: p.id }); } catch { } }
       if (selectedTournament) {
         const res = await api.get(`/tournaments/${selectedTournament.id}`);
         setSelectedTournament(res.data);
         const updatedCircuit = res.data.circuits?.find((c: Circuit) => c.id === circuit.id);
         if (updatedCircuit) setInscripcionModal(updatedCircuit);
       }
-    } finally {
-      setInscribiendoClub(null);
-    }
+    } finally { setInscribiendoClub(null); }
   };
 
   const handleDesinscribir = async (circuit: Circuit, playerId: number) => {
@@ -268,11 +201,8 @@ export default function FixturePage() {
         const updatedCircuit = res.data.circuits?.find((c: Circuit) => c.id === circuit.id);
         if (updatedCircuit) setInscripcionModal(updatedCircuit);
       }
-    } catch (err: any) {
-      alert(err?.response?.data?.error ?? 'Error al desinscribir jugador');
-    } finally {
-      setInscripcionSaving(null);
-    }
+    } catch (err: any) { alert(err?.response?.data?.error ?? 'Error al desinscribir jugador'); }
+    finally { setInscripcionSaving(null); }
   };
 
   const handleAbrirPreview = async (circuit: Circuit) => {
@@ -281,52 +211,37 @@ export default function FixturePage() {
       const res = await api.get(`/circuits/${circuit.id}/preview`);
       setPreviewTab('clasificatorio');
       setPreviewModal({ circuit, data: res.data });
-    } catch (err: any) {
-      alert(err?.response?.data?.error ?? 'Error al cargar la vista previa');
-    } finally {
-      setPreviewLoading(null);
-    }
+    } catch (err: any) { alert(err?.response?.data?.error ?? 'Error al cargar la vista previa'); }
+    finally { setPreviewLoading(null); }
   };
 
   const handleConfirmarGenerar = async () => {
     if (!previewModal) return;
     const circuit = previewModal.circuit;
-    setPreviewModal(null);
-    setGenerando(circuit.id);
+    setPreviewModal(null); setGenerando(circuit.id);
     try {
       const res = await api.post(`/circuits/${circuit.id}/generate`);
       const d = res.data.detalle;
       alert(`✅ Partidos generados correctamente\n\nClasificatorio: ${d.clasificatorio}\nSegunda: ${d.segunda}\nPrimera: ${d.primera}\nMáster: ${d.master}\n\nTotal: ${res.data.total}`);
       refreshSelected();
-    } catch (err: any) {
-      alert(err?.response?.data?.error ?? 'Error al generar partidos');
-    } finally {
-      setGenerando(null);
-    }
+    } catch (err: any) { alert(err?.response?.data?.error ?? 'Error al generar partidos'); }
+    finally { setGenerando(null); }
   };
 
   const getMatchesByRound = (matches: Match[]) => {
     const rounds: Record<number, Match[]> = {};
-    matches.forEach(m => {
-      if (!rounds[m.round]) rounds[m.round] = [];
-      rounds[m.round].push(m);
-    });
+    matches.forEach(m => { if (!rounds[m.round]) rounds[m.round] = []; rounds[m.round].push(m); });
     return rounds;
   };
 
   const getRoundsSorted = (matchesByRound: Record<number, Match[]>) => {
-    const roundsConFecha = Object.keys(matchesByRound).map(Number).map(round => {
-      const partido = matchesByRound[round][0];
-      return { round, scheduledAt: (partido as any).scheduledAt };
-    });
-    return roundsConFecha
-      .sort((a, b) => {
-        if (!a.scheduledAt && !b.scheduledAt) return a.round - b.round;
-        if (!a.scheduledAt) return 1;
-        if (!b.scheduledAt) return -1;
-        return new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime();
-      })
-      .map(r => r.round);
+    return Object.keys(matchesByRound).map(Number).map(round => ({
+      round, scheduledAt: (matchesByRound[round][0] as any).scheduledAt
+    })).sort((a, b) => {
+      if (!a.scheduledAt && !b.scheduledAt) return a.round - b.round;
+      if (!a.scheduledAt) return 1; if (!b.scheduledAt) return -1;
+      return new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime();
+    }).map(r => r.round);
   };
 
   if (loading) return <LoadingSpinner />;
@@ -556,16 +471,8 @@ export default function FixturePage() {
                 {selectedTournament?.departamentoId && (
                   <>
                     <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="soloDepTorneo"
-                        checked={soloDepTorneo}
-                        onChange={e => setSoloDepTorneo(e.target.checked)}
-                        className="w-4 h-4 accent-gold"
-                      />
-                      <label htmlFor="soloDepTorneo" className="text-chalk/60 text-xs cursor-pointer">
-                        Solo {selectedTournament.departamento?.nombre}
-                      </label>
+                      <input type="checkbox" id="soloDepTorneo" checked={soloDepTorneo} onChange={e => setSoloDepTorneo(e.target.checked)} className="w-4 h-4 accent-gold" />
+                      <label htmlFor="soloDepTorneo" className="text-chalk/60 text-xs cursor-pointer">Solo {selectedTournament.departamento?.nombre}</label>
                     </div>
                     <button
                       className="py-1 px-3 text-xs rounded border border-gold/40 text-gold hover:bg-gold/10 transition-all disabled:opacity-40"
@@ -597,31 +504,40 @@ export default function FixturePage() {
                     <p className="text-chalk/20 text-sm pl-1">Sin jugadores inscriptos aún.</p>
                   ) : (
                     <div className="space-y-1">
-                      {inscripcionModal.players?.filter(cp => {
-                        const nombre = `${cp.player.firstName} ${cp.player.lastName} ${cp.player.club ?? ''}`.toLowerCase();
-                        return nombre.includes(inscripcionSearch.toLowerCase());
-                      }).map(cp => (
-                        <div key={cp.player.id} className="flex items-center justify-between bg-blue-900/20 border border-blue-700/30 rounded-lg px-3 py-2">
-                          <div>
-                            <span className="text-chalk/90 text-sm font-medium">{cp.player.lastName}, {cp.player.firstName}</span>
-                            <span className="text-chalk/40 text-xs ml-2">{cp.player.club ?? ''}</span>
-                            <span className="text-blue-400/60 text-xs ml-2 capitalize">{cp.player.category?.name}</span>
-                            {(cp.player as any).departamento && (
-                              <span className="text-gold/40 text-xs ml-2">{(cp.player as any).departamento.nombre}</span>
-                            )}
+                      {inscripcionModal.players
+                        ?.filter(cp => {
+                          const nombre = `${cp.player.firstName} ${cp.player.lastName} ${cp.player.club ?? ''}`.toLowerCase();
+                          return nombre.includes(inscripcionSearch.toLowerCase());
+                        })
+                        .sort((a, b) => {
+                          const clubA = (a.player.club ?? '').toUpperCase();
+                          const clubB = (b.player.club ?? '').toUpperCase();
+                          if (clubA !== clubB) return clubA.localeCompare(clubB);
+                          return a.player.lastName.localeCompare(b.player.lastName);
+                        })
+                        .map(cp => (
+                          <div key={cp.player.id} className="flex items-center justify-between bg-blue-900/20 border border-blue-700/30 rounded-lg px-3 py-2">
+                            <div>
+                              <span className="text-chalk/90 text-sm font-medium">{cp.player.lastName}, {cp.player.firstName}</span>
+                              <span className="text-gold/60 text-xs font-semibold ml-2">{cp.player.club ?? ''}</span>
+                              <span className="text-blue-400/60 text-xs ml-2 capitalize">{cp.player.category?.name}</span>
+                              {(cp.player as any).departamento && (
+                                <span className="text-gold/40 text-xs ml-2">{(cp.player as any).departamento.nombre}</span>
+                              )}
+                            </div>
+                            <button
+                              className="py-0.5 px-2 text-xs rounded border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all disabled:opacity-40"
+                              disabled={inscripcionSaving === cp.player.id}
+                              onClick={() => handleDesinscribir(inscripcionModal, cp.player.id)}
+                            >
+                              {inscripcionSaving === cp.player.id ? '...' : 'Quitar'}
+                            </button>
                           </div>
-                          <button
-                            className="py-0.5 px-2 text-xs rounded border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all disabled:opacity-40"
-                            disabled={inscripcionSaving === cp.player.id}
-                            onClick={() => handleDesinscribir(inscripcionModal, cp.player.id)}
-                          >
-                            {inscripcionSaving === cp.player.id ? '...' : 'Quitar'}
-                          </button>
-                        </div>
-                      ))}
+                        ))}
                     </div>
                   )}
                 </div>
+
                 <div>
                   <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">Disponibles para inscribir</p>
                   {(() => {
@@ -631,21 +547,13 @@ export default function FixturePage() {
                       if ((p as any).dni === 'FEBIU000') return false;
                       const nombre = `${p.firstName} ${p.lastName} ${p.club ?? ''}`.toLowerCase();
                       const matchesSearch = nombre.includes(inscripcionSearch.toLowerCase());
-                      const matchesDep = soloDepTorneo && selectedTournament?.departamentoId
-                        ? p.departamentoId === selectedTournament.departamentoId
-                        : true;
+                      const matchesDep = soloDepTorneo && selectedTournament?.departamentoId ? p.departamentoId === selectedTournament.departamentoId : true;
                       return matchesSearch && matchesDep;
                     });
                     if (disponibles.length === 0) return <p className="text-chalk/20 text-sm pl-1">No hay jugadores disponibles.</p>;
                     const porClub: Record<string, typeof disponibles> = {};
-                    disponibles.forEach(p => {
-                      const club = p.club ?? 'Sin club';
-                      if (!porClub[club]) porClub[club] = [];
-                      porClub[club].push(p);
-                    });
-                    Object.values(porClub).forEach(jugadores =>
-                      jugadores.sort((a, b) => (CATEGORY_ORDER[(a as any).category?.name] ?? 9) - (CATEGORY_ORDER[(b as any).category?.name] ?? 9))
-                    );
+                    disponibles.forEach(p => { const club = p.club ?? 'Sin club'; if (!porClub[club]) porClub[club] = []; porClub[club].push(p); });
+                    Object.values(porClub).forEach(jugadores => jugadores.sort((a, b) => (CATEGORY_ORDER[(a as any).category?.name] ?? 9) - (CATEGORY_ORDER[(b as any).category?.name] ?? 9)));
                     const clubsOrdenados = Object.keys(porClub).sort();
                     return (
                       <div className="space-y-4">
@@ -669,12 +577,9 @@ export default function FixturePage() {
                                     <span className={`text-xs ml-2 capitalize font-mono ${
                                       (p as any).category?.name === 'master' ? 'text-gold/60' :
                                       (p as any).category?.name === 'primera' ? 'text-blue-400/60' :
-                                      (p as any).category?.name === 'segunda' ? 'text-green-400/60' :
-                                      'text-chalk/30'
+                                      (p as any).category?.name === 'segunda' ? 'text-green-400/60' : 'text-chalk/30'
                                     }`}>{(p as any).category?.name}</span>
-                                    {(p as any).departamento && (
-                                      <span className="text-gold/30 text-xs ml-2">{(p as any).departamento.nombre}</span>
-                                    )}
+                                    {(p as any).departamento && <span className="text-gold/30 text-xs ml-2">{(p as any).departamento.nombre}</span>}
                                   </div>
                                   <button
                                     className="py-0.5 px-2 text-xs rounded border border-green-700/40 text-green-400 hover:bg-green-900/20 transition-all disabled:opacity-40"
@@ -715,22 +620,14 @@ export default function FixturePage() {
                 </div>
               ))}
             </div>
-
             <div className="flex gap-2">
-              <button
-                className={`py-1 px-3 text-xs rounded-lg border transition-all ${previewTab === 'clasificatorio' ? 'border-gold/40 text-gold bg-gold/10' : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'}`}
-                onClick={() => setPreviewTab('clasificatorio')}
-              >
+              <button className={`py-1 px-3 text-xs rounded-lg border transition-all ${previewTab === 'clasificatorio' ? 'border-gold/40 text-gold bg-gold/10' : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'}`} onClick={() => setPreviewTab('clasificatorio')}>
                 Series ({previewModal.data.clasificatorio.totalSeries})
               </button>
-              <button
-                className={`py-1 px-3 text-xs rounded-lg border transition-all ${previewTab === 'segunda' ? 'border-gold/40 text-gold bg-gold/10' : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'}`}
-                onClick={() => setPreviewTab('segunda')}
-              >
+              <button className={`py-1 px-3 text-xs rounded-lg border transition-all ${previewTab === 'segunda' ? 'border-gold/40 text-gold bg-gold/10' : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'}`} onClick={() => setPreviewTab('segunda')}>
                 Cruces reducción ({previewModal.data.clasificatorio.crucesReduccion?.length ?? 0})
               </button>
             </div>
-
             <div className="max-h-[50vh] overflow-y-auto space-y-3 pr-1">
               {previewTab === 'clasificatorio' ? (
                 previewModal.data.clasificatorio.series.map(serie => (
@@ -758,7 +655,6 @@ export default function FixturePage() {
                 ))
               )}
             </div>
-
             <div className="flex gap-3 pt-2">
               <button className="btn-primary flex-1" onClick={handleConfirmarGenerar}>⚡ Confirmar y generar</button>
               <button className="btn-secondary flex-1" onClick={() => setPreviewModal(null)}>Cancelar</button>
