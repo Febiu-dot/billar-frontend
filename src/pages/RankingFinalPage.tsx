@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 interface RankingEntry {
   posicion: number;
@@ -29,17 +30,37 @@ const CAT_LABEL: Record<string, string> = {
   tercera: 'Tercera',
 };
 
+// circuitId del primer circuito — ajustar si cambia
+const CIRCUIT_ID_PRIMERO = 9;
+
 export default function RankingFinalPage() {
+  const { user } = useAuth();
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState<string>('general');
   const [busqueda, setBusqueda] = useState('');
+  const [guardando, setGuardando] = useState(false);
+  const [guardadoMsg, setGuardadoMsg] = useState('');
 
   useEffect(() => {
     api.get('/rankings/final')
       .then(r => { setRanking(r.data); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
+
+  const handleGuardar = async () => {
+    if (!confirm('¿Guardar este ranking como base para el Segundo Circuito?')) return;
+    setGuardando(true);
+    setGuardadoMsg('');
+    try {
+      const res = await api.post(`/rankings/guardar-final/${CIRCUIT_ID_PRIMERO}`);
+      setGuardadoMsg(`✅ ${res.data.message}`);
+    } catch (e: any) {
+      setGuardadoMsg(`❌ ${e?.response?.data?.error ?? 'Error al guardar'}`);
+    } finally {
+      setGuardando(false);
+    }
+  };
 
   const filtrado = ranking
     .filter(e => filtro === 'general' || e.categoria === filtro)
@@ -67,11 +88,30 @@ export default function RankingFinalPage() {
     <div className="min-h-screen bg-carbon-100">
       <div className="max-w-5xl mx-auto px-4 py-8">
 
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <h1 className="font-display text-5xl text-gold mb-1">RANKING PRIMER CIRCUITO</h1>
           <p className="text-chalk/50 text-sm">Departamental Montevideo — FEBIU 2026</p>
           <p className="text-chalk/30 text-xs mt-1">Ranking base para el Segundo Circuito</p>
         </div>
+
+        {/* Botón guardar — solo admin */}
+        {user?.role === 'admin' && (
+          <div className="flex flex-col items-center gap-2 mb-6">
+            <button
+              className="btn-primary px-6"
+              disabled={guardando}
+              onClick={handleGuardar}
+            >
+              {guardando ? 'Guardando...' : '💾 Usar como base para el Segundo Circuito'}
+            </button>
+            {guardadoMsg && (
+              <span className={`text-sm ${guardadoMsg.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>
+                {guardadoMsg}
+              </span>
+            )}
+            <p className="text-chalk/30 text-xs">Presioná este botón antes de generar los partidos del Segundo Circuito</p>
+          </div>
+        )}
 
         <div className="flex gap-2 flex-wrap justify-center mb-4">
           {(['general', 'master', 'primera', 'segunda', 'tercera'] as const).map(cat => (
@@ -80,9 +120,7 @@ export default function RankingFinalPage() {
               onClick={() => setFiltro(cat)}
               className={`px-4 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                 filtro === cat
-                  ? cat === 'general'
-                    ? 'bg-gold/20 text-gold border-gold/40'
-                    : CAT_COLORS[cat]
+                  ? cat === 'general' ? 'bg-gold/20 text-gold border-gold/40' : CAT_COLORS[cat]
                   : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'
               }`}
             >
@@ -131,18 +169,12 @@ export default function RankingFinalPage() {
                       entry.posicion <= 8 ? 'text-yellow-400' :
                       entry.posicion <= 32 ? 'text-blue-400' :
                       entry.posicion <= 64 ? 'text-green-400' : 'text-chalk/40'
-                    }`}>
-                      {entry.posicion}
-                    </span>
+                    }`}>{entry.posicion}</span>
                   </td>
                   <td className="px-4 py-2.5">
-                    <span className="text-chalk font-semibold">
-                      {entry.lastName}, {entry.firstName}
-                    </span>
+                    <span className="text-chalk font-semibold">{entry.lastName}, {entry.firstName}</span>
                   </td>
-                  <td className="px-4 py-2.5 hidden sm:table-cell text-chalk/50 text-xs">
-                    {entry.club || '—'}
-                  </td>
+                  <td className="px-4 py-2.5 hidden sm:table-cell text-chalk/50 text-xs">{entry.club || '—'}</td>
                   <td className="px-3 py-2.5 hidden md:table-cell text-center">
                     <span className={`text-xs px-2 py-0.5 rounded ${CAT_COLORS[entry.categoria] ?? ''}`}>
                       {CAT_LABEL[entry.categoria] ?? entry.categoria}
@@ -151,15 +183,9 @@ export default function RankingFinalPage() {
                   <td className="px-3 py-2.5 text-center">
                     <span className="text-gold font-bold font-mono">{entry.puntos}</span>
                   </td>
-                  <td className="px-3 py-2.5 text-center hidden sm:table-cell text-chalk/70 font-mono">
-                    {entry.setsGanados}
-                  </td>
-                  <td className="px-3 py-2.5 text-center hidden md:table-cell text-chalk/70 font-mono">
-                    {entry.tantos}
-                  </td>
-                  <td className="px-3 py-2.5 text-center hidden lg:table-cell text-chalk/50 font-mono text-xs">
-                    {entry.promedio.toFixed(2)}
-                  </td>
+                  <td className="px-3 py-2.5 text-center hidden sm:table-cell text-chalk/70 font-mono">{entry.setsGanados}</td>
+                  <td className="px-3 py-2.5 text-center hidden md:table-cell text-chalk/70 font-mono">{entry.tantos}</td>
+                  <td className="px-3 py-2.5 text-center hidden lg:table-cell text-chalk/50 font-mono text-xs">{entry.promedio.toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
