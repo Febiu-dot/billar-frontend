@@ -26,19 +26,20 @@ export default function Layout() {
   const handleLogout = () => { logout(); navigate('/login'); };
 
   const adminLinks = [
-    { a: '/admin', etiqueta: 'Panel Principal', icono: 'o' },
-    { a: '/admin/partidos', etiqueta: 'Partidos', icono: 'x' },
-    { a: '/admin/sedes', etiqueta: 'Sedes', icono: 's' },
-    { a: '/admin/mesas', etiqueta: 'Mesas', icono: 'm' },
-    { a: '/admin/jugadores', etiqueta: 'Jugadores', icono: 'j' },
-    { a: '/admin/fixture', etiqueta: 'Fixture', icono: 'f' },
-    { a: '/admin/series', etiqueta: 'Series', icono: 'r' },
-    { a: '/admin/cruces', etiqueta: 'Cruces', icono: 'c' },
-    { a: '/admin/faseconfig', etiqueta: 'Programación', icono: 'g' },
-    { a: '/admin/ranking', etiqueta: 'Ranking', icono: 'k' },
-    { a: '/admin/ranking-final', etiqueta: 'Ranking Final', icono: '🏆' },
-    { a: '/admin/reportes', etiqueta: 'Reportes', icono: '📋' },
-    { a: '/admin/usuarios', etiqueta: 'Jueces', icono: 'u' },
+    { a: '/admin',              etiqueta: 'Panel Principal',  icono: 'o' },
+    { a: '/admin/partidos',     etiqueta: 'Partidos',         icono: 'x' },
+    { a: '/admin/sedes',        etiqueta: 'Sedes',            icono: 's' },
+    { a: '/admin/mesas',        etiqueta: 'Mesas',            icono: 'm' },
+    { a: '/admin/jugadores',    etiqueta: 'Jugadores',        icono: 'j' },
+    { a: '/admin/fixture',      etiqueta: 'Fixture',          icono: 'f' },
+    { a: '/admin/series',       etiqueta: 'Series',           icono: 'r' },
+    { a: '/admin/cruces',       etiqueta: 'Cruces',           icono: 'c' },
+    { a: '/admin/faseconfig',   etiqueta: 'Programación',     icono: 'g' },
+    { a: '/admin/ranking',      etiqueta: 'Ranking',          icono: 'k' },
+    { a: '/admin/ranking-final',etiqueta: 'Ranking Final',    icono: '🏆' },
+    { a: '/admin/reportes',     etiqueta: 'Reportes',         icono: '📋' },
+    { a: '/admin/publicaciones',etiqueta: 'Publicaciones',    icono: '📢' },
+    { a: '/admin/usuarios',     etiqueta: 'Jueces',           icono: 'u' },
   ];
 
   const juezLinks = [
@@ -63,10 +64,10 @@ export default function Layout() {
         {links.map(l => <NavItem key={l.a} {...l} />)}
         {!isJuez && (
           <div className="pt-3 border-t border-gray-700 mt-3">
-            <NavItem a="/publico" etiqueta="Vista Publica" icono="p" />
-            <NavItem a="/ranking" etiqueta="Ranking Público" icono="🏆" />
-            <NavItem a="/ranking-final" etiqueta="Ranking Final" icono="🥇" />
-            <NavItem a="/reportes" etiqueta="Reportes Públicos" icono="📰" />
+            <NavItem a="/publico"      etiqueta="Vista Publica"     icono="p" />
+            <NavItem a="/ranking"      etiqueta="Ranking Público"   icono="🏆" />
+            <NavItem a="/ranking-final"etiqueta="Ranking Final"     icono="🥇" />
+            <NavItem a="/reportes"     etiqueta="Reportes Públicos" icono="📰" />
           </div>
         )}
       </nav>
