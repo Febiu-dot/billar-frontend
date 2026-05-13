@@ -17,6 +17,7 @@ import RankingPage from './pages/RankingPage';
 import RankingFinalPage from './pages/RankingFinalPage';
 import ReportesPage from './pages/ReportesPage';
 import AdminReportesPage from './pages/AdminReportesPage';
+import AdminPublicacionesPage from './pages/AdminPublicacionesPage';
 import Layout from './components/layout/Layout';
 
 function ProtectedRoute({ children, roles }: { children: React.ReactNode; roles?: string[] }) {
@@ -58,6 +59,7 @@ function AppRoutes() {
         <Route path="ranking" element={<RankingPage />} />
         <Route path="ranking-final" element={<RankingFinalPage />} />
         <Route path="reportes" element={<AdminReportesPage />} />
+        <Route path="publicaciones" element={<AdminPublicacionesPage />} />
       </Route>
       <Route path="/juez" element={<ProtectedRoute roles={['juez_sede', 'admin']}><Layout /></ProtectedRoute>}>
         <Route index element={<JudgePage />} />
