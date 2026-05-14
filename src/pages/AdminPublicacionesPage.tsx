@@ -21,11 +21,11 @@ const TEMAS: Record<string, { header: string; accent: string; light: string; bad
   ranking:        { header: '#7c4d00', accent: '#b8860b', light: '#fffbf0', badge: '#7c4d00' },
 };
 
-const SECCION_COLORES: Record<string, { bg: string; badge: string }> = {
-  'MÁSTER':  { bg: '#7c4d00', badge: '#f59e0b' },
-  'PRIMERA': { bg: '#014f86', badge: '#3b82f6' },
-  'SEGUNDA': { bg: '#166534', badge: '#22c55e' },
-  'TERCERA': { bg: '#374151', badge: '#9ca3af' },
+const SECCION_COLORES: Record<string, { bg: string; badge: string; light: string }> = {
+  'MÁSTER':  { bg: '#4a1070', badge: '#7b1fa2', light: '#f5eef8' },
+  'PRIMERA': { bg: '#014f86', badge: '#0277bd', light: '#e8f4fd' },
+  'SEGUNDA': { bg: '#b83c00', badge: '#e64a19', light: '#fff4f0' },
+  'TERCERA': { bg: '#1a5c2a', badge: '#2d8a3e', light: '#edf7ef' },
 };
 
 const FASES = [
