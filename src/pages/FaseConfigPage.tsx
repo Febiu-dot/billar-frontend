@@ -4,7 +4,7 @@ import { LoadingSpinner, EmptyState, Modal } from '../components/ui';
 
 interface Venue { id: number; name: string; departamentoId?: number; tables?: { id: number; number: number }[]; }
 interface Phase { id: number; name: string; type: string; order: number; }
-interface Circuit { id: number; name: string; phases?: Phase[]; }
+interface Circuit { id: number; name: string; order?: number; phases?: Phase[]; }
 interface Tournament { id: number; name: string; year: number; departamentoId?: number; circuits?: Circuit[]; }
 
 interface HorarioMesa { mesaId: number; horarios: string[]; }
@@ -44,8 +44,8 @@ export default function FaseConfigPage() {
   const [saved, setSaved] = useState(false);
   const [fechaModal, setFechaModal] = useState(false);
   const [nuevaFecha, setNuevaFecha] = useState('');
+  const [soloActivo, setSoloActivo] = useState(true);
 
-  // Asignación automática
   const [asignarModal, setAsignarModal] = useState(false);
   const [horaP1, setHoraP1] = useState('19:30');
   const [horaP2, setHoraP2] = useState('20:15');
@@ -61,11 +61,12 @@ export default function FaseConfigPage() {
       if (tRes.data.length > 0) {
         const t = tRes.data[0];
         setSelectedTournament(t);
-        if (t.circuits?.length > 0) {
-          const c = t.circuits[0];
-          setSelectedCircuit(c);
-          if (c.phases?.length > 0) setSelectedPhase(c.phases[0]);
-        }
+        // Seleccionar el circuito con mayor order por defecto
+        const circuitos = t.circuits ?? [];
+        const maxOrder = Math.max(...circuitos.map((c: Circuit) => c.order ?? 0));
+        const ultimoCircuito = circuitos.find((c: Circuit) => c.order === maxOrder) ?? circuitos[0];
+        setSelectedCircuit(ultimoCircuito ?? null);
+        if (ultimoCircuito?.phases?.length > 0) setSelectedPhase(ultimoCircuito.phases[0]);
       }
       setLoading(false);
     });
@@ -80,6 +81,14 @@ export default function FaseConfigPage() {
       });
     });
   }, [selectedPhase]);
+
+  // Circuitos filtrados según toggle
+  const circuitosFiltrados = (() => {
+    const todos = selectedTournament?.circuits ?? [];
+    if (!soloActivo || todos.length <= 1) return todos;
+    const maxOrder = Math.max(...todos.map(c => c.order ?? 0));
+    return todos.filter(c => c.order === maxOrder);
+  })();
 
   const sedesFiltradas = selectedTournament?.departamentoId
     ? venues.filter(v => v.departamentoId === selectedTournament.departamentoId)
@@ -100,28 +109,22 @@ export default function FaseConfigPage() {
 
   const handleAsignar = async () => {
     if (!selectedPhase) return;
-    setAsignando(true);
-    setAsignadoMsg('');
+    setAsignando(true); setAsignadoMsg('');
     try {
       const esSeries = esFaseDeSeries(selectedPhase.type);
-      const body = esSeries
-        ? { horaP1, horaP2 }
-        : { horaInicio, crucesPerMesa };
+      const body = esSeries ? { horaP1, horaP2 } : { horaInicio, crucesPerMesa };
       const res = await api.post(`/faseconfig/${selectedPhase.id}/asignar`, body);
       setAsignadoMsg(`✅ ${res.data.message} — ${res.data.asignados} de ${res.data.total} asignados`);
     } catch (err: any) {
       setAsignadoMsg(`❌ ${err?.response?.data?.error ?? 'Error al asignar'}`);
-    } finally {
-      setAsignando(false);
-    }
+    } finally { setAsignando(false); }
   };
 
   const agregarFecha = () => {
     if (!nuevaFecha) return;
     if (config.configuracion.fechas.find(f => f.fecha === nuevaFecha)) { alert('Esa fecha ya existe'); return; }
     setConfig({ ...config, configuracion: { fechas: [...config.configuracion.fechas, { fecha: nuevaFecha, sedes: [] }] } });
-    setNuevaFecha('');
-    setFechaModal(false);
+    setNuevaFecha(''); setFechaModal(false);
   };
 
   const eliminarFecha = (fecha: string) =>
@@ -204,7 +207,29 @@ export default function FaseConfigPage() {
 
       <div className="p-6 space-y-6">
         <div className="card space-y-4">
-          <h2 className="font-display text-lg text-chalk">Selección</h2>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <h2 className="font-display text-lg text-chalk">Selección</h2>
+            {(selectedTournament?.circuits?.length ?? 0) > 1 && (
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={soloActivo}
+                  onChange={e => {
+                    setSoloActivo(e.target.checked);
+                    if (!e.target.checked) {
+                      // Al mostrar todos, resetear al primero disponible
+                      const todos = selectedTournament?.circuits ?? [];
+                      setSelectedCircuit(todos[0] ?? null);
+                      setSelectedPhase(todos[0]?.phases?.[0] ?? null);
+                    }
+                  }}
+                  className="w-4 h-4 accent-gold"
+                />
+                <span className="text-chalk/60 text-xs uppercase tracking-widest">Solo circuito activo</span>
+              </label>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Torneo</label>
@@ -218,13 +243,17 @@ export default function FaseConfigPage() {
               </select>
             </div>
             <div>
-              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Circuito</label>
+              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">
+                Circuito {soloActivo && circuitosFiltrados.length === 1 && (
+                  <span className="text-gold/60 ml-1">(activo)</span>
+                )}
+              </label>
               <select className="input" value={selectedCircuit?.id ?? ''} onChange={e => {
-                const c = selectedTournament?.circuits?.find(c => c.id === Number(e.target.value));
+                const c = circuitosFiltrados.find(c => c.id === Number(e.target.value));
                 setSelectedCircuit(c ?? null);
                 setSelectedPhase(c?.phases?.[0] ?? null);
               }}>
-                {selectedTournament?.circuits?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {circuitosFiltrados.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
             <div>
