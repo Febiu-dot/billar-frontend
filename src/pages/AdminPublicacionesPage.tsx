@@ -3,6 +3,15 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { LoadingSpinner } from '../components/ui';
 
+const CLUB_ABREV: Record<string, string> = {
+  'CAPOLAVORO': 'CAP', 'FERIA FRANCA': 'FER', 'YATAY': 'YAT',
+  'CABRERA': 'CAB', 'MODEL CENTER': 'MOD', 'NUEVO MALVIN': 'NM',
+  'SPORTING UNION': 'SPO', 'CENTENARIO': 'CEN',
+  'CASA DEL BILLAR': 'CDB', 'PIEDRA HONDA': 'PH',
+};
+const abrevClub = (club?: string) =>
+  club ? (CLUB_ABREV[club.toUpperCase()] ?? club.slice(0, 3).toUpperCase()) : '';
+
 const TEMAS: Record<string, { header: string; accent: string; light: string; badge: string }> = {
   clasificatorio: { header: '#1a5c2a', accent: '#2d8a3e', light: '#edf7ef', badge: '#1a5c2a' },
   reduccion:      { header: '#1a5c2a', accent: '#388e3c', light: '#f1f8e9', badge: '#1a5c2a' },
@@ -12,11 +21,11 @@ const TEMAS: Record<string, { header: string; accent: string; light: string; bad
   ranking:        { header: '#7c4d00', accent: '#b8860b', light: '#fffbf0', badge: '#7c4d00' },
 };
 
-const SECCION_COLORES: Record<string, { bg: string; text: string; badge: string }> = {
-  'MÁSTER':   { bg: '#7c4d00', text: '#fff', badge: '#f59e0b' },
-  'PRIMERA':  { bg: '#014f86', text: '#fff', badge: '#3b82f6' },
-  'SEGUNDA':  { bg: '#166534', text: '#fff', badge: '#22c55e' },
-  'TERCERA':  { bg: '#374151', text: '#fff', badge: '#9ca3af' },
+const SECCION_COLORES: Record<string, { bg: string; badge: string }> = {
+  'MÁSTER':  { bg: '#7c4d00', badge: '#f59e0b' },
+  'PRIMERA': { bg: '#014f86', badge: '#3b82f6' },
+  'SEGUNDA': { bg: '#166534', badge: '#22c55e' },
+  'TERCERA': { bg: '#374151', badge: '#9ca3af' },
 };
 
 const FASES = [
@@ -40,7 +49,6 @@ const cargarHtml2Canvas = (): Promise<any> =>
     document.head.appendChild(script);
   });
 
-// ─── Cabecera ───────────────────────────────────────────────────────
 function PubHeader({ data, tema }: { data: any; tema: any }) {
   return (
     <div style={{ background: tema.header, padding: '36px 50px 32px', display: 'flex', alignItems: 'center', gap: 36, fontFamily: F }}>
@@ -54,9 +62,7 @@ function PubHeader({ data, tema }: { data: any; tema: any }) {
         </div>
         <div style={{ fontSize: 32, fontWeight: 900, marginTop: 16, letterSpacing: 4, textTransform: 'uppercase', lineHeight: 1.1 }}>{data.fase}</div>
         {data.fechaPrincipal && (
-          <div style={{ fontSize: 20, marginTop: 8, opacity: 0.9, textTransform: 'uppercase', letterSpacing: 1 }}>
-            {data.fechaPrincipal}
-          </div>
+          <div style={{ fontSize: 20, marginTop: 8, opacity: 0.9, textTransform: 'uppercase', letterSpacing: 1 }}>{data.fechaPrincipal}</div>
         )}
         {data.formato && (
           <div style={{ marginTop: 14, background: 'rgba(255,255,255,0.2)', borderRadius: 6, padding: '8px 24px', display: 'inline-block', fontSize: 20, fontWeight: 700, letterSpacing: 2 }}>
@@ -68,7 +74,6 @@ function PubHeader({ data, tema }: { data: any; tema: any }) {
   );
 }
 
-// ─── Pie de página ──────────────────────────────────────────────────
 function PubFooter({ notas, tema }: { notas: string; tema: any }) {
   if (!notas.trim()) return null;
   return (
@@ -78,30 +83,22 @@ function PubFooter({ notas, tema }: { notas: string; tema: any }) {
   );
 }
 
-// ─── Fila de jugador ────────────────────────────────────────────────
 function JRow({ j, tema, border }: { j: any; tema: any; border?: boolean }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', gap: 10, borderBottom: border ? `1px solid ${tema.light}` : 'none', minHeight: 48, fontFamily: F }}>
       {j.ranking !== null ? (
-        <div style={{ width: 40, height: 32, background: tema.badge, color: '#fff', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 900, flexShrink: 0 }}>
-          {j.ranking}
-        </div>
+        <div style={{ width: 40, height: 32, background: tema.badge, color: '#fff', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 900, flexShrink: 0 }}>{j.ranking}</div>
       ) : (
         <div style={{ width: 40, height: 32, background: '#ddd', color: '#888', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, flexShrink: 0 }}>?</div>
       )}
-      <div style={{ flex: 1, fontSize: 20, fontWeight: j.esSlot ? 400 : 700, color: j.esSlot ? '#999' : '#111', fontStyle: j.esSlot ? 'italic' : 'normal', wordBreak: 'break-word' }}>
-        {j.nombre}
-      </div>
+      <div style={{ flex: 1, fontSize: 20, fontWeight: j.esSlot ? 400 : 700, color: j.esSlot ? '#999' : '#111', fontStyle: j.esSlot ? 'italic' : 'normal', wordBreak: 'break-word' }}>{j.nombre}</div>
       {j.club && (
-        <div style={{ background: tema.header, color: '#fff', padding: '4px 10px', borderRadius: 4, fontSize: 16, fontWeight: 800, flexShrink: 0, letterSpacing: 1 }}>
-          {j.club}
-        </div>
+        <div style={{ background: tema.header, color: '#fff', padding: '4px 10px', borderRadius: 4, fontSize: 16, fontWeight: 800, flexShrink: 0, letterSpacing: 1 }}>{j.club}</div>
       )}
     </div>
   );
 }
 
-// ─── Info de partido ────────────────────────────────────────────────
 function InfoPartido({ p, tema, label }: { p: any; tema: any; label: string }) {
   return (
     <div style={{ background: tema.header, color: '#fff', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 12, fontSize: 17, fontFamily: F, flexWrap: 'wrap' }}>
@@ -109,16 +106,11 @@ function InfoPartido({ p, tema, label }: { p: any; tema: any; label: string }) {
       {p.hora ? <span>🕐 {p.hora}</span> : null}
       {p.fecha ? <span>📅 {p.fecha}</span> : null}
       {p.sede ? <span>📍 {p.sede}{p.mesa ? ` · Mesa ${p.mesa}` : ''}</span> : <span style={{ opacity: 0.5 }}>Sin asignar</span>}
-      {p.resultado && (
-        <span style={{ marginLeft: 'auto', fontWeight: 900, background: 'rgba(255,255,255,0.2)', padding: '2px 12px', borderRadius: 4, fontSize: 19 }}>
-          {p.resultado}
-        </span>
-      )}
+      {p.resultado && <span style={{ marginLeft: 'auto', fontWeight: 900, background: 'rgba(255,255,255,0.2)', padding: '2px 12px', borderRadius: 4, fontSize: 19 }}>{p.resultado}</span>}
     </div>
   );
 }
 
-// ─── Plantilla Series ───────────────────────────────────────────────
 function PlantillaSeries({ data, tema }: { data: any; tema: any }) {
   const series: any[] = data.series ?? [];
   const pares: any[][] = [];
@@ -129,27 +121,9 @@ function PlantillaSeries({ data, tema }: { data: any; tema: any }) {
         <div key={i} style={{ display: 'flex', gap: 14, marginBottom: 14 }}>
           {par.map((s, si) => s ? (
             <div key={si} style={{ flex: 1, border: `2px solid ${tema.accent}`, borderRadius: 8, background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
-              <div style={{ background: tema.accent, color: '#fff', padding: '8px 16px', fontSize: 18, fontWeight: 900, letterSpacing: 3, borderRadius: '6px 6px 0 0' }}>
-                SERIE {s.numero}
-              </div>
-              {s.p1 && (
-                <>
-                  <div style={{ background: tema.light }}>
-                    <JRow j={s.p1.jugadorA} tema={tema} border />
-                    <JRow j={s.p1.jugadorB} tema={tema} />
-                  </div>
-                  <InfoPartido p={s.p1} tema={tema} label="P1" />
-                </>
-              )}
-              {s.p2 && (
-                <>
-                  <div style={{ background: '#fff', borderTop: `2px solid ${tema.light}` }}>
-                    <JRow j={s.p2.jugadorA} tema={tema} border />
-                    <JRow j={s.p2.jugadorB} tema={tema} />
-                  </div>
-                  <InfoPartido p={s.p2} tema={tema} label="P2" />
-                </>
-              )}
+              <div style={{ background: tema.accent, color: '#fff', padding: '8px 16px', fontSize: 18, fontWeight: 900, letterSpacing: 3, borderRadius: '6px 6px 0 0' }}>SERIE {s.numero}</div>
+              {s.p1 && (<><div style={{ background: tema.light }}><JRow j={s.p1.jugadorA} tema={tema} border /><JRow j={s.p1.jugadorB} tema={tema} /></div><InfoPartido p={s.p1} tema={tema} label="P1" /></>)}
+              {s.p2 && (<><div style={{ background: '#fff', borderTop: `2px solid ${tema.light}` }}><JRow j={s.p2.jugadorA} tema={tema} border /><JRow j={s.p2.jugadorB} tema={tema} /></div><InfoPartido p={s.p2} tema={tema} label="P2" /></>)}
             </div>
           ) : <div key={si} style={{ flex: 1 }} />)}
         </div>
@@ -158,7 +132,6 @@ function PlantillaSeries({ data, tema }: { data: any; tema: any }) {
   );
 }
 
-// ─── Plantilla Reducción ────────────────────────────────────────────
 function PlantillaReduccion({ data, tema }: { data: any; tema: any }) {
   const cruces: any[] = data.cruces ?? [];
   const pares: any[][] = [];
@@ -170,16 +143,12 @@ function PlantillaReduccion({ data, tema }: { data: any; tema: any }) {
           {par.map((c, ci) => c ? (
             <div key={ci} style={{ flex: 1, border: `2px solid ${tema.accent}`, borderRadius: 8, background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
               <div style={{ background: tema.accent, color: '#fff', padding: '7px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: '6px 6px 0 0' }}>
-                <span style={{ fontWeight: 900, fontSize: 17, letterSpacing: 1 }}>
-                  {c.esRepechaje ? 'REPECHAJE' : `CRUCE ${c.numero}`}
-                </span>
+                <span style={{ fontWeight: 900, fontSize: 17, letterSpacing: 1 }}>{c.esRepechaje ? 'REPECHAJE' : `CRUCE ${c.numero}`}</span>
                 {c.resultado && <span style={{ fontWeight: 900, fontSize: 19 }}>{c.resultado}</span>}
               </div>
-              <JRow j={c.jugadorA} tema={tema} border />
-              <JRow j={c.jugadorB} tema={tema} />
+              <JRow j={c.jugadorA} tema={tema} border /><JRow j={c.jugadorB} tema={tema} />
               <div style={{ background: tema.light, padding: '7px 14px', fontSize: 16, color: tema.header, display: 'flex', gap: 12, fontWeight: 600, flexWrap: 'wrap' }}>
-                {c.hora ? <span>🕐 {c.hora}</span> : null}
-                {c.fecha ? <span>📅 {c.fecha}</span> : null}
+                {c.hora ? <span>🕐 {c.hora}</span> : null}{c.fecha ? <span>📅 {c.fecha}</span> : null}
                 {c.sede ? <span>📍 {c.sede}{c.mesa ? ` M.${c.mesa}` : ''}</span> : <span style={{ opacity: 0.5 }}>Sin asignar</span>}
               </div>
             </div>
@@ -190,15 +159,10 @@ function PlantillaReduccion({ data, tema }: { data: any; tema: any }) {
   );
 }
 
-// ─── Plantilla Cruces ───────────────────────────────────────────────
 function PlantillaCruces({ data, tema }: { data: any; tema: any }) {
   const cruces: any[] = data.cruces ?? [];
   const porEtapa: Record<string, any[]> = {};
-  for (const c of cruces) {
-    const k = c.etapa ?? 'CRUCES';
-    if (!porEtapa[k]) porEtapa[k] = [];
-    porEtapa[k].push(c);
-  }
+  for (const c of cruces) { const k = c.etapa ?? 'CRUCES'; if (!porEtapa[k]) porEtapa[k] = []; porEtapa[k].push(c); }
   const etapas = Object.keys(porEtapa);
   return (
     <div style={{ padding: '20px 24px', background: '#f8f8f8', fontFamily: F }}>
@@ -208,29 +172,18 @@ function PlantillaCruces({ data, tema }: { data: any; tema: any }) {
         for (let i = 0; i < arr.length; i += 2) pares.push([arr[i], arr[i + 1] ?? null]);
         return (
           <div key={etapa} style={{ marginBottom: 20 }}>
-            {etapas.length > 1 && (
-              <div style={{ background: tema.accent, color: '#fff', padding: '10px 18px', fontSize: 20, fontWeight: 900, letterSpacing: 3, borderRadius: '8px 8px 0 0', marginBottom: 8 }}>
-                {etapa}
-              </div>
-            )}
+            {etapas.length > 1 && <div style={{ background: tema.accent, color: '#fff', padding: '10px 18px', fontSize: 20, fontWeight: 900, letterSpacing: 3, borderRadius: '8px 8px 0 0', marginBottom: 8 }}>{etapa}</div>}
             {pares.map((par, i) => (
               <div key={i} style={{ display: 'flex', gap: 14, marginBottom: 10 }}>
                 {par.map((c, ci) => c ? (
                   <div key={ci} style={{ flex: 1, border: `2px solid ${tema.accent}`, borderRadius: 8, background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
                     <div style={{ background: tema.light, padding: '7px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `2px solid ${tema.accent}`, borderRadius: '6px 6px 0 0', flexWrap: 'wrap', gap: 8 }}>
                       <span style={{ fontWeight: 900, fontSize: 17, color: tema.header, letterSpacing: 1 }}>CRUCE {c.round}</span>
-                      <span style={{ fontSize: 16, color: tema.accent, fontWeight: 600 }}>
-                        {c.hora ? `🕐 ${c.hora}` : ''} {c.fecha ? `📅 ${c.fecha}` : ''}
-                      </span>
+                      <span style={{ fontSize: 16, color: tema.accent, fontWeight: 600 }}>{c.hora ? `🕐 ${c.hora}` : ''} {c.fecha ? `📅 ${c.fecha}` : ''}</span>
                       {c.resultado && <span style={{ fontWeight: 900, color: tema.header, fontSize: 20 }}>{c.resultado}</span>}
                     </div>
-                    <JRow j={c.jugadorA} tema={tema} border />
-                    <JRow j={c.jugadorB} tema={tema} />
-                    {c.sede && (
-                      <div style={{ background: tema.header, color: '#fff', padding: '7px 14px', fontSize: 16, fontWeight: 600 }}>
-                        📍 {c.sede}{c.mesa ? ` · Mesa ${c.mesa}` : ''}
-                      </div>
-                    )}
+                    <JRow j={c.jugadorA} tema={tema} border /><JRow j={c.jugadorB} tema={tema} />
+                    {c.sede && <div style={{ background: tema.header, color: '#fff', padding: '7px 14px', fontSize: 16, fontWeight: 600 }}>📍 {c.sede}{c.mesa ? ` · Mesa ${c.mesa}` : ''}</div>}
                   </div>
                 ) : <div key={ci} style={{ flex: 1 }} />)}
               </div>
@@ -242,11 +195,8 @@ function PlantillaCruces({ data, tema }: { data: any; tema: any }) {
   );
 }
 
-// ─── Plantilla Ranking ──────────────────────────────────────────────
 function PlantillaRanking({ data, tema }: { data: any; tema: any }) {
   const jugadores: any[] = data.jugadores ?? [];
-
-  // Agrupar por sección
   const secciones = ['MÁSTER', 'PRIMERA', 'SEGUNDA', 'TERCERA'];
   const porSeccion: Record<string, any[]> = {};
   for (const j of jugadores) {
@@ -259,75 +209,39 @@ function PlantillaRanking({ data, tema }: { data: any; tema: any }) {
       {secciones.filter(s => porSeccion[s]?.length > 0).map(seccion => {
         const color = SECCION_COLORES[seccion];
         const jugSec = porSeccion[seccion];
-        // Dividir en 2 columnas
         const mitad = Math.ceil(jugSec.length / 2);
         const col1 = jugSec.slice(0, mitad);
         const col2 = jugSec.slice(mitad);
 
         return (
           <div key={seccion} style={{ marginBottom: 20 }}>
-            {/* Título de sección */}
-            <div style={{
-              background: color.bg, color: color.text,
-              padding: '10px 20px', fontSize: 22, fontWeight: 900,
-              letterSpacing: 3, borderRadius: '8px 8px 0 0',
-              display: 'flex', alignItems: 'center', gap: 12,
-            }}>
+            <div style={{ background: color.bg, color: '#fff', padding: '10px 20px', fontSize: 22, fontWeight: 900, letterSpacing: 3, borderRadius: '8px 8px 0 0', display: 'flex', alignItems: 'center', gap: 12 }}>
               <span>{seccion}</span>
-              <span style={{ fontSize: 16, opacity: 0.8, fontWeight: 600 }}>
-                ({jugSec.length} jugadores · pos. {jugSec[0].posicion}–{jugSec[jugSec.length - 1].posicion})
-              </span>
+              <span style={{ fontSize: 16, opacity: 0.8, fontWeight: 600 }}>({jugSec.length} jugadores · pos. {jugSec[0].posicion}–{jugSec[jugSec.length - 1].posicion})</span>
             </div>
-
-            {/* Tabla 2 columnas */}
-            <div style={{ display: 'flex', gap: 8, background: '#fff', border: `2px solid ${color.bg}`, borderTop: 'none', borderRadius: '0 0 8px 8px', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', gap: 0, background: '#fff', border: `2px solid ${color.bg}`, borderTop: 'none', borderRadius: '0 0 8px 8px', overflow: 'hidden' }}>
               {[col1, col2].map((col, ci) => (
-                <div key={ci} style={{ flex: 1 }}>
-                  {/* Cabecera columna */}
-                  <div style={{ display: 'flex', background: color.bg, opacity: 0.85, padding: '6px 10px', gap: 8 }}>
+                <div key={ci} style={{ flex: 1, borderLeft: ci === 1 ? `2px solid ${color.bg}` : 'none' }}>
+                  <div style={{ display: 'flex', background: color.bg, padding: '6px 10px', gap: 8, opacity: 0.9 }}>
                     <span style={{ width: 44, fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'center' }}>#</span>
                     <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#fff' }}>Jugador</span>
                     <span style={{ width: 40, fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'center' }}>Club</span>
                     <span style={{ width: 44, fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'right' }}>Pts</span>
                   </div>
                   {col.map((j: any, idx: number) => (
-                    <div key={j.posicion} style={{
-                      display: 'flex', alignItems: 'center', padding: '8px 10px', gap: 8,
-                      background: idx % 2 === 0 ? tema.light : '#fff',
-                      borderBottom: `1px solid ${tema.light}`,
-                    }}>
-                      {/* Posición */}
-                      <div style={{
-                        width: 44, height: 30, borderRadius: 4, flexShrink: 0,
-                        background: color.badge, color: '#fff',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 16, fontWeight: 900,
-                      }}>
+                    <div key={j.posicion} style={{ display: 'flex', alignItems: 'center', padding: '8px 10px', gap: 8, background: idx % 2 === 0 ? tema.light : '#fff', borderBottom: `1px solid ${tema.light}` }}>
+                      <div style={{ width: 44, height: 30, borderRadius: 4, flexShrink: 0, background: color.badge, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900 }}>
                         {j.posicion}
                       </div>
-                      {/* Nombre */}
-                      <div style={{ flex: 1, fontSize: 18, fontWeight: 700, color: '#111', wordBreak: 'break-word', lineHeight: 1.2 }}>
-                        {j.nombre}
-                      </div>
-                      {/* Club */}
+                      <div style={{ flex: 1, fontSize: 18, fontWeight: 700, color: '#111', wordBreak: 'break-word', lineHeight: 1.2 }}>{j.nombre}</div>
                       {j.club && (
-                        <div style={{
-                          width: 40, background: color.bg, color: '#fff',
-                          padding: '3px 4px', borderRadius: 3,
-                          fontSize: 13, fontWeight: 800, textAlign: 'center', flexShrink: 0,
-                        }}>
-                          {j.club}
-                        </div>
+                        <div style={{ width: 40, background: color.bg, color: '#fff', padding: '3px 4px', borderRadius: 3, fontSize: 13, fontWeight: 800, textAlign: 'center', flexShrink: 0 }}>{j.club}</div>
                       )}
-                      {/* Puntos */}
-                      <div style={{ width: 44, fontSize: 17, fontWeight: 900, color: color.bg, textAlign: 'right', flexShrink: 0 }}>
-                        {j.puntos}
-                      </div>
+                      <div style={{ width: 44, fontSize: 17, fontWeight: 900, color: color.bg, textAlign: 'right', flexShrink: 0 }}>{j.puntos}</div>
                     </div>
                   ))}
-                  {/* Rellenar columna corta */}
                   {ci === 1 && col.length < col1.length && Array.from({ length: col1.length - col.length }).map((_, i) => (
-                    <div key={`empty-${i}`} style={{ height: 47, background: (col.length + i) % 2 === 0 ? tema.light : '#fff', borderBottom: `1px solid ${tema.light}` }} />
+                    <div key={`e-${i}`} style={{ height: 47, background: (col.length + i) % 2 === 0 ? tema.light : '#fff', borderBottom: `1px solid ${tema.light}` }} />
                   ))}
                 </div>
               ))}
@@ -339,7 +253,6 @@ function PlantillaRanking({ data, tema }: { data: any; tema: any }) {
   );
 }
 
-// ─── Contenido reutilizable ─────────────────────────────────────────
 function PubContenido({ data, tema, notas }: { data: any; tema: any; notas: string }) {
   return (
     <>
@@ -353,7 +266,6 @@ function PubContenido({ data, tema, notas }: { data: any; tema: any; notas: stri
   );
 }
 
-// ─── Página principal ───────────────────────────────────────────────
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
   const esAdmin = user?.role === 'admin';
@@ -392,6 +304,49 @@ export default function AdminPublicacionesPage() {
     if (!circuitId) return;
     setLoading(true); setError(''); setPubData(null);
     try {
+      // Ranking: usa el endpoint de rankings que ya funciona
+      if (tipoFase === 'ranking') {
+        const [rankRes] = await Promise.all([
+          api.get(`/rankings/circuit/${circuitId}`),
+        ]);
+
+        if (rankRes.data.length === 0) {
+          setError('No hay ranking guardado para este circuito. Generalo desde Ranking Final → "Usar como base para el Segundo Circuito".');
+          setLoading(false);
+          return;
+        }
+
+        // Info del torneo/circuito desde los torneos cargados
+        const todosCircuitos = torneos.flatMap((t: any) => (t.circuits ?? []).map((c: any) => ({ ...c, torneoNombre: t.name, torneoYear: t.year })));
+        const circuito = todosCircuitos.find((c: any) => c.id === Number(circuitId));
+
+        const jugadores = rankRes.data.map((e: any) => ({
+          posicion: e.position,
+          nombre: `${e.player.lastName}, ${e.player.firstName}`,
+          club: abrevClub(e.player.club),
+          puntos: e.points,
+          setsGanados: e.setsWon,
+          tantos: e.pointsFor,
+          seccion: e.position <= 8 ? 'MÁSTER' : e.position <= 32 ? 'PRIMERA' : e.position <= 64 ? 'SEGUNDA' : 'TERCERA',
+        }));
+
+        setPubData({
+          tipo: 'ranking',
+          tipoFase: 'ranking',
+          torneo: circuito?.torneoNombre ?? 'FEBIU',
+          circuito: circuito?.name ?? '',
+          temporada: String(circuito?.torneoYear ?? ''),
+          fase: `RANKING — ${(circuito?.name ?? '').toUpperCase()}`,
+          formato: '',
+          fechaPrincipal: '',
+          jugadores,
+        });
+        setNotas('');
+        setLoading(false);
+        return;
+      }
+
+      // Otras fases: usa publicaciones normalmente
       const res = await api.get(`/publicaciones/${circuitId}/${tipoFase}`);
       setPubData(res.data); setNotas('');
     } catch (e: any) {
@@ -405,20 +360,15 @@ export default function AdminPublicacionesPage() {
     try {
       const h2c = await cargarHtml2Canvas();
       const canvas = await h2c(exportRef.current, {
-        scale: 3,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        width: exportRef.current.scrollWidth,
-        height: exportRef.current.scrollHeight,
+        scale: 3, useCORS: true, allowTaint: true, backgroundColor: '#ffffff',
+        width: exportRef.current.scrollWidth, height: exportRef.current.scrollHeight,
       });
       const link = document.createElement('a');
       link.download = `${pubData?.fase ?? 'publicacion'} - ${pubData?.circuito ?? ''}.png`.replace(/[/\\?%*:|"<>]/g, '-');
       link.href = canvas.toDataURL('image/png', 1.0);
       link.click();
-    } catch (e: any) {
-      alert(`Error al exportar: ${e.message}`);
-    } finally { setExportando(false); }
+    } catch (e: any) { alert(`Error al exportar: ${e.message}`); }
+    finally { setExportando(false); }
   };
 
   const tema = TEMAS[tipoFase] ?? TEMAS.clasificatorio;
@@ -436,9 +386,7 @@ export default function AdminPublicacionesPage() {
 
       <div className="px-6 pt-6 pb-4 border-b border-felt-light/20">
         <h1 className="font-display text-4xl text-gold">PUBLICACIONES</h1>
-        <p className="text-chalk/50 text-sm mt-1">
-          {esAdmin ? 'Generación y exportación de gráficos para difusión' : 'Gráficos del torneo'}
-        </p>
+        <p className="text-chalk/50 text-sm mt-1">{esAdmin ? 'Generación y exportación de gráficos para difusión' : 'Gráficos del torneo'}</p>
       </div>
 
       <div className="p-6 space-y-5">
@@ -448,9 +396,7 @@ export default function AdminPublicacionesPage() {
               <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Circuito</label>
               <select className="input" value={circuitId} onChange={e => { setCircuitId(e.target.value); setPubData(null); }}>
                 <option value="">Seleccionar circuito...</option>
-                {circuitos.map((c: any) => (
-                  <option key={c.id} value={c.id}>{c.torneoNombre} — {c.name}</option>
-                ))}
+                {circuitos.map((c: any) => <option key={c.id} value={c.id}>{c.torneoNombre} — {c.name}</option>)}
               </select>
             </div>
             <div>
@@ -488,8 +434,8 @@ export default function AdminPublicacionesPage() {
         {pubData && !loading && (
           <div>
             <p className="text-chalk/40 text-xs uppercase tracking-widest mb-3">
-              {pubData.tipo === 'series' ? `${pubData.series?.length ?? 0} series`
-                : pubData.tipo === 'ranking' ? `${pubData.jugadores?.length ?? 0} jugadores`
+              {pubData.tipo === 'ranking' ? `${pubData.jugadores?.length ?? 0} jugadores`
+                : pubData.tipo === 'series' ? `${pubData.series?.length ?? 0} series`
                 : `${pubData.cruces?.length ?? 0} cruces`}
             </p>
             <div ref={wrapperRef} style={{ width: '540px', overflow: 'hidden', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
