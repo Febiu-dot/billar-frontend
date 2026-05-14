@@ -30,7 +30,6 @@ const cargarHtml2Canvas = (): Promise<any> =>
     document.head.appendChild(script);
   });
 
-// ─── Cabecera ───────────────────────────────────────────────────────
 function PubHeader({ data, tema }: { data: any; tema: any }) {
   return (
     <div style={{ background: tema.header, padding: '36px 50px 32px', display: 'flex', alignItems: 'center', gap: 36, fontFamily: F }}>
@@ -56,7 +55,6 @@ function PubHeader({ data, tema }: { data: any; tema: any }) {
   );
 }
 
-// ─── Pie de página ──────────────────────────────────────────────────
 function PubFooter({ notas, tema }: { notas: string; tema: any }) {
   if (!notas.trim()) return null;
   return (
@@ -66,7 +64,6 @@ function PubFooter({ notas, tema }: { notas: string; tema: any }) {
   );
 }
 
-// ─── Fila de jugador ────────────────────────────────────────────────
 function JRow({ j, tema, border }: { j: any; tema: any; border?: boolean }) {
   return (
     <div style={{
@@ -93,7 +90,6 @@ function JRow({ j, tema, border }: { j: any; tema: any; border?: boolean }) {
   );
 }
 
-// ─── Info de partido ────────────────────────────────────────────────
 function InfoPartido({ p, tema, label }: { p: any; tema: any; label: string }) {
   return (
     <div style={{ background: tema.header, color: '#fff', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 12, fontSize: 17, fontFamily: F, flexWrap: 'wrap' }}>
@@ -110,7 +106,6 @@ function InfoPartido({ p, tema, label }: { p: any; tema: any; label: string }) {
   );
 }
 
-// ─── Plantilla Series ───────────────────────────────────────────────
 function PlantillaSeries({ data, tema }: { data: any; tema: any }) {
   const series: any[] = data.series ?? [];
   const pares: any[][] = [];
@@ -151,7 +146,6 @@ function PlantillaSeries({ data, tema }: { data: any; tema: any }) {
   );
 }
 
-// ─── Plantilla Reducción ────────────────────────────────────────────
 function PlantillaReduccion({ data, tema }: { data: any; tema: any }) {
   const cruces: any[] = data.cruces ?? [];
   const pares: any[][] = [];
@@ -184,7 +178,6 @@ function PlantillaReduccion({ data, tema }: { data: any; tema: any }) {
   );
 }
 
-// ─── Plantilla Cruces (Primera / Master) ───────────────────────────
 function PlantillaCruces({ data, tema }: { data: any; tema: any }) {
   const cruces: any[] = data.cruces ?? [];
   const porEtapa: Record<string, any[]> = {};
@@ -237,7 +230,6 @@ function PlantillaCruces({ data, tema }: { data: any; tema: any }) {
   );
 }
 
-// ─── Contenido reutilizable ─────────────────────────────────────────
 function PubContenido({ data, tema, notas }: { data: any; tema: any; notas: string }) {
   return (
     <>
@@ -250,7 +242,6 @@ function PubContenido({ data, tema, notas }: { data: any; tema: any; notas: stri
   );
 }
 
-// ─── Página principal ───────────────────────────────────────────────
 export default function AdminPublicacionesPage() {
   const [torneos, setTorneos] = useState<any[]>([]);
   const [circuitId, setCircuitId] = useState('');
@@ -286,7 +277,7 @@ export default function AdminPublicacionesPage() {
       const res = await api.get(`/publicaciones/${circuitId}/${tipoFase}`);
       setPubData(res.data); setNotas('');
     } catch (e: any) {
-      setError(e?.response?.data?.error ?? 'Error al cargar los datos');
+      setError(e?.response?.data?.error ?? 'Error al cargar');
     } finally { setLoading(false); }
   };
 
@@ -296,7 +287,7 @@ export default function AdminPublicacionesPage() {
     try {
       const h2c = await cargarHtml2Canvas();
       const canvas = await h2c(exportRef.current, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
@@ -319,9 +310,20 @@ export default function AdminPublicacionesPage() {
 
   return (
     <div>
-      {/* DIV OCULTO a tamaño completo para exportar */}
+      {/* DIV OCULTO a tamaño completo 1080px — base para exportar */}
       {pubData && (
-        <div ref={exportRef} style={{ position: 'fixed', left: '-9999px', top: 0, width: '1080px', fontFamily: F, background: '#ffffff', lineHeight: 1.3, zIndex: -1 }}>
+        <div
+          ref={exportRef}
+          style={{
+            position: 'absolute',
+            left: '-9999px',
+            top: 0,
+            width: '1080px',
+            fontFamily: F,
+            background: '#ffffff',
+            lineHeight: 1.3,
+          }}
+        >
           <PubContenido data={pubData} tema={tema} notas={notas} />
         </div>
       )}
@@ -360,13 +362,17 @@ export default function AdminPublicacionesPage() {
             <>
               <div>
                 <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Nota al pie (opcional)</label>
-                <textarea className="input w-full" rows={2} placeholder="Ej: Los ganadores pasan a la siguiente fase..." value={notas} onChange={e => setNotas(e.target.value)} />
+                <textarea
+                  className="input w-full" rows={2}
+                  placeholder="Ej: Los ganadores pasan a la siguiente fase..."
+                  value={notas} onChange={e => setNotas(e.target.value)}
+                />
               </div>
               <div className="flex items-center gap-4">
                 <button className="btn-primary px-8" disabled={exportando} onClick={exportar}>
                   {exportando ? 'Exportando...' : '⬇ Exportar PNG'}
                 </button>
-                <span className="text-chalk/30 text-xs">2160px · Alta resolución · WhatsApp y redes</span>
+                <span className="text-chalk/30 text-xs">3240px · Alta resolución · WhatsApp y redes</span>
               </div>
             </>
           )}
@@ -380,7 +386,10 @@ export default function AdminPublicacionesPage() {
             <p className="text-chalk/40 text-xs uppercase tracking-widest mb-3">
               Vista previa (50%) · {pubData.tipo === 'series' ? `${pubData.series?.length ?? 0} series` : `${pubData.cruces?.length ?? 0} cruces`}
             </p>
-            <div ref={wrapperRef} style={{ width: '540px', overflow: 'hidden', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+            <div
+              ref={wrapperRef}
+              style={{ width: '540px', overflow: 'hidden', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}
+            >
               <div style={{ width: '1080px', transform: 'scale(0.5)', transformOrigin: 'top left', fontFamily: F, background: '#ffffff', lineHeight: 1.3 }}>
                 <PubContenido data={pubData} tema={tema} notas={notas} />
               </div>
