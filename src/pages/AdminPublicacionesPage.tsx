@@ -229,7 +229,7 @@ function PlantillaRanking({ data, tema }: { data: any; tema: any }) {
                     <span style={{ width: 44, fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'right' }}>Pts</span>
                   </div>
                   {col.map((j: any, idx: number) => (
-                    <div key={j.posicion} style={{ display: 'flex', alignItems: 'center', padding: '8px 10px', gap: 8, background: idx % 2 === 0 ? tema.light : '#fff', borderBottom: `1px solid ${tema.light}` }}>
+                    <div key={j.posicion} style={{ display: 'flex', alignItems: 'center', padding: '8px 10px', gap: 8, background: idx % 2 === 0 ? color.light : '#fff', borderBottom: `1px solid ${color.light}` }}>
                       <div style={{ width: 44, height: 30, borderRadius: 4, flexShrink: 0, background: color.badge, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900 }}>
                         {j.posicion}
                       </div>
@@ -241,7 +241,7 @@ function PlantillaRanking({ data, tema }: { data: any; tema: any }) {
                     </div>
                   ))}
                   {ci === 1 && col.length < col1.length && Array.from({ length: col1.length - col.length }).map((_, i) => (
-                    <div key={`e-${i}`} style={{ height: 47, background: (col.length + i) % 2 === 0 ? tema.light : '#fff', borderBottom: `1px solid ${tema.light}` }} />
+                    <div key={`e-${i}`} style={{ height: 47, background: (col.length + i) % 2 === 0 ? color.light : '#fff', borderBottom: `1px solid ${color.light}` }} />
                   ))}
                 </div>
               ))}
@@ -304,21 +304,26 @@ export default function AdminPublicacionesPage() {
     if (!circuitId) return;
     setLoading(true); setError(''); setPubData(null);
     try {
-      // Ranking: usa el endpoint de rankings que ya funciona
       if (tipoFase === 'ranking') {
-        const [rankRes] = await Promise.all([
-          api.get(`/rankings/circuit/${circuitId}`),
-        ]);
+        const todosCircuitos = torneos.flatMap((t: any) =>
+          (t.circuits ?? []).map((c: any) => ({ ...c, torneoNombre: t.name, torneoYear: t.year }))
+        );
+        let circuito = todosCircuitos.find((c: any) => c.id === Number(circuitId));
+        let rankRes = await api.get(`/rankings/circuit/${circuitId}`);
+
+        if (rankRes.data.length === 0 && circuito) {
+          const prevCircuito = todosCircuitos.find((c: any) => c.order === (circuito!.order - 1));
+          if (prevCircuito) {
+            rankRes = await api.get(`/rankings/circuit/${prevCircuito.id}`);
+            circuito = prevCircuito;
+          }
+        }
 
         if (rankRes.data.length === 0) {
-          setError('No hay ranking guardado para este circuito. Generalo desde Ranking Final → "Usar como base para el Segundo Circuito".');
+          setError('No hay ranking guardado. Generalo desde Ranking Final → "Usar como base para el Segundo Circuito".');
           setLoading(false);
           return;
         }
-
-        // Info del torneo/circuito desde los torneos cargados
-        const todosCircuitos = torneos.flatMap((t: any) => (t.circuits ?? []).map((c: any) => ({ ...c, torneoNombre: t.name, torneoYear: t.year })));
-        const circuito = todosCircuitos.find((c: any) => c.id === Number(circuitId));
 
         const jugadores = rankRes.data.map((e: any) => ({
           posicion: e.position,
@@ -336,7 +341,7 @@ export default function AdminPublicacionesPage() {
           torneo: circuito?.torneoNombre ?? 'FEBIU',
           circuito: circuito?.name ?? '',
           temporada: String(circuito?.torneoYear ?? ''),
-          fase: `RANKING — ${(circuito?.name ?? '').toUpperCase()}`,
+          fase: `RANKING FINAL — ${(circuito?.name ?? '').toUpperCase()}`,
           formato: '',
           fechaPrincipal: '',
           jugadores,
@@ -346,7 +351,6 @@ export default function AdminPublicacionesPage() {
         return;
       }
 
-      // Otras fases: usa publicaciones normalmente
       const res = await api.get(`/publicaciones/${circuitId}/${tipoFase}`);
       setPubData(res.data); setNotas('');
     } catch (e: any) {
