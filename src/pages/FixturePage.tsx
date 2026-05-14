@@ -8,17 +8,7 @@ const CATEGORY_ORDER: Record<string, number> = { master: 1, primera: 2, segunda:
 
 interface PreviewSerie {
   serie: number;
-  jugadores: { id: number; nombre: string; esLibre?: boolean; esSlot?: boolean }[];
-}
-
-interface PreviewCruce {
-  cruce: number;
-  jugadorA: string;
-  jugadorB: string;
-  esSlotA?: boolean;
-  esSlotB?: boolean;
-  slotA?: string;
-  slotB?: string;
+  jugadores: { id: number; nombre: string; esLibre?: boolean; esClasificado?: boolean }[];
 }
 
 interface PreviewData {
@@ -27,11 +17,11 @@ interface PreviewData {
     totalJugadores: number;
     totalSeries: number;
     series: PreviewSerie[];
-    crucesReduccion: PreviewCruce[];
+    crucesReduccion: { cruce: number; slotA: string; slotB: string }[];
   };
   segundaPreview?: { totalSeries: number; series: any[] };
-  primeraPreview?: { totalCruces: number; cruces: PreviewCruce[] };
-  masterPreview?: { totalCruces: number; cruces: PreviewCruce[] };
+  primeraPreview?: { totalCruces: number; cruces: any[] };
+  masterPreview?: { totalCruces: number; cruces: any[] };
 }
 
 type PreviewTab = 'series' | 'reduccion' | 'segunda' | 'primera' | 'master';
@@ -42,6 +32,7 @@ export default function FixturePage() {
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
+  const [circuitosOcultos, setCircuitosOcultos] = useState<Set<number>>(new Set());
 
   const [tournamentModal, setTournamentModal] = useState(false);
   const [editTournament, setEditTournament] = useState<Tournament | null>(null);
@@ -86,10 +77,35 @@ export default function FixturePage() {
 
   const loadTournament = (id: number) => {
     setDetailLoading(true);
-    api.get(`/tournaments/${id}`).then(r => { setSelectedTournament(r.data); setDetailLoading(false); setLoading(false); });
+    api.get(`/tournaments/${id}`).then(r => {
+      setSelectedTournament(r.data);
+      setDetailLoading(false);
+      setLoading(false);
+      // Ocultar todos los circuitos excepto el de mayor order
+      const circuits: Circuit[] = r.data.circuits ?? [];
+      if (circuits.length > 1) {
+        const maxOrder = Math.max(...circuits.map((c: any) => c.order ?? 0));
+        const anteriores: Set<number> = new Set(
+          circuits.filter((c: any) => (c.order ?? 0) < maxOrder).map((c: any) => c.id)
+        );
+        setCircuitosOcultos(anteriores);
+      }
+    });
   };
 
-  const refreshSelected = () => { if (selectedTournament) loadTournament(selectedTournament.id); fetchTournaments(); };
+  const refreshSelected = () => {
+    if (selectedTournament) loadTournament(selectedTournament.id);
+    fetchTournaments();
+  };
+
+  const toggleCircuito = (circuitId: number) => {
+    setCircuitosOcultos(prev => {
+      const next: Set<number> = new Set(prev);
+      if (next.has(circuitId)) next.delete(circuitId);
+      else next.add(circuitId);
+      return next;
+    });
+  };
 
   const openAddTournament = () => {
     setEditTournament(null);
@@ -298,71 +314,92 @@ export default function FixturePage() {
             {selectedTournament.circuits?.length === 0 ? (
               <div className="card text-center text-chalk/30 py-8">Sin circuitos.</div>
             ) : (
-              selectedTournament.circuits?.map(circuit => (
-                <div key={circuit.id}>
-                  <div className="flex items-center gap-3 mb-4 flex-wrap">
-                    <h3 className="font-display text-2xl text-chalk">{circuit.name}</h3>
-                    <span className={`badge-status ${circuit.active ? 'bg-blue-900/40 text-blue-300' : 'bg-chalk/10 text-chalk/30'}`}>Circuito {circuit.order}</span>
-                    {circuit.startDate && (
-                      <span className="text-chalk/30 text-xs font-mono">
-                        {new Date(circuit.startDate).toLocaleDateString('es-UY')}
-                        {circuit.endDate && ` → ${new Date(circuit.endDate).toLocaleDateString('es-UY')}`}
+              selectedTournament.circuits?.map(circuit => {
+                const oculto = circuitosOcultos.has(circuit.id);
+                return (
+                  <div key={circuit.id}>
+                    {/* Header del circuito con toggle */}
+                    <div className="flex items-center gap-3 mb-4 flex-wrap">
+                      <h3 className="font-display text-2xl text-chalk">{circuit.name}</h3>
+                      <span className={`badge-status ${circuit.active ? 'bg-blue-900/40 text-blue-300' : 'bg-chalk/10 text-chalk/30'}`}>
+                        Circuito {circuit.order}
                       </span>
-                    )}
-                    <div className="flex gap-2 ml-auto flex-wrap">
-                      <button className="py-1 px-3 text-xs rounded-lg border border-blue-700/40 text-blue-300 hover:bg-blue-900/20 transition-all" onClick={() => openInscripcion(circuit)}>
-                        👥 Inscripción ({circuit.players?.length ?? 0})
-                      </button>
-                      <button
-                        className="py-1 px-3 text-xs rounded-lg border border-gold/40 text-gold hover:bg-gold/10 transition-all disabled:opacity-40"
-                        disabled={previewLoading === circuit.id || generando === circuit.id}
-                        onClick={() => handleAbrirPreview(circuit)}
-                      >
-                        {previewLoading === circuit.id ? 'Cargando...' : generando === circuit.id ? 'Generando...' : '⚡ Generar partidos'}
-                      </button>
-                      <button className="btn-primary py-1 px-3 text-xs" onClick={() => openAddPhase(circuit)}>+ Fase</button>
-                      <button className="py-1 px-3 text-xs rounded-lg border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all" onClick={() => handleDeleteCircuit(circuit)}>Eliminar</button>
+                      {circuit.startDate && (
+                        <span className="text-chalk/30 text-xs font-mono">
+                          {new Date(circuit.startDate).toLocaleDateString('es-UY')}
+                          {circuit.endDate && ` → ${new Date(circuit.endDate).toLocaleDateString('es-UY')}`}
+                        </span>
+                      )}
+                      <div className="flex gap-2 ml-auto flex-wrap">
+                        {!oculto && (
+                          <>
+                            <button className="py-1 px-3 text-xs rounded-lg border border-blue-700/40 text-blue-300 hover:bg-blue-900/20 transition-all" onClick={() => openInscripcion(circuit)}>
+                              👥 Inscripción ({circuit.players?.length ?? 0})
+                            </button>
+                            <button
+                              className="py-1 px-3 text-xs rounded-lg border border-gold/40 text-gold hover:bg-gold/10 transition-all disabled:opacity-40"
+                              disabled={previewLoading === circuit.id || generando === circuit.id}
+                              onClick={() => handleAbrirPreview(circuit)}
+                            >
+                              {previewLoading === circuit.id ? 'Cargando...' : generando === circuit.id ? 'Generando...' : '⚡ Generar partidos'}
+                            </button>
+                            <button className="btn-primary py-1 px-3 text-xs" onClick={() => openAddPhase(circuit)}>+ Fase</button>
+                            <button className="py-1 px-3 text-xs rounded-lg border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all" onClick={() => handleDeleteCircuit(circuit)}>Eliminar</button>
+                          </>
+                        )}
+                        <button
+                          className={`py-1 px-3 text-xs rounded-lg border transition-all ${oculto ? 'border-gold/30 text-gold/70 hover:bg-gold/10' : 'border-chalk/20 text-chalk/40 hover:border-chalk/40'}`}
+                          onClick={() => toggleCircuito(circuit.id)}
+                        >
+                          {oculto ? '👁 Mostrar' : '🙈 Ocultar'}
+                        </button>
+                      </div>
                     </div>
-                  </div>
 
-                  {circuit.phases?.length === 0 ? (
-                    <p className="text-chalk/30 text-sm pl-2">Sin fases.</p>
-                  ) : (
-                    circuit.phases?.map((phase: Phase) => {
-                      const matchesByRound = getMatchesByRound(phase.matches ?? []);
-                      const rounds = getRoundsSorted(matchesByRound);
-                      return (
-                        <div key={phase.id} className="mb-6">
-                          <div className="flex items-center gap-2 mb-3">
-                            <h4 className="font-semibold text-chalk/80 uppercase text-sm tracking-wider">{phase.name}</h4>
-                            <span className="badge-status bg-felt-light/20 text-chalk/40 text-xs capitalize">{phase.type}</span>
-                            <span className="text-chalk/20 text-xs font-mono">{phase.matches?.length ?? 0} partidos</span>
-                            <button className="ml-auto py-0.5 px-2 text-xs rounded border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all" onClick={() => handleDeletePhase(phase)}>Eliminar</button>
-                          </div>
-                          {rounds.length === 0 ? (
-                            <p className="text-chalk/20 text-xs pl-2">Sin partidos en esta fase</p>
-                          ) : (
-                            <div className="flex gap-4 overflow-x-auto pb-2 items-start">
-                              {rounds.map(round => (
-                                <div key={round} className="flex-shrink-0 w-64">
-                                  <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2 font-mono">
-                                    {matchesByRound[round][0]?.scheduledAt
-                                      ? new Date(matchesByRound[round][0].scheduledAt!).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
-                                      : `Ronda ${round}`}
-                                  </p>
-                                  <div className="space-y-2">
-                                    {matchesByRound[round].map(m => <MatchCard key={m.id} match={m} />)}
-                                  </div>
+                    {/* Contenido del circuito — se oculta con el toggle */}
+                    {!oculto && (
+                      <>
+                        {circuit.phases?.length === 0 ? (
+                          <p className="text-chalk/30 text-sm pl-2">Sin fases. Agregá una con "+ Fase".</p>
+                        ) : (
+                          circuit.phases?.map((phase: Phase) => {
+                            const matchesByRound = getMatchesByRound(phase.matches ?? []);
+                            const rounds = getRoundsSorted(matchesByRound);
+                            return (
+                              <div key={phase.id} className="mb-6">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h4 className="font-semibold text-chalk/80 uppercase text-sm tracking-wider">{phase.name}</h4>
+                                  <span className="badge-status bg-felt-light/20 text-chalk/40 text-xs capitalize">{phase.type}</span>
+                                  <span className="text-chalk/20 text-xs font-mono">{phase.matches?.length ?? 0} partidos</span>
+                                  <button className="ml-auto py-0.5 px-2 text-xs rounded border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all" onClick={() => handleDeletePhase(phase)}>Eliminar</button>
                                 </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              ))
+                                {rounds.length === 0 ? (
+                                  <p className="text-chalk/20 text-xs pl-2">Sin partidos en esta fase</p>
+                                ) : (
+                                  <div className="flex gap-4 overflow-x-auto pb-2 items-start">
+                                    {rounds.map(round => (
+                                      <div key={round} className="flex-shrink-0 w-64">
+                                        <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2 font-mono">
+                                          {matchesByRound[round][0]?.scheduledAt
+                                            ? new Date(matchesByRound[round][0].scheduledAt!).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
+                                            : `Ronda ${round}`}
+                                        </p>
+                                        <div className="space-y-2">
+                                          {matchesByRound[round].map(m => <MatchCard key={m.id} match={m} />)}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
         )}
@@ -588,10 +625,9 @@ export default function FixturePage() {
       {previewModal && (
         <Modal title={`VISTA PREVIA — ${previewModal.circuit.name}`} onClose={() => setPreviewModal(null)}>
           <div className="space-y-4">
-            {/* Resumen inscriptos */}
             <div className="grid grid-cols-4 gap-2">
               {[
-                { label: 'Máster', val: previewModal.data.inscriptos.master, color: 'text-gold' },
+                { label: 'Máster',  val: previewModal.data.inscriptos.master,  color: 'text-gold' },
                 { label: 'Primera', val: previewModal.data.inscriptos.primera, color: 'text-blue-400' },
                 { label: 'Segunda', val: previewModal.data.inscriptos.segunda, color: 'text-green-400' },
                 { label: 'Clasif.', val: previewModal.data.inscriptos.tercera, color: 'text-chalk/60' },
@@ -603,17 +639,15 @@ export default function FixturePage() {
               ))}
             </div>
 
-            {/* Tabs */}
             <div className="flex gap-2 flex-wrap">
               {[
-                { key: 'series', label: `Series (${previewModal.data.clasificatorio.totalSeries})` },
+                { key: 'series',    label: `Series (${previewModal.data.clasificatorio.totalSeries})` },
                 { key: 'reduccion', label: `Reducción (${previewModal.data.clasificatorio.crucesReduccion?.length ?? 0})` },
-                { key: 'segunda', label: `Segunda (${previewModal.data.segundaPreview?.totalSeries ?? 0} series)` },
-                { key: 'primera', label: `Primera (${previewModal.data.primeraPreview?.totalCruces ?? 0} cruces)` },
-                { key: 'master', label: `Master (${previewModal.data.masterPreview?.totalCruces ?? 0} cruces)` },
+                { key: 'segunda',   label: `Segunda (${previewModal.data.segundaPreview?.totalSeries ?? 0} series)` },
+                { key: 'primera',   label: `Primera (${previewModal.data.primeraPreview?.totalCruces ?? 0} cruces)` },
+                { key: 'master',    label: `Master (${previewModal.data.masterPreview?.totalCruces ?? 0} cruces)` },
               ].map(tab => (
-                <button
-                  key={tab.key}
+                <button key={tab.key}
                   className={`py-1 px-3 text-xs rounded-lg border transition-all ${previewTab === tab.key ? 'border-gold/40 text-gold bg-gold/10' : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'}`}
                   onClick={() => setPreviewTab(tab.key as PreviewTab)}
                 >
@@ -622,9 +656,7 @@ export default function FixturePage() {
               ))}
             </div>
 
-            {/* Contenido según tab */}
             <div className="max-h-[50vh] overflow-y-auto space-y-3 pr-1">
-
               {previewTab === 'series' && previewModal.data.clasificatorio.series.map(serie => (
                 <div key={serie.serie} className="bg-felt-dark/40 border border-felt-light/10 rounded-lg p-3">
                   <p className="text-chalk/40 text-xs uppercase tracking-widest font-mono mb-2">Serie {serie.serie}</p>
@@ -680,7 +712,6 @@ export default function FixturePage() {
                   <span className={`text-sm flex-1 text-right ${cruce.esSlotB ? 'text-gold/50 italic' : 'text-chalk/70'}`}>{cruce.jugadorB}</span>
                 </div>
               ))}
-
             </div>
 
             <div className="flex gap-3 pt-2">
