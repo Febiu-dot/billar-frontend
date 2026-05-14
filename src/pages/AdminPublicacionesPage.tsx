@@ -106,7 +106,6 @@ function PlantillaSeries({ data, tema }: { data: any; tema: any }) {
   const series: any[] = data.series ?? [];
   const pares: any[][] = [];
   for (let i = 0; i < series.length; i += 2) pares.push([series[i], series[i + 1] ?? null]);
-
   return (
     <div style={{ padding: '16px 20px', background: '#fff', fontFamily: F }}>
       {pares.map((par, i) => (
@@ -146,7 +145,6 @@ function PlantillaReduccion({ data, tema }: { data: any; tema: any }) {
   const cruces: any[] = data.cruces ?? [];
   const pares: any[][] = [];
   for (let i = 0; i < cruces.length; i += 2) pares.push([cruces[i], cruces[i + 1] ?? null]);
-
   return (
     <div style={{ padding: '16px 20px', background: '#fff', fontFamily: F }}>
       {pares.map((par, i) => (
@@ -183,7 +181,6 @@ function PlantillaCruces({ data, tema }: { data: any; tema: any }) {
     porEtapa[k].push(c);
   }
   const etapas = Object.keys(porEtapa);
-
   return (
     <div style={{ padding: '16px 20px', background: '#fff', fontFamily: F }}>
       {etapas.map(etapa => {
@@ -226,6 +223,20 @@ function PlantillaCruces({ data, tema }: { data: any; tema: any }) {
   );
 }
 
+// ─── Contenido de la publicación (reutilizable) ─────────────────────
+function PubContenido({ data, tema, notas }: { data: any; tema: any; notas: string }) {
+  return (
+    <>
+      <PubHeader data={data} tema={tema} />
+      {data.tipo === 'series'    && <PlantillaSeries    data={data} tema={tema} />}
+      {data.tipo === 'reduccion' && <PlantillaReduccion data={data} tema={tema} />}
+      {data.tipo === 'cruces'    && <PlantillaCruces    data={data} tema={tema} />}
+      <PubFooter notas={notas} tema={tema} />
+    </>
+  );
+}
+
+// ─── Página principal ───────────────────────────────────────────────
 export default function AdminPublicacionesPage() {
   const [torneos, setTorneos] = useState<any[]>([]);
   const [circuitId, setCircuitId] = useState('');
@@ -235,7 +246,10 @@ export default function AdminPublicacionesPage() {
   const [exportando, setExportando] = useState(false);
   const [notas, setNotas] = useState('');
   const [error, setError] = useState('');
-  const pubRef = useRef<HTMLDivElement>(null);
+
+  // Ref para EXPORTAR — tamaño completo, oculto
+  const exportRef = useRef<HTMLDivElement>(null);
+  // Ref para ajustar altura del wrapper de vista previa
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -247,9 +261,10 @@ export default function AdminPublicacionesPage() {
     }).catch(() => {});
   }, []);
 
+  // Ajustar altura del wrapper de preview al contenido real
   useEffect(() => {
-    if (wrapperRef.current && pubRef.current) {
-      const h = pubRef.current.scrollHeight * 0.5;
+    if (wrapperRef.current && exportRef.current) {
+      const h = exportRef.current.scrollHeight * 0.5;
       wrapperRef.current.style.height = `${h}px`;
     }
   }, [pubData, notas]);
@@ -269,15 +284,18 @@ export default function AdminPublicacionesPage() {
   };
 
   const exportar = async () => {
-    if (!pubRef.current) return;
+    if (!exportRef.current) return;
     setExportando(true);
     try {
       const h2c = await cargarHtml2Canvas();
-      const canvas = await h2c(pubRef.current, {
-        scale: 2,
+      // Captura el div OCULTO de tamaño completo (1080px real, sin transform)
+      const canvas = await h2c(exportRef.current, {
+        scale: 2,          // 2160px de ancho final — alta resolución
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
+        width: exportRef.current.scrollWidth,
+        height: exportRef.current.scrollHeight,
       });
       const link = document.createElement('a');
       link.download = `${pubData?.fase ?? 'publicacion'} - ${pubData?.circuito ?? ''}.png`.replace(/[/\\?%*:|"<>]/g, '-');
@@ -297,6 +315,25 @@ export default function AdminPublicacionesPage() {
 
   return (
     <div>
+      {/* DIV OCULTO para exportar — tamaño completo 1080px sin ningún transform */}
+      {pubData && (
+        <div
+          ref={exportRef}
+          style={{
+            position: 'fixed',
+            left: '-9999px',
+            top: 0,
+            width: '1080px',
+            fontFamily: F,
+            background: '#ffffff',
+            lineHeight: 1.3,
+            zIndex: -1,
+          }}
+        >
+          <PubContenido data={pubData} tema={tema} notas={notas} />
+        </div>
+      )}
+
       <div className="px-6 pt-6 pb-4 border-b border-felt-light/20">
         <h1 className="font-display text-4xl text-gold">PUBLICACIONES</h1>
         <p className="text-chalk/50 text-sm mt-1">Generación automática de gráficos para WhatsApp y redes sociales</p>
@@ -343,7 +380,7 @@ export default function AdminPublicacionesPage() {
                 <button className="btn-primary px-8" disabled={exportando} onClick={exportar}>
                   {exportando ? 'Exportando...' : '⬇ Exportar PNG'}
                 </button>
-                <span className="text-chalk/30 text-xs">Alta resolución · Listo para WhatsApp y redes</span>
+                <span className="text-chalk/30 text-xs">2160px de ancho · Alta resolución · Listo para WhatsApp</span>
               </div>
             </>
           )}
@@ -360,19 +397,14 @@ export default function AdminPublicacionesPage() {
             <p className="text-chalk/40 text-xs uppercase tracking-widest mb-3">
               Vista previa (50%) · {pubData.tipo === 'series' ? `${pubData.series?.length ?? 0} series` : `${pubData.cruces?.length ?? 0} cruces`}
             </p>
+            {/* Wrapper con altura ajustada al contenido escalado */}
             <div
               ref={wrapperRef}
               style={{ width: '540px', overflow: 'hidden', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}
             >
-              <div
-                ref={pubRef}
-                style={{ width: '1080px', transform: 'scale(0.5)', transformOrigin: 'top left', fontFamily: F, background: '#ffffff', lineHeight: 1.3 }}
-              >
-                <PubHeader data={pubData} tema={tema} />
-                {pubData.tipo === 'series'    && <PlantillaSeries    data={pubData} tema={tema} />}
-                {pubData.tipo === 'reduccion' && <PlantillaReduccion data={pubData} tema={tema} />}
-                {pubData.tipo === 'cruces'    && <PlantillaCruces    data={pubData} tema={tema} />}
-                <PubFooter notas={notas} tema={tema} />
+              {/* Preview — mismo contenido pero con transform 50% */}
+              <div style={{ width: '1080px', transform: 'scale(0.5)', transformOrigin: 'top left', fontFamily: F, background: '#ffffff', lineHeight: 1.3 }}>
+                <PubContenido data={pubData} tema={tema} notas={notas} />
               </div>
             </div>
           </div>
