@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { api } from '../services/api';
 import { LoadingSpinner } from '../components/ui';
 
-// ─── Temas de color por fase ────────────────────────────────────────
 const TEMAS: Record<string, { header: string; accent: string; light: string; row: string; badge: string }> = {
   clasificatorio: { header: '#1a5c2a', accent: '#2d8a3e', light: '#edf7ef', row: '#d4edda', badge: '#1a5c2a' },
   reduccion:      { header: '#1a5c2a', accent: '#388e3c', light: '#f1f8e9', row: '#dcedc8', badge: '#1a5c2a' },
@@ -21,7 +20,16 @@ const FASES = [
 
 const F = 'Arial, Helvetica, sans-serif';
 
-// ─── Cabecera ───────────────────────────────────────────────────────
+const cargarHtml2Canvas = (): Promise<any> =>
+  new Promise((resolve, reject) => {
+    if ((window as any).html2canvas) { resolve((window as any).html2canvas); return; }
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    script.onload = () => resolve((window as any).html2canvas);
+    script.onerror = () => reject(new Error('No se pudo cargar html2canvas desde CDN'));
+    document.head.appendChild(script);
+  });
+
 function PubHeader({ data, tema }: { data: any; tema: any }) {
   return (
     <div style={{ background: tema.header, padding: '28px 40px 24px', display: 'flex', alignItems: 'center', gap: 28, fontFamily: F }}>
@@ -47,7 +55,6 @@ function PubHeader({ data, tema }: { data: any; tema: any }) {
   );
 }
 
-// ─── Pie de página ──────────────────────────────────────────────────
 function PubFooter({ notas, tema }: { notas: string; tema: any }) {
   if (!notas.trim()) return null;
   return (
@@ -57,7 +64,6 @@ function PubFooter({ notas, tema }: { notas: string; tema: any }) {
   );
 }
 
-// ─── Fila de jugador ────────────────────────────────────────────────
 function JRow({ j, tema, border }: { j: any; tema: any; border?: boolean }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', padding: '6px 10px', gap: 7, borderBottom: border ? `1px solid ${tema.light}` : 'none', minHeight: 34, fontFamily: F }}>
@@ -80,7 +86,6 @@ function JRow({ j, tema, border }: { j: any; tema: any; border?: boolean }) {
   );
 }
 
-// ─── Fila de info de partido ────────────────────────────────────────
 function InfoPartido({ p, tema, label }: { p: any; tema: any; label: string }) {
   return (
     <div style={{ background: tema.header, color: '#fff', padding: '5px 10px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontFamily: F }}>
@@ -97,7 +102,6 @@ function InfoPartido({ p, tema, label }: { p: any; tema: any; label: string }) {
   );
 }
 
-// ─── Plantilla Series ───────────────────────────────────────────────
 function PlantillaSeries({ data, tema }: { data: any; tema: any }) {
   const series: any[] = data.series ?? [];
   const pares: any[][] = [];
@@ -138,7 +142,6 @@ function PlantillaSeries({ data, tema }: { data: any; tema: any }) {
   );
 }
 
-// ─── Plantilla Reducción ────────────────────────────────────────────
 function PlantillaReduccion({ data, tema }: { data: any; tema: any }) {
   const cruces: any[] = data.cruces ?? [];
   const pares: any[][] = [];
@@ -171,11 +174,8 @@ function PlantillaReduccion({ data, tema }: { data: any; tema: any }) {
   );
 }
 
-// ─── Plantilla Cruces (Primera / Master) ───────────────────────────
 function PlantillaCruces({ data, tema }: { data: any; tema: any }) {
   const cruces: any[] = data.cruces ?? [];
-
-  // Agrupar por etapa
   const porEtapa: Record<string, any[]> = {};
   for (const c of cruces) {
     const k = c.etapa ?? 'CRUCES';
@@ -202,9 +202,7 @@ function PlantillaCruces({ data, tema }: { data: any; tema: any }) {
                 {par.map((c, ci) => c ? (
                   <div key={ci} style={{ flex: 1, border: `2px solid ${tema.accent}`, borderRadius: 5, overflow: 'hidden', background: '#fff' }}>
                     <div style={{ background: tema.light, padding: '4px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${tema.accent}` }}>
-                      <span style={{ fontWeight: 900, fontSize: 12, color: tema.header, letterSpacing: 1 }}>
-                        CRUCE {c.round}
-                      </span>
+                      <span style={{ fontWeight: 900, fontSize: 12, color: tema.header, letterSpacing: 1 }}>CRUCE {c.round}</span>
                       <span style={{ fontSize: 11, color: tema.accent, fontWeight: 600 }}>
                         {c.hora ? `🕐 ${c.hora}` : ''} {c.fecha ? `📅 ${c.fecha}` : ''}
                       </span>
@@ -228,7 +226,6 @@ function PlantillaCruces({ data, tema }: { data: any; tema: any }) {
   );
 }
 
-// ─── Página principal ───────────────────────────────────────────────
 export default function AdminPublicacionesPage() {
   const [torneos, setTorneos] = useState<any[]>([]);
   const [circuitId, setCircuitId] = useState('');
@@ -250,7 +247,6 @@ export default function AdminPublicacionesPage() {
     }).catch(() => {});
   }, []);
 
-  // Ajustar altura del wrapper al contenido escalado
   useEffect(() => {
     if (wrapperRef.current && pubRef.current) {
       const h = pubRef.current.scrollHeight * 0.5;
@@ -276,8 +272,8 @@ export default function AdminPublicacionesPage() {
     if (!pubRef.current) return;
     setExportando(true);
     try {
-      const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(pubRef.current, {
+      const h2c = await cargarHtml2Canvas();
+      const canvas = await h2c(pubRef.current, {
         scale: 2,
         useCORS: true,
         allowTaint: true,
@@ -288,14 +284,13 @@ export default function AdminPublicacionesPage() {
       link.href = canvas.toDataURL('image/png', 1.0);
       link.click();
     } catch (e: any) {
-      alert(`Error al exportar: ${e.message}\n\nVerificá que html2canvas está instalado:\nnpm install html2canvas`);
+      alert(`Error al exportar: ${e.message}`);
     } finally {
       setExportando(false);
     }
   };
 
   const tema = TEMAS[tipoFase] ?? TEMAS.clasificatorio;
-
   const circuitos = torneos.flatMap((t: any) =>
     (t.circuits ?? []).map((c: any) => ({ ...c, torneoNombre: t.name }))
   );
@@ -308,7 +303,6 @@ export default function AdminPublicacionesPage() {
       </div>
 
       <div className="p-6 space-y-5">
-        {/* Controles */}
         <div className="card space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
@@ -361,7 +355,6 @@ export default function AdminPublicacionesPage() {
 
         {loading && <LoadingSpinner />}
 
-        {/* Vista previa */}
         {pubData && !loading && (
           <div>
             <p className="text-chalk/40 text-xs uppercase tracking-widest mb-3">
@@ -373,7 +366,7 @@ export default function AdminPublicacionesPage() {
             >
               <div
                 ref={pubRef}
-                style={{ width: '1080px', transform: 'scale(0.5)', transformOrigin: 'top left', fontFamily: 'Arial, Helvetica, sans-serif', background: '#ffffff', lineHeight: 1.3 }}
+                style={{ width: '1080px', transform: 'scale(0.5)', transformOrigin: 'top left', fontFamily: F, background: '#ffffff', lineHeight: 1.3 }}
               >
                 <PubHeader data={pubData} tema={tema} />
                 {pubData.tipo === 'series'    && <PlantillaSeries    data={pubData} tema={tema} />}
