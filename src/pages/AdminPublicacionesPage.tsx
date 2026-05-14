@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { LoadingSpinner } from '../components/ui';
 
 const TEMAS: Record<string, { header: string; accent: string; light: string; badge: string }> = {
@@ -66,11 +67,7 @@ function PubFooter({ notas, tema }: { notas: string; tema: any }) {
 
 function JRow({ j, tema, border }: { j: any; tema: any; border?: boolean }) {
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', padding: '10px 14px', gap: 10,
-      borderBottom: border ? `1px solid ${tema.light}` : 'none',
-      minHeight: 48, fontFamily: F,
-    }}>
+    <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', gap: 10, borderBottom: border ? `1px solid ${tema.light}` : 'none', minHeight: 48, fontFamily: F }}>
       {j.ranking !== null ? (
         <div style={{ width: 40, height: 32, background: tema.badge, color: '#fff', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 900, flexShrink: 0 }}>
           {j.ranking}
@@ -110,7 +107,6 @@ function PlantillaSeries({ data, tema }: { data: any; tema: any }) {
   const series: any[] = data.series ?? [];
   const pares: any[][] = [];
   for (let i = 0; i < series.length; i += 2) pares.push([series[i], series[i + 1] ?? null]);
-
   return (
     <div style={{ padding: '20px 24px', background: '#f8f8f8', fontFamily: F }}>
       {pares.map((par, i) => (
@@ -150,7 +146,6 @@ function PlantillaReduccion({ data, tema }: { data: any; tema: any }) {
   const cruces: any[] = data.cruces ?? [];
   const pares: any[][] = [];
   for (let i = 0; i < cruces.length; i += 2) pares.push([cruces[i], cruces[i + 1] ?? null]);
-
   return (
     <div style={{ padding: '20px 24px', background: '#f8f8f8', fontFamily: F }}>
       {pares.map((par, i) => (
@@ -187,7 +182,6 @@ function PlantillaCruces({ data, tema }: { data: any; tema: any }) {
     porEtapa[k].push(c);
   }
   const etapas = Object.keys(porEtapa);
-
   return (
     <div style={{ padding: '20px 24px', background: '#f8f8f8', fontFamily: F }}>
       {etapas.map(etapa => {
@@ -243,6 +237,9 @@ function PubContenido({ data, tema, notas }: { data: any; tema: any; notas: stri
 }
 
 export default function AdminPublicacionesPage() {
+  const { user } = useAuth();
+  const esAdmin = user?.role === 'admin';
+
   const [torneos, setTorneos] = useState<any[]>([]);
   const [circuitId, setCircuitId] = useState('');
   const [tipoFase, setTipoFase] = useState('clasificatorio');
@@ -258,7 +255,11 @@ export default function AdminPublicacionesPage() {
     api.get('/publicaciones/circuitos').then(r => {
       setTorneos(r.data);
       if (r.data.length > 0 && r.data[0].circuits?.length > 0) {
-        setCircuitId(String(r.data[0].circuits[0].id));
+        // Seleccionar el circuito con mayor order por defecto
+        const circuits = r.data[0].circuits;
+        const maxOrder = Math.max(...circuits.map((c: any) => c.order ?? 0));
+        const ultimo = circuits.find((c: any) => c.order === maxOrder) ?? circuits[0];
+        setCircuitId(String(ultimo.id));
       }
     }).catch(() => {});
   }, []);
@@ -277,7 +278,7 @@ export default function AdminPublicacionesPage() {
       const res = await api.get(`/publicaciones/${circuitId}/${tipoFase}`);
       setPubData(res.data); setNotas('');
     } catch (e: any) {
-      setError(e?.response?.data?.error ?? 'Error al cargar');
+      setError(e?.response?.data?.error ?? 'Error al cargar los datos');
     } finally { setLoading(false); }
   };
 
@@ -310,19 +311,11 @@ export default function AdminPublicacionesPage() {
 
   return (
     <div>
-      {/* DIV OCULTO a tamaño completo 1080px — base para exportar */}
-      {pubData && (
+      {/* DIV OCULTO para exportar — solo se usa en modo admin */}
+      {pubData && esAdmin && (
         <div
           ref={exportRef}
-          style={{
-            position: 'absolute',
-            left: '-9999px',
-            top: 0,
-            width: '1080px',
-            fontFamily: F,
-            background: '#ffffff',
-            lineHeight: 1.3,
-          }}
+          style={{ position: 'absolute', left: '-9999px', top: 0, width: '1080px', fontFamily: F, background: '#ffffff', lineHeight: 1.3 }}
         >
           <PubContenido data={pubData} tema={tema} notas={notas} />
         </div>
@@ -330,10 +323,13 @@ export default function AdminPublicacionesPage() {
 
       <div className="px-6 pt-6 pb-4 border-b border-felt-light/20">
         <h1 className="font-display text-4xl text-gold">PUBLICACIONES</h1>
-        <p className="text-chalk/50 text-sm mt-1">Generación automática de gráficos para WhatsApp y redes sociales</p>
+        <p className="text-chalk/50 text-sm mt-1">
+          {esAdmin ? 'Generación y exportación de gráficos para difusión' : 'Gráficos del torneo'}
+        </p>
       </div>
 
       <div className="p-6 space-y-5">
+        {/* Controles de selección — visibles para todos */}
         <div className="card space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
@@ -353,12 +349,13 @@ export default function AdminPublicacionesPage() {
             </div>
             <div className="flex items-end">
               <button className="btn-primary w-full" disabled={!circuitId || loading} onClick={cargar}>
-                {loading ? 'Cargando...' : '⚡ Generar publicación'}
+                {loading ? 'Cargando...' : '👁 Ver publicación'}
               </button>
             </div>
           </div>
 
-          {pubData && (
+          {/* Nota al pie y exportar — SOLO ADMIN */}
+          {esAdmin && pubData && (
             <>
               <div>
                 <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Nota al pie (opcional)</label>
@@ -381,10 +378,11 @@ export default function AdminPublicacionesPage() {
         {error && <div className="bg-red-900/20 border border-red-700/40 rounded-lg px-4 py-3 text-red-400 text-sm">{error}</div>}
         {loading && <LoadingSpinner />}
 
+        {/* Vista previa */}
         {pubData && !loading && (
           <div>
             <p className="text-chalk/40 text-xs uppercase tracking-widest mb-3">
-              Vista previa (50%) · {pubData.tipo === 'series' ? `${pubData.series?.length ?? 0} series` : `${pubData.cruces?.length ?? 0} cruces`}
+              {pubData.tipo === 'series' ? `${pubData.series?.length ?? 0} series` : `${pubData.cruces?.length ?? 0} cruces`}
             </p>
             <div
               ref={wrapperRef}
