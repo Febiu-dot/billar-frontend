@@ -15,8 +15,6 @@ import UsersPage from './pages/UsersPage';
 import FaseConfigPage from './pages/FaseConfigPage';
 import RankingPage from './pages/RankingPage';
 import RankingFinalPage from './pages/RankingFinalPage';
-import ReportesPage from './pages/ReportesPage';
-import AdminReportesPage from './pages/AdminReportesPage';
 import AdminPublicacionesPage from './pages/AdminPublicacionesPage';
 import Layout from './components/layout/Layout';
 
@@ -32,12 +30,14 @@ function AppRoutes() {
   const { user } = useAuth();
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/publico" element={<PublicPage />} />
-      <Route path="/fixture" element={<FixturePage />} />
-      <Route path="/ranking" element={<RankingPage />} />
+      {/* Rutas públicas */}
+      <Route path="/login"         element={<LoginPage />} />
+      <Route path="/publico"       element={<PublicPage />} />
+      <Route path="/fixture"       element={<FixturePage />} />
+      <Route path="/ranking"       element={<RankingPage />} />
       <Route path="/ranking-final" element={<RankingFinalPage />} />
-      <Route path="/reportes" element={<ReportesPage />} />
+      <Route path="/publicaciones" element={<AdminPublicacionesPage />} />
+
       <Route path="/" element={
         <ProtectedRoute>
           {user?.role === 'admin' ? <Navigate to="/admin" replace /> :
@@ -45,25 +45,29 @@ function AppRoutes() {
            <Navigate to="/publico" replace />}
         </ProtectedRoute>
       } />
+
+      {/* Admin */}
       <Route path="/admin" element={<ProtectedRoute roles={['admin']}><Layout /></ProtectedRoute>}>
         <Route index element={<AdminDashboard />} />
-        <Route path="sedes" element={<VenuesPage />} />
-        <Route path="mesas" element={<TablesPage />} />
-        <Route path="jugadores" element={<PlayersPage />} />
-        <Route path="partidos" element={<MatchesPage />} />
-        <Route path="fixture" element={<FixturePage />} />
-        <Route path="series" element={<SeriesPage />} />
-        <Route path="cruces" element={<CrucesPage />} />
-        <Route path="usuarios" element={<UsersPage />} />
-        <Route path="faseconfig" element={<FaseConfigPage />} />
-        <Route path="ranking" element={<RankingPage />} />
+        <Route path="sedes"         element={<VenuesPage />} />
+        <Route path="mesas"         element={<TablesPage />} />
+        <Route path="jugadores"     element={<PlayersPage />} />
+        <Route path="partidos"      element={<MatchesPage />} />
+        <Route path="fixture"       element={<FixturePage />} />
+        <Route path="series"        element={<SeriesPage />} />
+        <Route path="cruces"        element={<CrucesPage />} />
+        <Route path="usuarios"      element={<UsersPage />} />
+        <Route path="faseconfig"    element={<FaseConfigPage />} />
+        <Route path="ranking"       element={<RankingPage />} />
         <Route path="ranking-final" element={<RankingFinalPage />} />
-        <Route path="reportes" element={<AdminReportesPage />} />
         <Route path="publicaciones" element={<AdminPublicacionesPage />} />
       </Route>
+
+      {/* Juez */}
       <Route path="/juez" element={<ProtectedRoute roles={['juez_sede', 'admin']}><Layout /></ProtectedRoute>}>
         <Route index element={<JudgePage />} />
       </Route>
+
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
