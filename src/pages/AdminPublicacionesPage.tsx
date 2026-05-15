@@ -28,6 +28,15 @@ const SECCION_COLORES: Record<string, { bg: string; badge: string; light: string
   'TERCERA': { bg: '#1a5c2a', badge: '#2d8a3e', light: '#edf7ef' },
 };
 
+// Color del jugador según su posición en el ranking (categoría)
+const getCatColor = (ranking: number | null): { text: string; badge: string } => {
+  if (ranking === null) return { text: '#999', badge: '#aaa' };
+  if (ranking <= 8)  return { text: '#4a1070', badge: '#4a1070' }; // master → violeta
+  if (ranking <= 32) return { text: '#014f86', badge: '#014f86' }; // primera → azul
+  if (ranking <= 64) return { text: '#b83c00', badge: '#b83c00' }; // segunda → naranja
+  return             { text: '#1a5c2a', badge: '#1a5c2a' };        // tercera → verde
+};
+
 const FASES = [
   { value: 'clasificatorio', label: '🟢 Series Clasificatorio' },
   { value: 'reduccion',      label: '🟢 Reducción Clasificatorio' },
@@ -83,17 +92,28 @@ function PubFooter({ notas, tema }: { notas: string; tema: any }) {
   );
 }
 
+// Fila de jugador — nombre y club con color de su categoría
 function JRow({ j, tema, border }: { j: any; tema: any; border?: boolean }) {
+  const cat = getCatColor(j.esSlot ? null : j.ranking);
   return (
     <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', gap: 10, borderBottom: border ? `1px solid ${tema.light}` : 'none', minHeight: 48, fontFamily: F }}>
-      {j.ranking !== null ? (
-        <div style={{ width: 40, height: 32, background: tema.badge, color: '#fff', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 900, flexShrink: 0 }}>{j.ranking}</div>
+      {/* Badge de posición en ranking */}
+      {!j.esSlot && j.ranking !== null ? (
+        <div style={{ width: 40, height: 32, background: cat.badge, color: '#fff', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 900, flexShrink: 0 }}>
+          {j.ranking}
+        </div>
       ) : (
-        <div style={{ width: 40, height: 32, background: '#ddd', color: '#888', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, flexShrink: 0 }}>?</div>
+        <div style={{ width: 40, height: 32, background: '#e0e0e0', color: '#888', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, flexShrink: 0 }}>—</div>
       )}
-      <div style={{ flex: 1, fontSize: 20, fontWeight: j.esSlot ? 400 : 700, color: j.esSlot ? '#999' : '#111', fontStyle: j.esSlot ? 'italic' : 'normal', wordBreak: 'break-word' }}>{j.nombre}</div>
+      {/* Nombre del jugador con color de su categoría */}
+      <div style={{ flex: 1, fontSize: 20, fontWeight: j.esSlot ? 400 : 700, color: j.esSlot ? '#aaa' : cat.text, fontStyle: j.esSlot ? 'italic' : 'normal', wordBreak: 'break-word' }}>
+        {j.nombre}
+      </div>
+      {/* Club con color de su categoría */}
       {j.club && (
-        <div style={{ background: tema.header, color: '#fff', padding: '4px 10px', borderRadius: 4, fontSize: 16, fontWeight: 800, flexShrink: 0, letterSpacing: 1 }}>{j.club}</div>
+        <div style={{ background: j.esSlot ? '#aaa' : cat.badge, color: '#fff', padding: '4px 10px', borderRadius: 4, fontSize: 16, fontWeight: 800, flexShrink: 0, letterSpacing: 1 }}>
+          {j.club}
+        </div>
       )}
     </div>
   );
