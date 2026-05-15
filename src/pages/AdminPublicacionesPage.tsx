@@ -28,13 +28,13 @@ const SECCION_COLORES: Record<string, { bg: string; badge: string; light: string
   'TERCERA': { bg: '#1a5c2a', badge: '#2d8a3e', light: '#edf7ef' },
 };
 
-// Color del jugador según su posición en el ranking (categoría)
-const getCatColor = (ranking: number | null): { text: string; badge: string } => {
-  if (ranking === null) return { text: '#999', badge: '#aaa' };
-  if (ranking <= 8)  return { text: '#4a1070', badge: '#4a1070' }; // master → violeta
-  if (ranking <= 32) return { text: '#014f86', badge: '#014f86' }; // primera → azul
-  if (ranking <= 64) return { text: '#b83c00', badge: '#b83c00' }; // segunda → naranja
-  return             { text: '#1a5c2a', badge: '#1a5c2a' };        // tercera → verde
+const getCatColor = (categoria: string | null): { text: string; badge: string; light: string } => {
+  const c = categoria?.toLowerCase();
+  if (c === 'master')  return { text: '#4a1070', badge: '#4a1070', light: '#f5eef8' };
+  if (c === 'primera') return { text: '#014f86', badge: '#014f86', light: '#e8f4fd' };
+  if (c === 'segunda') return { text: '#b83c00', badge: '#b83c00', light: '#fff4f0' };
+  if (c === 'tercera') return { text: '#1a5c2a', badge: '#1a5c2a', light: '#edf7ef' };
+  return { text: '#999', badge: '#aaa', light: '#f5f5f5' };
 };
 
 const FASES = [
@@ -92,12 +92,10 @@ function PubFooter({ notas, tema }: { notas: string; tema: any }) {
   );
 }
 
-// Fila de jugador — nombre y club con color de su categoría
 function JRow({ j, tema, border }: { j: any; tema: any; border?: boolean }) {
-  const cat = getCatColor(j.esSlot ? null : j.ranking);
+  const cat = getCatColor(j.esSlot ? null : j.categoria);
   return (
     <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', gap: 10, borderBottom: border ? `1px solid ${tema.light}` : 'none', minHeight: 48, fontFamily: F }}>
-      {/* Badge de posición en ranking */}
       {!j.esSlot && j.ranking !== null ? (
         <div style={{ width: 40, height: 32, background: cat.badge, color: '#fff', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 900, flexShrink: 0 }}>
           {j.ranking}
@@ -105,11 +103,9 @@ function JRow({ j, tema, border }: { j: any; tema: any; border?: boolean }) {
       ) : (
         <div style={{ width: 40, height: 32, background: '#e0e0e0', color: '#888', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, flexShrink: 0 }}>—</div>
       )}
-      {/* Nombre del jugador con color de su categoría */}
       <div style={{ flex: 1, fontSize: 20, fontWeight: j.esSlot ? 400 : 700, color: j.esSlot ? '#aaa' : cat.text, fontStyle: j.esSlot ? 'italic' : 'normal', wordBreak: 'break-word' }}>
         {j.nombre}
       </div>
-      {/* Club con color de su categoría */}
       {j.club && (
         <div style={{ background: j.esSlot ? '#aaa' : cat.badge, color: '#fff', padding: '4px 10px', borderRadius: 4, fontSize: 16, fontWeight: 800, flexShrink: 0, letterSpacing: 1 }}>
           {j.club}
@@ -215,6 +211,7 @@ function PlantillaCruces({ data, tema }: { data: any; tema: any }) {
   );
 }
 
+// Ranking: encabezados de sección con color de sección, jugadores con color de su categoría real
 function PlantillaRanking({ data, tema }: { data: any; tema: any }) {
   const jugadores: any[] = data.jugadores ?? [];
   const secciones = ['MÁSTER', 'PRIMERA', 'SEGUNDA', 'TERCERA'];
@@ -223,45 +220,49 @@ function PlantillaRanking({ data, tema }: { data: any; tema: any }) {
     if (!porSeccion[j.seccion]) porSeccion[j.seccion] = [];
     porSeccion[j.seccion].push(j);
   }
-
   return (
     <div style={{ padding: '20px 24px', background: '#f8f8f8', fontFamily: F }}>
       {secciones.filter(s => porSeccion[s]?.length > 0).map(seccion => {
-        const color = SECCION_COLORES[seccion];
+        const secColor = SECCION_COLORES[seccion];
         const jugSec = porSeccion[seccion];
         const mitad = Math.ceil(jugSec.length / 2);
         const col1 = jugSec.slice(0, mitad);
         const col2 = jugSec.slice(mitad);
-
         return (
           <div key={seccion} style={{ marginBottom: 20 }}>
-            <div style={{ background: color.bg, color: '#fff', padding: '10px 20px', fontSize: 22, fontWeight: 900, letterSpacing: 3, borderRadius: '8px 8px 0 0', display: 'flex', alignItems: 'center', gap: 12 }}>
+            {/* Encabezado de sección — usa color de la sección */}
+            <div style={{ background: secColor.bg, color: '#fff', padding: '10px 20px', fontSize: 22, fontWeight: 900, letterSpacing: 3, borderRadius: '8px 8px 0 0', display: 'flex', alignItems: 'center', gap: 12 }}>
               <span>{seccion}</span>
               <span style={{ fontSize: 16, opacity: 0.8, fontWeight: 600 }}>({jugSec.length} jugadores · pos. {jugSec[0].posicion}–{jugSec[jugSec.length - 1].posicion})</span>
             </div>
-            <div style={{ display: 'flex', gap: 0, background: '#fff', border: `2px solid ${color.bg}`, borderTop: 'none', borderRadius: '0 0 8px 8px', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', gap: 0, background: '#fff', border: `2px solid ${secColor.bg}`, borderTop: 'none', borderRadius: '0 0 8px 8px', overflow: 'hidden' }}>
               {[col1, col2].map((col, ci) => (
-                <div key={ci} style={{ flex: 1, borderLeft: ci === 1 ? `2px solid ${color.bg}` : 'none' }}>
-                  <div style={{ display: 'flex', background: color.bg, padding: '6px 10px', gap: 8, opacity: 0.9 }}>
+                <div key={ci} style={{ flex: 1, borderLeft: ci === 1 ? `2px solid ${secColor.bg}` : 'none' }}>
+                  {/* Cabecera de columna */}
+                  <div style={{ display: 'flex', background: secColor.bg, padding: '6px 10px', gap: 8, opacity: 0.9 }}>
                     <span style={{ width: 44, fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'center' }}>#</span>
                     <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#fff' }}>Jugador</span>
                     <span style={{ width: 40, fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'center' }}>Club</span>
                     <span style={{ width: 44, fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'right' }}>Pts</span>
                   </div>
-                  {col.map((j: any, idx: number) => (
-                    <div key={j.posicion} style={{ display: 'flex', alignItems: 'center', padding: '8px 10px', gap: 8, background: idx % 2 === 0 ? color.light : '#fff', borderBottom: `1px solid ${color.light}` }}>
-                      <div style={{ width: 44, height: 30, borderRadius: 4, flexShrink: 0, background: color.badge, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900 }}>
-                        {j.posicion}
+                  {/* Filas — cada jugador con color de su categoría real */}
+                  {col.map((j: any, idx: number) => {
+                    const catColor = getCatColor(j.categoria);
+                    return (
+                      <div key={j.posicion} style={{ display: 'flex', alignItems: 'center', padding: '8px 10px', gap: 8, background: idx % 2 === 0 ? catColor.light : '#fff', borderBottom: `1px solid #eee` }}>
+                        <div style={{ width: 44, height: 30, borderRadius: 4, flexShrink: 0, background: catColor.badge, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900 }}>
+                          {j.posicion}
+                        </div>
+                        <div style={{ flex: 1, fontSize: 18, fontWeight: 700, color: catColor.text, wordBreak: 'break-word', lineHeight: 1.2 }}>{j.nombre}</div>
+                        {j.club && (
+                          <div style={{ width: 40, background: catColor.badge, color: '#fff', padding: '3px 4px', borderRadius: 3, fontSize: 13, fontWeight: 800, textAlign: 'center', flexShrink: 0 }}>{j.club}</div>
+                        )}
+                        <div style={{ width: 44, fontSize: 17, fontWeight: 900, color: catColor.text, textAlign: 'right', flexShrink: 0 }}>{j.puntos}</div>
                       </div>
-                      <div style={{ flex: 1, fontSize: 18, fontWeight: 700, color: '#111', wordBreak: 'break-word', lineHeight: 1.2 }}>{j.nombre}</div>
-                      {j.club && (
-                        <div style={{ width: 40, background: color.bg, color: '#fff', padding: '3px 4px', borderRadius: 3, fontSize: 13, fontWeight: 800, textAlign: 'center', flexShrink: 0 }}>{j.club}</div>
-                      )}
-                      <div style={{ width: 44, fontSize: 17, fontWeight: 900, color: color.bg, textAlign: 'right', flexShrink: 0 }}>{j.puntos}</div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {ci === 1 && col.length < col1.length && Array.from({ length: col1.length - col.length }).map((_, i) => (
-                    <div key={`e-${i}`} style={{ height: 47, background: (col.length + i) % 2 === 0 ? color.light : '#fff', borderBottom: `1px solid ${color.light}` }} />
+                    <div key={`e-${i}`} style={{ height: 47, background: (col.length + i) % 2 === 0 ? '#f9f9f9' : '#fff', borderBottom: '1px solid #eee' }} />
                   ))}
                 </div>
               ))}
@@ -345,14 +346,14 @@ export default function AdminPublicacionesPage() {
           return;
         }
 
+        // Incluye categoria del jugador para colores individuales
         const jugadores = rankRes.data.map((e: any) => ({
           posicion: e.position,
           nombre: `${e.player.lastName}, ${e.player.firstName}`,
           club: abrevClub(e.player.club),
           puntos: e.points,
-          setsGanados: e.setsWon,
-          tantos: e.pointsFor,
-          seccion: e.position <= 8 ? 'MÁSTER' : e.position <= 32 ? 'PRIMERA' : e.position <= 64 ? 'SEGUNDA' : 'TERCERA',
+          categoria: e.player?.category?.name ?? null,
+          seccion: (e.position ?? 999) <= 8 ? 'MÁSTER' : (e.position ?? 999) <= 32 ? 'PRIMERA' : (e.position ?? 999) <= 64 ? 'SEGUNDA' : 'TERCERA',
         }));
 
         setPubData({
