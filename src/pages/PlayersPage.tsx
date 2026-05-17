@@ -34,10 +34,17 @@ export default function PlayersPage() {
     api.get('/departamentos').then(r => setDepartamentos(r.data));
   }, []);
 
+  // Plantilla CSV incluye columna Categoria para soportar creación de nuevos jugadores
   const handleDescargarPlantilla = () => {
-    const header = ['ID', 'Apellido', 'Nombre', 'CI', 'Club', 'Departamento'];
+    const header = ['ID', 'Apellido', 'Nombre', 'CI', 'Club', 'Departamento', 'Categoria'];
     const filas = players.map(p => [
-      p.id, p.lastName, p.firstName, p.dni ?? '', p.club ?? '', p.departamento?.nombre ?? '',
+      p.id,
+      p.lastName,
+      p.firstName,
+      p.dni ?? '',
+      p.club ?? '',
+      p.departamento?.nombre ?? '',
+      p.category?.name ?? '',
     ]);
     const csv = [header, ...filas].map(r => r.join(';')).join('\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -47,35 +54,102 @@ export default function PlayersPage() {
     URL.revokeObjectURL(url);
   };
 
+  // Import:
+  // - ID = 0 (o no existe en BD) → crear jugador nuevo (requiere Categoria)
+  // - ID existe en BD           → actualizar departamento del jugador existente
   const handleImportar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setImportando(true); setImportMsg('');
+
     try {
       const text = await file.text();
       const filas = text.split('\n').slice(1).filter(r => r.trim());
-      let actualizados = 0, errores = 0, sinDep = 0;
+
+      let actualizados = 0;
+      let sinDep = 0;
+      let erroresUpdate = 0;
+      const nuevosJugadores: {
+        firstName: string;
+        lastName: string;
+        dni?: string;
+        categoryId: number;
+        club?: string;
+        departamentoId?: number;
+      }[] = [];
+
       for (const fila of filas) {
         const cols = fila.split(';');
-        const playerId = parseInt(cols[0]);
-        const depNombre = cols[5]?.trim().replace(/\r/g, '');
-        if (!playerId || isNaN(playerId)) continue;
-        const player = players.find(p => p.id === playerId);
-        if (!player) continue;
+        const playerId   = parseInt(cols[0]);
+        const apellido   = cols[1]?.trim() ?? '';
+        const nombre     = cols[2]?.trim() ?? '';
+        const ci         = cols[3]?.trim() ?? '';
+        const club       = cols[4]?.trim() ?? '';
+        const depNombre  = cols[5]?.trim().replace(/\r/g, '') ?? '';
+        const catNombre  = cols[6]?.trim().replace(/\r/g, '').toLowerCase() ?? '';
+
         if (!depNombre) { sinDep++; continue; }
+
         const dep = departamentos.find(d => d.nombre.toLowerCase() === depNombre.toLowerCase());
-        if (!dep) { errores++; continue; }
+        if (!dep) { erroresUpdate++; continue; }
+
+        // ── NUEVO JUGADOR (ID=0 o no existe en BD) ──────────────────────
+        const existingPlayer = players.find(p => p.id === playerId);
+        if (!existingPlayer || playerId === 0) {
+          const cat = categories.find(c => c.name.toLowerCase() === catNombre);
+          if (!cat) { erroresUpdate++; continue; }
+          nuevosJugadores.push({
+            firstName:     nombre,
+            lastName:      apellido,
+            dni:           ci || undefined,
+            categoryId:    cat.id,
+            club:          club || undefined,
+            departamentoId: dep.id,
+          });
+          continue;
+        }
+
+        // ── ACTUALIZAR JUGADOR EXISTENTE ─────────────────────────────────
         try {
           await api.put(`/players/${playerId}`, {
-            firstName: player.firstName, lastName: player.lastName, dni: player.dni,
-            categoryId: player.categoryId, active: player.active,
-            club: player.club ?? cols[4]?.trim() ?? '', departamentoId: dep.id,
+            firstName:     existingPlayer.firstName,
+            lastName:      existingPlayer.lastName,
+            dni:           existingPlayer.dni,
+            categoryId:    existingPlayer.categoryId,
+            active:        existingPlayer.active,
+            club:          existingPlayer.club ?? club,
+            departamentoId: dep.id,
           });
           actualizados++;
-        } catch { errores++; }
+        } catch {
+          erroresUpdate++;
+        }
       }
+
+      // ── CREACIÓN MASIVA ──────────────────────────────────────────────
+      let creados = 0;
+      let erroresCreate = 0;
+      if (nuevosJugadores.length > 0) {
+        try {
+          const res = await api.post('/players/bulk', { players: nuevosJugadores });
+          creados       = res.data.creados ?? 0;
+          erroresCreate = res.data.errores ?? 0;
+        } catch {
+          erroresCreate = nuevosJugadores.length;
+        }
+      }
+
       await fetchPlayers();
-      setImportMsg(`✅ ${actualizados} actualizados${sinDep > 0 ? `, ${sinDep} sin departamento` : ''}${errores > 0 ? `, ${errores} errores` : ''}`);
+
+      const totalErrores = erroresUpdate + erroresCreate;
+      let msg = '✅ ';
+      if (actualizados > 0) msg += `${actualizados} actualizados`;
+      if (creados > 0)      msg += `${actualizados > 0 ? ', ' : ''}${creados} creados`;
+      if (sinDep > 0)       msg += `, ${sinDep} sin departamento`;
+      if (totalErrores > 0) msg += `, ${totalErrores} errores`;
+      if (actualizados === 0 && creados === 0) msg = `⚠️ 0 jugadores procesados${totalErrores > 0 ? ` — ${totalErrores} errores` : ''}`;
+
+      setImportMsg(msg);
     } catch {
       setImportMsg('❌ Error al leer el archivo');
     } finally {
@@ -99,7 +173,13 @@ export default function PlayersPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true); setError('');
     try {
-      const payload = { ...form, categoryId: Number(form.categoryId), dni: form.dni || undefined, club: form.club || undefined, departamentoId: form.departamentoId ? Number(form.departamentoId) : undefined };
+      const payload = {
+        ...form,
+        categoryId: Number(form.categoryId),
+        dni: form.dni || undefined,
+        club: form.club || undefined,
+        departamentoId: form.departamentoId ? Number(form.departamentoId) : undefined,
+      };
       if (editPlayer) { await api.put(`/players/${editPlayer.id}`, payload); }
       else { await api.post('/players', payload); }
       setShowModal(false); fetchPlayers();
@@ -109,7 +189,11 @@ export default function PlayersPage() {
 
   const handleToggleActive = async (p: Player) => {
     try {
-      await api.put(`/players/${p.id}`, { firstName: p.firstName, lastName: p.lastName, dni: p.dni, categoryId: p.categoryId, active: !p.active, club: p.club, departamentoId: p.departamentoId });
+      await api.put(`/players/${p.id}`, {
+        firstName: p.firstName, lastName: p.lastName, dni: p.dni,
+        categoryId: p.categoryId, active: !p.active, club: p.club,
+        departamentoId: p.departamentoId,
+      });
       fetchPlayers();
     } catch { alert('Error al cambiar el estado del jugador'); }
   };
@@ -117,13 +201,12 @@ export default function PlayersPage() {
   const catOrder: CategoryName[] = ['master', 'primera', 'segunda', 'tercera'];
 
   const filtered = players.filter(p => {
-    const matchesCat = filterCat ? p.category?.name === filterCat : true;
-    const matchesDep = filterDep ? p.departamentoId?.toString() === filterDep : true;
+    const matchesCat    = filterCat ? p.category?.name === filterCat : true;
+    const matchesDep    = filterDep ? p.departamentoId?.toString() === filterDep : true;
     const matchesSearch = search ? `${p.firstName} ${p.lastName}`.toLowerCase().includes(search.toLowerCase()) : true;
     return matchesCat && matchesDep && matchesSearch;
   });
 
-  // Agrupar por categoría y ordenar por club dentro de cada grupo
   const grouped: Record<string, Player[]> = {};
   filtered.forEach(p => {
     const cat = p.category?.name ?? 'sin_categoria';
@@ -131,7 +214,6 @@ export default function PlayersPage() {
     grouped[cat].push(p);
   });
 
-  // Ordenar cada grupo por club (alfabético), luego por apellido dentro del mismo club
   Object.keys(grouped).forEach(cat => {
     grouped[cat].sort((a, b) => {
       const clubA = (a.club ?? '').toUpperCase();
@@ -184,9 +266,9 @@ export default function PlayersPage() {
         <div className="bg-felt-dark/30 border border-felt-light/10 rounded-lg px-4 py-3 text-xs text-chalk/50 space-y-1">
           <p className="font-semibold text-chalk/70">¿Cómo importar departamentos?</p>
           <p>1. Descargá la plantilla CSV con el botón <strong>⬇ Plantilla CSV</strong></p>
-          <p>2. Abrila en Excel, completá la columna <strong>Departamento</strong> con el nombre exacto del departamento</p>
-          <p>3. Guardá el archivo como CSV (separado por punto y coma)</p>
-          <p>4. Subilo con el botón <strong>⬆ Importar departamentos</strong></p>
+          <p>2. Para <strong>actualizar</strong> jugadores existentes: completá la columna <strong>Departamento</strong></p>
+          <p>3. Para <strong>crear jugadores nuevos</strong>: usá ID=0 y completá todas las columnas incluyendo <strong>Categoria</strong></p>
+          <p>4. Guardá el archivo como CSV (separado por punto y coma) y subilo con <strong>⬆ Importar departamentos</strong></p>
           <p className="text-chalk/40">Departamentos disponibles: {departamentos.map(d => d.nombre).join(', ')}</p>
         </div>
 
