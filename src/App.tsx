@@ -16,6 +16,7 @@ import FaseConfigPage from './pages/FaseConfigPage';
 import RankingPage from './pages/RankingPage';
 import RankingFinalPage from './pages/RankingFinalPage';
 import AdminPublicacionesPage from './pages/AdminPublicacionesPage';
+import ConfigTorneoPage from './pages/ConfigTorneoPage';
 import Layout from './components/layout/Layout';
 
 function ProtectedRoute({ children, roles }: { children: React.ReactNode; roles?: string[] }) {
@@ -49,18 +50,19 @@ function AppRoutes() {
       {/* Admin */}
       <Route path="/admin" element={<ProtectedRoute roles={['admin']}><Layout /></ProtectedRoute>}>
         <Route index element={<AdminDashboard />} />
-        <Route path="sedes"         element={<VenuesPage />} />
-        <Route path="mesas"         element={<TablesPage />} />
-        <Route path="jugadores"     element={<PlayersPage />} />
-        <Route path="partidos"      element={<MatchesPage />} />
-        <Route path="fixture"       element={<FixturePage />} />
-        <Route path="series"        element={<SeriesPage />} />
-        <Route path="cruces"        element={<CrucesPage />} />
-        <Route path="usuarios"      element={<UsersPage />} />
-        <Route path="faseconfig"    element={<FaseConfigPage />} />
-        <Route path="ranking"       element={<RankingPage />} />
-        <Route path="ranking-final" element={<RankingFinalPage />} />
-        <Route path="publicaciones" element={<AdminPublicacionesPage />} />
+        <Route path="sedes"           element={<VenuesPage />} />
+        <Route path="mesas"           element={<TablesPage />} />
+        <Route path="jugadores"       element={<PlayersPage />} />
+        <Route path="partidos"        element={<MatchesPage />} />
+        <Route path="fixture"         element={<FixturePage />} />
+        <Route path="series"          element={<SeriesPage />} />
+        <Route path="cruces"          element={<CrucesPage />} />
+        <Route path="usuarios"        element={<UsersPage />} />
+        <Route path="faseconfig"      element={<FaseConfigPage />} />
+        <Route path="ranking"         element={<RankingPage />} />
+        <Route path="ranking-final"   element={<RankingFinalPage />} />
+        <Route path="publicaciones"   element={<AdminPublicacionesPage />} />
+        <Route path="config-torneo"   element={<ConfigTorneoPage />} />
       </Route>
 
       {/* Juez */}
