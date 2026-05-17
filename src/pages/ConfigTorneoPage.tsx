@@ -96,8 +96,10 @@ export default function ConfigTorneoPage() {
         const ultimo = allCircuits.find((c: any) => c.order === maxOrder) ?? allCircuits[0];
         setCircuitId(String(ultimo.id));
       }
-      setLoading(false);
-    });
+    }).catch(e => {
+      console.error('Error cargando torneos:', e);
+      setError('Error al cargar los torneos');
+    }).finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
