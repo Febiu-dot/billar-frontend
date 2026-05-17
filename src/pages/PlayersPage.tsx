@@ -3,10 +3,12 @@ import { api } from '../services/api';
 import { Player, Category, CategoryName, Departamento } from '../types';
 import { PageHeader, CategoryBadge, LoadingSpinner, Modal, EmptyState } from '../components/ui';
 
-const CLUBS = [
-  'CAPOLAVORO', 'FERIA FRANCA', 'YATAY', 'CABRERA', 'MODEL CENTER',
-  'NUEVO MALVIN', 'SPORTING UNION', 'CENTENARIO', 'CASA DEL BILLAR', 'PIEDRA HONDA',
-];
+// Clubes por departamento — agregar según se incorporen nuevos departamentos
+const CLUBS_BY_DEPARTAMENTO: Record<string, string[]> = {
+  'Montevideo': ['CAPOLAVORO', 'FERIA FRANCA', 'YATAY', 'CABRERA', 'MODEL CENTER', 'NUEVO MALVIN', 'SPORTING UNION', 'CENTENARIO', 'CASA DEL BILLAR', 'PIEDRA HONDA'],
+  'Canelones':  ['San Bautista', 'Centro Comercial', '23 de Marzo', 'Lomas 3', 'CAR', 'Club Carlitos'],
+  'Rivera':     ['Club Uruguay Rivera'],
+};
 
 export default function PlayersPage() {
   const [players, setPlayers]             = useState<Player[]>([]);
@@ -34,17 +36,19 @@ export default function PlayersPage() {
     api.get('/departamentos').then(r => setDepartamentos(r.data));
   }, []);
 
-  // Plantilla CSV incluye columna Categoria para soportar creación de nuevos jugadores
+  // Devuelve la lista de clubes según el departamentoId seleccionado en el form
+  const getClubsForForm = (): string[] => {
+    if (!form.departamentoId) return [];
+    const dep = departamentos.find(d => d.id.toString() === form.departamentoId);
+    if (!dep) return [];
+    return CLUBS_BY_DEPARTAMENTO[dep.nombre] ?? [];
+  };
+
   const handleDescargarPlantilla = () => {
     const header = ['ID', 'Apellido', 'Nombre', 'CI', 'Club', 'Departamento', 'Categoria'];
     const filas = players.map(p => [
-      p.id,
-      p.lastName,
-      p.firstName,
-      p.dni ?? '',
-      p.club ?? '',
-      p.departamento?.nombre ?? '',
-      p.category?.name ?? '',
+      p.id, p.lastName, p.firstName, p.dni ?? '', p.club ?? '',
+      p.departamento?.nombre ?? '', p.category?.name ?? '',
     ]);
     const csv = [header, ...filas].map(r => r.join(';')).join('\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -54,93 +58,59 @@ export default function PlayersPage() {
     URL.revokeObjectURL(url);
   };
 
-  // Import:
-  // - ID = 0 (o no existe en BD) → crear jugador nuevo (requiere Categoria)
-  // - ID existe en BD           → actualizar departamento del jugador existente
   const handleImportar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setImportando(true); setImportMsg('');
-
     try {
       const text = await file.text();
       const filas = text.split('\n').slice(1).filter(r => r.trim());
-
-      let actualizados = 0;
-      let sinDep = 0;
-      let erroresUpdate = 0;
-      const nuevosJugadores: {
-        firstName: string;
-        lastName: string;
-        dni?: string;
-        categoryId: number;
-        club?: string;
-        departamentoId?: number;
-      }[] = [];
+      let actualizados = 0, sinDep = 0, erroresUpdate = 0;
+      const nuevosJugadores: { firstName: string; lastName: string; dni?: string; categoryId: number; club?: string; departamentoId?: number }[] = [];
 
       for (const fila of filas) {
-        const cols = fila.split(';');
-        const playerId   = parseInt(cols[0]);
-        const apellido   = cols[1]?.trim() ?? '';
-        const nombre     = cols[2]?.trim() ?? '';
-        const ci         = cols[3]?.trim() ?? '';
-        const club       = cols[4]?.trim() ?? '';
-        const depNombre  = cols[5]?.trim().replace(/\r/g, '') ?? '';
-        const catNombre  = cols[6]?.trim().replace(/\r/g, '').toLowerCase() ?? '';
+        const cols      = fila.split(';');
+        const playerId  = parseInt(cols[0]);
+        const apellido  = cols[1]?.trim() ?? '';
+        const nombre    = cols[2]?.trim() ?? '';
+        const ci        = cols[3]?.trim() ?? '';
+        const club      = cols[4]?.trim() ?? '';
+        const depNombre = cols[5]?.trim().replace(/\r/g, '') ?? '';
+        const catNombre = cols[6]?.trim().replace(/\r/g, '').toLowerCase() ?? '';
 
         if (!depNombre) { sinDep++; continue; }
-
         const dep = departamentos.find(d => d.nombre.toLowerCase() === depNombre.toLowerCase());
         if (!dep) { erroresUpdate++; continue; }
 
-        // ── NUEVO JUGADOR (ID=0 o no existe en BD) ──────────────────────
         const existingPlayer = players.find(p => p.id === playerId);
         if (!existingPlayer || playerId === 0) {
           const cat = categories.find(c => c.name.toLowerCase() === catNombre);
           if (!cat) { erroresUpdate++; continue; }
-          nuevosJugadores.push({
-            firstName:     nombre,
-            lastName:      apellido,
-            dni:           ci || undefined,
-            categoryId:    cat.id,
-            club:          club || undefined,
-            departamentoId: dep.id,
-          });
+          nuevosJugadores.push({ firstName: nombre, lastName: apellido, dni: ci || undefined, categoryId: cat.id, club: club || undefined, departamentoId: dep.id });
           continue;
         }
 
-        // ── ACTUALIZAR JUGADOR EXISTENTE ─────────────────────────────────
         try {
           await api.put(`/players/${playerId}`, {
-            firstName:     existingPlayer.firstName,
-            lastName:      existingPlayer.lastName,
-            dni:           existingPlayer.dni,
-            categoryId:    existingPlayer.categoryId,
-            active:        existingPlayer.active,
-            club:          existingPlayer.club ?? club,
+            firstName: existingPlayer.firstName, lastName: existingPlayer.lastName,
+            dni: existingPlayer.dni, categoryId: existingPlayer.categoryId,
+            active: existingPlayer.active, club: existingPlayer.club ?? club,
             departamentoId: dep.id,
           });
           actualizados++;
-        } catch {
-          erroresUpdate++;
-        }
+        } catch { erroresUpdate++; }
       }
 
-      // ── CREACIÓN MASIVA ──────────────────────────────────────────────
-      let creados = 0;
-      let erroresCreate = 0;
+      let creados = 0, erroresCreate = 0;
       if (nuevosJugadores.length > 0) {
         try {
           const res = await api.post('/players/bulk', { players: nuevosJugadores });
-          creados       = res.data.creados ?? 0;
+          creados = res.data.creados ?? 0;
           erroresCreate = res.data.errores ?? 0;
-        } catch {
-          erroresCreate = nuevosJugadores.length;
-        }
+        } catch { erroresCreate = nuevosJugadores.length; }
       }
 
       await fetchPlayers();
-
       const totalErrores = erroresUpdate + erroresCreate;
       let msg = '✅ ';
       if (actualizados > 0) msg += `${actualizados} actualizados`;
@@ -148,7 +118,6 @@ export default function PlayersPage() {
       if (sinDep > 0)       msg += `, ${sinDep} sin departamento`;
       if (totalErrores > 0) msg += `, ${totalErrores} errores`;
       if (actualizados === 0 && creados === 0) msg = `⚠️ 0 jugadores procesados${totalErrores > 0 ? ` — ${totalErrores} errores` : ''}`;
-
       setImportMsg(msg);
     } catch {
       setImportMsg('❌ Error al leer el archivo');
@@ -166,7 +135,14 @@ export default function PlayersPage() {
 
   const openEdit = (p: Player) => {
     setEditPlayer(p);
-    setForm({ firstName: p.firstName, lastName: p.lastName, dni: p.dni ?? '', categoryId: p.categoryId.toString(), club: p.club ?? '', departamentoId: p.departamentoId?.toString() ?? '' });
+    setForm({
+      firstName:      p.firstName,
+      lastName:       p.lastName,
+      dni:            p.dni ?? '',
+      categoryId:     p.categoryId.toString(),
+      club:           p.club ?? '',
+      departamentoId: p.departamentoId?.toString() ?? '',
+    });
     setError(''); setShowModal(true);
   };
 
@@ -175,9 +151,9 @@ export default function PlayersPage() {
     try {
       const payload = {
         ...form,
-        categoryId: Number(form.categoryId),
-        dni: form.dni || undefined,
-        club: form.club || undefined,
+        categoryId:     Number(form.categoryId),
+        dni:            form.dni || undefined,
+        club:           form.club || undefined,
         departamentoId: form.departamentoId ? Number(form.departamentoId) : undefined,
       };
       if (editPlayer) { await api.put(`/players/${editPlayer.id}`, payload); }
@@ -213,7 +189,6 @@ export default function PlayersPage() {
     if (!grouped[cat]) grouped[cat] = [];
     grouped[cat].push(p);
   });
-
   Object.keys(grouped).forEach(cat => {
     grouped[cat].sort((a, b) => {
       const clubA = (a.club ?? '').toUpperCase();
@@ -222,6 +197,9 @@ export default function PlayersPage() {
       return a.lastName.localeCompare(b.lastName);
     });
   });
+
+  const clubsDisponibles = getClubsForForm();
+  const clubActualNoEnLista = form.club && !clubsDisponibles.includes(form.club);
 
   if (loading) return <LoadingSpinner />;
 
@@ -342,24 +320,46 @@ export default function PlayersPage() {
                 <input className="input" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} required placeholder="Perez" />
               </div>
             </div>
-            <div>
-              <label className="block text-silver-dark text-xs uppercase tracking-widest mb-1.5">Club</label>
-              <select className="input" value={form.club} onChange={e => setForm({ ...form, club: e.target.value })}>
-                <option value="">Sin club</option>
-                {CLUBS.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
+
+            {/* Departamento primero para que el club se filtre correctamente */}
             <div>
               <label className="block text-silver-dark text-xs uppercase tracking-widest mb-1.5">Departamento</label>
-              <select className="input" value={form.departamentoId} onChange={e => setForm({ ...form, departamentoId: e.target.value })}>
+              <select
+                className="input"
+                value={form.departamentoId}
+                onChange={e => setForm({ ...form, departamentoId: e.target.value, club: '' })}
+              >
                 <option value="">Sin departamento</option>
                 {departamentos.map(d => <option key={d.id} value={d.id}>{d.nombre}</option>)}
               </select>
             </div>
+
+            <div>
+              <label className="block text-silver-dark text-xs uppercase tracking-widest mb-1.5">Club</label>
+              {clubsDisponibles.length > 0 ? (
+                <select className="input" value={form.club} onChange={e => setForm({ ...form, club: e.target.value })}>
+                  <option value="">Sin club</option>
+                  {/* Mostrar el club actual aunque no esté en la lista del departamento */}
+                  {clubActualNoEnLista && (
+                    <option value={form.club}>{form.club}</option>
+                  )}
+                  {clubsDisponibles.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              ) : (
+                <input
+                  className="input"
+                  value={form.club}
+                  onChange={e => setForm({ ...form, club: e.target.value })}
+                  placeholder="Nombre del club"
+                />
+              )}
+            </div>
+
             <div>
               <label className="block text-silver-dark text-xs uppercase tracking-widest mb-1.5">C.I.</label>
               <input className="input" value={form.dni} onChange={e => setForm({ ...form, dni: e.target.value })} placeholder="Opcional" />
             </div>
+
             <div>
               <label className="block text-silver-dark text-xs uppercase tracking-widest mb-1.5">Categoria *</label>
               <select className="input" value={form.categoryId} onChange={e => setForm({ ...form, categoryId: e.target.value })} required>
@@ -367,6 +367,7 @@ export default function PlayersPage() {
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
+
             {error && <p className="text-red-400 text-sm">{error}</p>}
             <div className="flex gap-3 pt-2">
               <button type="submit" className="btn-primary flex-1" disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</button>
