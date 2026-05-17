@@ -85,11 +85,16 @@ export default function ConfigTorneoPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api.get('/tournaments').then(r => {
-      setTournaments(r.data);
-      const allCircuits = r.data.flatMap((t: any) =>
-        (t.circuits ?? []).map((c: any) => ({ ...c, torneoNombre: t.name, torneoYear: t.year }))
-      );
+    Promise.all([
+      api.get('/tournaments'),
+      api.get('/circuits'),
+    ]).then(([tRes, cRes]) => {
+      setTournaments(tRes.data);
+      const allCircuits = cRes.data.map((c: any) => ({
+        ...c,
+        torneoNombre: c.tournament?.name ?? '',
+        torneoYear:   c.tournament?.year ?? '',
+      }));
       setCircuitos(allCircuits);
       if (allCircuits.length > 0) {
         const maxOrder = Math.max(...allCircuits.map((c: any) => c.order ?? 0));
@@ -97,8 +102,8 @@ export default function ConfigTorneoPage() {
         setCircuitId(String(ultimo.id));
       }
     }).catch(e => {
-      console.error('Error cargando torneos:', e);
-      setError('Error al cargar los torneos');
+      console.error('Error cargando datos:', e);
+      setError('Error al cargar los datos');
     }).finally(() => setLoading(false));
   }, []);
 
