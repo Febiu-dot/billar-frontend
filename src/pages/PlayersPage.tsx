@@ -191,6 +191,12 @@ export default function PlayersPage() {
   });
   Object.keys(grouped).forEach(cat => {
     grouped[cat].sort((a, b) => {
+      const depA  = (a.departamento?.nombre ?? '').toUpperCase();
+      const depB  = (b.departamento?.nombre ?? '').toUpperCase();
+      if (depA !== depB) return depA.localeCompare(depB);
+      const ciA   = (a.dni ?? '').toUpperCase();
+      const ciB   = (b.dni ?? '').toUpperCase();
+      if (ciA !== ciB) return ciA.localeCompare(ciB);
       const clubA = (a.club ?? '').toUpperCase();
       const clubB = (b.club ?? '').toUpperCase();
       if (clubA !== clubB) return clubA.localeCompare(clubB);
