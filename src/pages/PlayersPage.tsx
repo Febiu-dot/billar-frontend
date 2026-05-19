@@ -8,6 +8,13 @@ const CLUBS_BY_DEPARTAMENTO: Record<string, string[]> = {
   'Montevideo': ['CAPOLAVORO', 'FERIA FRANCA', 'YATAY', 'CABRERA', 'MODEL CENTER', 'NUEVO MALVIN', 'SPORTING UNION', 'CENTENARIO', 'CASA DEL BILLAR', 'PIEDRA HONDA'],
   'Canelones':  ['San Bautista', 'Centro Comercial', '23 de Marzo', 'Lomas 3', 'CAR', 'Club Carlitos'],
   'Rivera':     ['Club Uruguay Rivera'],
+  'Lavalleja':  ['Centro Democratico', 'Solis De Mataojo'],
+  'Durazno':    ['Centro Union'],
+  'Artigas':    ['Asociacion Agropecuaria'],
+  'Rocha':      ['Club Rocha Billar'],
+  'San José':   ['Club San Jose', 'Club Centenario', 'Libertad Billar Club', 'Willy Billar Club'],
+  'Salto':      ['Liga Saltena De Billar'],
+  'Maldonado':  ['Asociacion Carolina'],
 };
 
 export default function PlayersPage() {
