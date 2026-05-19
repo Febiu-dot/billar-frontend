@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+mport { useEffect, useState, useRef } from 'react';
 import { api } from '../services/api';
 import { Player, Category, CategoryName, Departamento } from '../types';
 import { PageHeader, CategoryBadge, LoadingSpinner, Modal, EmptyState } from '../components/ui';
