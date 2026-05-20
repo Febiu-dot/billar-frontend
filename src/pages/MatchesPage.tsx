@@ -4,17 +4,34 @@ import { socket } from '../services/socket';
 import { Match, Table, MatchStatus } from '../types';
 import { PageHeader, MatchStatusBadge, playerName, LoadingSpinner, Modal, EmptyState } from '../components/ui';
 
+interface Tournament { id: number; name: string; }
+interface Circuit    { id: number; name: string; tournamentId: number; }
+
 export default function MatchesPage() {
-  const [matches, setMatches]   = useState<Match[]>([]);
-  const [tables, setTables]     = useState<Table[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [filterStatus, setFilterStatus] = useState<MatchStatus | ''>('');
+  const [matches, setMatches]         = useState<Match[]>([]);
+  const [tables, setTables]           = useState<Table[]>([]);
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [circuits, setCircuits]       = useState<Circuit[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [filterStatus, setFilterStatus]       = useState<MatchStatus | ''>('');
+  const [filterTournament, setFilterTournament] = useState('');
+  const [filterCircuit, setFilterCircuit]       = useState('');
   const [assignModal, setAssignModal]   = useState<Match | null>(null);
   const [selectedTable, setSelectedTable] = useState('');
-  const [saving, setSaving]     = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const fetchMatches = (circuitId?: string, tournamentId?: string) => {
+    const params = new URLSearchParams();
+    if (circuitId)   params.append('circuitId',   circuitId);
+    else if (tournamentId) params.append('tournamentId', tournamentId);
+    return api.get(`/matches?${params.toString()}`).then(r => setMatches(r.data));
+  };
 
   const fetchAll = () =>
-    Promise.all([api.get('/matches'), api.get('/tables')]).then(([m, t]) => {
+    Promise.all([
+      api.get('/matches'),
+      api.get('/tables'),
+    ]).then(([m, t]) => {
       setMatches(m.data);
       setTables(t.data);
       setLoading(false);
@@ -22,10 +39,32 @@ export default function MatchesPage() {
 
   useEffect(() => {
     fetchAll();
-    socket.on('match:updated', fetchAll);
-    socket.on('table:updated', fetchAll);
-    return () => { socket.off('match:updated', fetchAll); socket.off('table:updated', fetchAll); };
+    api.get('/tournaments').then(r => setTournaments(r.data));
+    api.get('/circuits').then(r => setCircuits(r.data));
+    socket.on('match:updated', () => fetchMatches(filterCircuit, filterTournament));
+    socket.on('table:updated', () => api.get('/tables').then(r => setTables(r.data)));
+    return () => { socket.off('match:updated'); socket.off('table:updated'); };
   }, []);
+
+  // Al cambiar torneo: resetear circuito y cargar partidos del torneo
+  const handleTournamentChange = (tournamentId: string) => {
+    setFilterTournament(tournamentId);
+    setFilterCircuit('');
+    setLoading(true);
+    fetchMatches('', tournamentId).finally(() => setLoading(false));
+  };
+
+  // Al cambiar circuito: cargar partidos del circuito
+  const handleCircuitChange = (circuitId: string) => {
+    setFilterCircuit(circuitId);
+    setLoading(true);
+    fetchMatches(circuitId, '').finally(() => setLoading(false));
+  };
+
+  // Circuitos del torneo seleccionado
+  const circuitsFiltrados = filterTournament
+    ? circuits.filter(c => c.tournamentId === Number(filterTournament))
+    : circuits;
 
   const handleAssign = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,16 +73,14 @@ export default function MatchesPage() {
     try {
       await api.put(`/matches/${assignModal.id}/assign`, { tableId: Number(selectedTable) });
       setAssignModal(null);
-      fetchAll();
-    } finally {
-      setSaving(false);
-    }
+      fetchMatches(filterCircuit, filterTournament);
+    } finally { setSaving(false); }
   };
 
   const handleAutoAssign = async (matchId: number) => {
     try {
       await api.post('/matches/auto-assign', { matchId });
-      fetchAll();
+      fetchMatches(filterCircuit, filterTournament);
     } catch (err: any) {
       alert(err?.response?.data?.error ?? 'No hay mesas libres disponibles');
     }
@@ -51,7 +88,7 @@ export default function MatchesPage() {
 
   const handleStart = async (matchId: number) => {
     await api.put(`/matches/${matchId}/start`);
-    fetchAll();
+    fetchMatches(filterCircuit, filterTournament);
   };
 
   const statusOrder: MatchStatus[] = ['en_juego', 'asignado', 'pendiente', 'finalizado', 'wo'];
@@ -73,10 +110,37 @@ export default function MatchesPage() {
     <div>
       <PageHeader
         title="PARTIDOS"
-        subtitle={`${matches.length} partidos en total`}
+        subtitle={`${matches.length} partidos`}
       />
 
       <div className="p-6 space-y-4">
+        {/* Filtros torneo / circuito */}
+        <div className="flex flex-wrap gap-3 items-center">
+          <select
+            className="input w-56"
+            value={filterTournament}
+            onChange={e => handleTournamentChange(e.target.value)}
+          >
+            <option value="">Todos los torneos</option>
+            {tournaments.map(t => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+
+          <select
+            className="input w-56"
+            value={filterCircuit}
+            onChange={e => handleCircuitChange(e.target.value)}
+            disabled={!filterTournament}
+          >
+            <option value="">Todos los circuitos</option>
+            {circuitsFiltrados.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Filtros de estado */}
         <div className="flex flex-wrap gap-2">
           {statuses.map(s => (
             <button
@@ -88,7 +152,7 @@ export default function MatchesPage() {
             >
               {statusLabels[s]}
               <span className="ml-1 font-mono">
-                ({s === '' ? matches.length : matches.filter(m => m.status === s).length})
+                ({s === '' ? filtered.length : filtered.filter(m => m.status === s).length})
               </span>
             </button>
           ))}
