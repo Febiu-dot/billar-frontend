@@ -3,35 +3,57 @@ import { api } from '../services/api';
 import { LoadingSpinner } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 
-interface Jugador { id: number; firstName: string; lastName: string; club?: string; }
+interface Tournament { id: number; name: string; }
+interface Circuit    { id: number; name: string; tournamentId: number; order: number; }
+interface Jugador    { id: number; firstName: string; lastName: string; club?: string; }
 interface Clasificado { posicion: number; jugador: Jugador; fuente: string; }
-interface FaseRanking { publicado: boolean; clasificados: Clasificado[]; }
+interface FaseRanking  { publicado: boolean; clasificados: Clasificado[]; }
 interface RankingTorneo {
+  phaseIds:       { clasificatorio: number | null; segunda: number | null; primera: number | null; master: number | null };
   clasificatorio: FaseRanking;
-  segunda: FaseRanking;
-  primera: FaseRanking;
-  master: FaseRanking;
+  segunda:        FaseRanking;
+  primera:        FaseRanking;
+  master:         FaseRanking;
 }
 
-const FASES = [
-  { key: 'clasificatorio', label: 'Clasificatorio', phaseId: 30, color: 'text-orange-400', bg: 'bg-orange-900/20', border: 'border-orange-700/30' },
-  { key: 'segunda', label: 'Segunda', phaseId: 31, color: 'text-blue-400', bg: 'bg-blue-900/20', border: 'border-blue-700/30' },
-  { key: 'primera', label: 'Primera', phaseId: 32, color: 'text-green-400', bg: 'bg-green-900/20', border: 'border-green-700/30' },
-  { key: 'master', label: 'Master', phaseId: 33, color: 'text-gold', bg: 'bg-gold/10', border: 'border-gold/30' },
+const FASES_CONFIG = [
+  { key: 'clasificatorio', label: 'Clasificatorio', color: 'text-orange-400', bg: 'bg-orange-900/20', border: 'border-orange-700/30' },
+  { key: 'segunda',        label: 'Segunda',        color: 'text-blue-400',   bg: 'bg-blue-900/20',   border: 'border-blue-700/30'   },
+  { key: 'primera',        label: 'Primera',        color: 'text-green-400',  bg: 'bg-green-900/20',  border: 'border-green-700/30'  },
+  { key: 'master',         label: 'Master',         color: 'text-gold',       bg: 'bg-gold/10',       border: 'border-gold/30'       },
 ];
 
 export default function RankingPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const [ranking, setRanking] = useState<RankingTorneo | null>(null);
-  const [loading, setLoading] = useState(true);
+
+  const [tournaments, setTournaments]         = useState<Tournament[]>([]);
+  const [circuits, setCircuits]               = useState<Circuit[]>([]);
+  const [selectedTournament, setSelectedTournament] = useState('');
+  const [selectedCircuit, setSelectedCircuit]       = useState('');
+
+  const [ranking, setRanking]     = useState<RankingTorneo | null>(null);
+  const [loading, setLoading]     = useState(false);
   const [tabActivo, setTabActivo] = useState('clasificatorio');
   const [publicando, setPublicando] = useState<number | null>(null);
 
-  const cargar = async () => {
+  useEffect(() => {
+    api.get('/tournaments').then(r => setTournaments(r.data));
+    api.get('/circuits').then(r => setCircuits(r.data));
+  }, []);
+
+  const circuitsFiltrados = selectedTournament
+    ? circuits.filter(c => c.tournamentId === Number(selectedTournament)).sort((a, b) => a.order - b.order)
+    : [];
+
+  const cargar = async (circuitId: string) => {
+    if (!circuitId) return;
+    setLoading(true);
+    setRanking(null);
     try {
-      const res = await api.get('/rankings/torneo');
+      const res = await api.get(`/rankings/torneo?circuitId=${circuitId}`);
       setRanking(res.data);
+      setTabActivo('clasificatorio');
     } catch (e) {
       console.error(e);
     } finally {
@@ -39,13 +61,23 @@ export default function RankingPage() {
     }
   };
 
-  useEffect(() => { cargar(); }, []);
+  const handleTournamentChange = (tournamentId: string) => {
+    setSelectedTournament(tournamentId);
+    setSelectedCircuit('');
+    setRanking(null);
+  };
 
-  const handlePublicar = async (phaseId: number, publicado: boolean) => {
+  const handleCircuitChange = (circuitId: string) => {
+    setSelectedCircuit(circuitId);
+    cargar(circuitId);
+  };
+
+  const handlePublicar = async (phaseId: number | null, publicado: boolean) => {
+    if (!phaseId) return;
     setPublicando(phaseId);
     try {
       await api.put(`/rankings/torneo/${phaseId}/publicar`, { publicado });
-      await cargar();
+      await cargar(selectedCircuit);
     } catch (e) {
       alert('Error al cambiar estado de publicación');
     } finally {
@@ -53,14 +85,10 @@ export default function RankingPage() {
     }
   };
 
-  if (loading) return <LoadingSpinner />;
-  if (!ranking) return <div className="p-6 text-chalk/50">No se pudo cargar el ranking.</div>;
-
-  const faseActual = FASES.find(f => f.key === tabActivo)!;
-  const dataActual = ranking[tabActivo as keyof RankingTorneo];
-
-  // Vista pública: solo mostrar fases publicadas
-  const fasesVisibles = isAdmin ? FASES : FASES.filter(f => ranking[f.key as keyof RankingTorneo].publicado);
+  const faseActual     = FASES_CONFIG.find(f => f.key === tabActivo)!;
+  const dataActual     = ranking?.[tabActivo as keyof Omit<RankingTorneo, 'phaseIds'>] as FaseRanking | undefined;
+  const phaseIdActual  = ranking?.phaseIds?.[tabActivo as keyof typeof ranking.phaseIds] ?? null;
+  const fasesVisibles  = isAdmin ? FASES_CONFIG : FASES_CONFIG.filter(f => ranking?.[f.key as keyof Omit<RankingTorneo, 'phaseIds'>]?.publicado);
 
   return (
     <div>
@@ -71,115 +99,151 @@ export default function RankingPage() {
 
       <div className="p-6 space-y-6">
 
-        {/* Tabs de fases */}
-        <div className="flex gap-2 flex-wrap">
-          {(isAdmin ? FASES : fasesVisibles).map(f => {
-            const data = ranking[f.key as keyof RankingTorneo];
-            const activo = tabActivo === f.key;
-            return (
-              <button
-                key={f.key}
-                onClick={() => setTabActivo(f.key)}
-                className={`py-1.5 px-4 text-sm rounded-lg border transition-all flex items-center gap-2 ${
-                  activo
-                    ? `${f.border} ${f.color} ${f.bg}`
-                    : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'
-                }`}
-              >
-                {f.label}
-                {data.clasificados.length > 0 && (
-                  <span className="text-xs opacity-60">{data.clasificados.length}</span>
-                )}
-                {isAdmin && (
-                  <span className={`text-xs ml-1 ${data.publicado ? 'text-green-400' : 'text-chalk/30'}`}>
-                    {data.publicado ? '●' : '○'}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+        {/* Selectores torneo / circuito */}
+        <div className="flex flex-wrap gap-3 items-center">
+          <select
+            className="input w-56"
+            value={selectedTournament}
+            onChange={e => handleTournamentChange(e.target.value)}
+          >
+            <option value="">Seleccioná un torneo</option>
+            {tournaments.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+
+          <select
+            className="input w-56"
+            value={selectedCircuit}
+            onChange={e => handleCircuitChange(e.target.value)}
+            disabled={!selectedTournament}
+          >
+            <option value="">Seleccioná un circuito</option>
+            {circuitsFiltrados.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
         </div>
 
-        {/* Panel de la fase activa */}
-        <div className="card space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div>
-              <h2 className={`font-display text-2xl ${faseActual.color}`}>{faseActual.label}</h2>
-              <p className="text-chalk/40 text-xs mt-0.5">
-                {dataActual.clasificados.length > 0
-                  ? `${dataActual.clasificados.length} clasificados`
-                  : 'Sin datos aún'}
-              </p>
-            </div>
-            {isAdmin && (
-              <button
-                className={`py-1.5 px-4 text-xs rounded-lg border transition-all ${
-                  dataActual.publicado
-                    ? 'border-green-700/40 text-green-400 bg-green-900/20 hover:bg-green-900/30'
-                    : 'border-felt-light/20 text-chalk/50 hover:border-chalk/40'
-                }`}
-                disabled={publicando === faseActual.phaseId}
-                onClick={() => handlePublicar(faseActual.phaseId, !dataActual.publicado)}
-              >
-                {publicando === faseActual.phaseId
-                  ? 'Guardando...'
-                  : dataActual.publicado
-                  ? '✅ Publicado — click para despublicar'
-                  : '○ No publicado — click para publicar'}
-              </button>
-            )}
-          </div>
-
-          {dataActual.clasificados.length === 0 ? (
-            <div className="text-center py-12 text-chalk/30">
-              <p className="text-4xl mb-3">🎱</p>
-              <p className="text-sm">
-                {isAdmin
-                  ? 'Aún no hay clasificados para esta fase.'
-                  : 'El ranking de esta fase aún no está disponible.'}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {dataActual.clasificados.map((c) => (
-                <div
-                  key={c.posicion}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-lg border ${
-                    c.posicion <= 3
-                      ? `${faseActual.border} ${faseActual.bg}`
-                      : 'border-felt-light/5 bg-felt-dark/20'
-                  }`}
-                >
-                  <span className={`font-display text-lg w-8 text-right shrink-0 ${
-                    c.posicion === 1 ? 'text-gold' :
-                    c.posicion === 2 ? 'text-chalk/60' :
-                    c.posicion === 3 ? 'text-orange-600/80' :
-                    'text-chalk/30'
-                  }`}>
-                    {c.posicion}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-chalk/90 font-medium text-sm">
-                      {c.jugador ? `${c.jugador.lastName}, ${c.jugador.firstName}` : '—'}
-                    </p>
-                    {c.jugador?.club && (
-                      <p className="text-chalk/30 text-xs">{c.jugador.club}</p>
-                    )}
-                  </div>
-                  <span className="text-chalk/20 text-xs font-mono shrink-0">{c.fuente}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Info para público */}
-        {!isAdmin && fasesVisibles.length === 0 && (
+        {/* Estado inicial */}
+        {!selectedCircuit && !loading && (
           <div className="text-center py-16 text-chalk/30">
             <p className="text-5xl mb-4">🏆</p>
-            <p className="text-lg font-display">El ranking aún no está disponible</p>
-            <p className="text-sm mt-2">Volvé más tarde para ver los resultados.</p>
+            <p className="text-lg font-display">Seleccioná un torneo y circuito</p>
           </div>
+        )}
+
+        {loading && <LoadingSpinner />}
+
+        {ranking && !loading && (
+          <>
+            {/* Tabs de fases */}
+            <div className="flex gap-2 flex-wrap">
+              {(isAdmin ? FASES_CONFIG : fasesVisibles).map(f => {
+                const data = ranking[f.key as keyof Omit<RankingTorneo, 'phaseIds'>] as FaseRanking;
+                const activo = tabActivo === f.key;
+                return (
+                  <button
+                    key={f.key}
+                    onClick={() => setTabActivo(f.key)}
+                    className={`py-1.5 px-4 text-sm rounded-lg border transition-all flex items-center gap-2 ${
+                      activo
+                        ? `${f.border} ${f.color} ${f.bg}`
+                        : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'
+                    }`}
+                  >
+                    {f.label}
+                    {data.clasificados.length > 0 && (
+                      <span className="text-xs opacity-60">{data.clasificados.length}</span>
+                    )}
+                    {isAdmin && (
+                      <span className={`text-xs ml-1 ${data.publicado ? 'text-green-400' : 'text-chalk/30'}`}>
+                        {data.publicado ? '●' : '○'}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Panel de la fase activa */}
+            {dataActual && (
+              <div className="card space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div>
+                    <h2 className={`font-display text-2xl ${faseActual.color}`}>{faseActual.label}</h2>
+                    <p className="text-chalk/40 text-xs mt-0.5">
+                      {dataActual.clasificados.length > 0
+                        ? `${dataActual.clasificados.length} clasificados`
+                        : 'Sin datos aún'}
+                    </p>
+                  </div>
+                  {isAdmin && (
+                    <button
+                      className={`py-1.5 px-4 text-xs rounded-lg border transition-all ${
+                        dataActual.publicado
+                          ? 'border-green-700/40 text-green-400 bg-green-900/20 hover:bg-green-900/30'
+                          : 'border-felt-light/20 text-chalk/50 hover:border-chalk/40'
+                      }`}
+                      disabled={publicando === phaseIdActual || !phaseIdActual}
+                      onClick={() => handlePublicar(phaseIdActual, !dataActual.publicado)}
+                    >
+                      {publicando === phaseIdActual
+                        ? 'Guardando...'
+                        : dataActual.publicado
+                        ? '✅ Publicado — click para despublicar'
+                        : '○ No publicado — click para publicar'}
+                    </button>
+                  )}
+                </div>
+
+                {dataActual.clasificados.length === 0 ? (
+                  <div className="text-center py-12 text-chalk/30">
+                    <p className="text-4xl mb-3">🎱</p>
+                    <p className="text-sm">
+                      {isAdmin
+                        ? 'Aún no hay clasificados para esta fase.'
+                        : 'El ranking de esta fase aún no está disponible.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {dataActual.clasificados.map((c) => (
+                      <div
+                        key={c.posicion}
+                        className={`flex items-center gap-4 px-4 py-3 rounded-lg border ${
+                          c.posicion <= 3
+                            ? `${faseActual.border} ${faseActual.bg}`
+                            : 'border-felt-light/5 bg-felt-dark/20'
+                        }`}
+                      >
+                        <span className={`font-display text-lg w-8 text-right shrink-0 ${
+                          c.posicion === 1 ? 'text-gold' :
+                          c.posicion === 2 ? 'text-chalk/60' :
+                          c.posicion === 3 ? 'text-orange-600/80' : 'text-chalk/30'
+                        }`}>
+                          {c.posicion}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-chalk/90 font-medium text-sm">
+                            {c.jugador ? `${c.jugador.lastName}, ${c.jugador.firstName}` : '—'}
+                          </p>
+                          {c.jugador?.club && (
+                            <p className="text-chalk/30 text-xs">{c.jugador.club}</p>
+                          )}
+                        </div>
+                        <span className="text-chalk/20 text-xs font-mono shrink-0">{c.fuente}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!isAdmin && fasesVisibles.length === 0 && (
+              <div className="text-center py-16 text-chalk/30">
+                <p className="text-5xl mb-4">🏆</p>
+                <p className="text-lg font-display">El ranking aún no está disponible</p>
+                <p className="text-sm mt-2">Volvé más tarde para ver los resultados.</p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
