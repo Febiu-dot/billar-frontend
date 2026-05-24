@@ -46,14 +46,27 @@ export default function RankingPage() {
     ? circuits.filter(c => c.tournamentId === Number(selectedTournament)).sort((a, b) => a.order - b.order)
     : [];
 
+  // ── Filtra las fases que realmente existen en este circuito ──────────
+  // Para Nacional solo existen 'clasificatorio' y 'master'
+  // Para Departamental existen las 4
+  const getFasesConDatos = (r: RankingTorneo) =>
+    FASES_CONFIG.filter(f => {
+      const phaseId = r.phaseIds?.[f.key as keyof typeof r.phaseIds];
+      const data = r[f.key as keyof Omit<RankingTorneo, 'phaseIds'>] as FaseRanking | undefined;
+      return phaseId !== null || (data?.clasificados.length ?? 0) > 0;
+    });
+
   const cargar = async (circuitId: string) => {
     if (!circuitId) return;
     setLoading(true);
     setRanking(null);
     try {
       const res = await api.get(`/rankings/torneo?circuitId=${circuitId}`);
-      setRanking(res.data);
-      setTabActivo('clasificatorio');
+      const data: RankingTorneo = res.data;
+      setRanking(data);
+      // Tab inicial = primera fase con phaseId real
+      const faseInicial = getFasesConDatos(data)[0]?.key ?? 'clasificatorio';
+      setTabActivo(faseInicial);
     } catch (e) {
       console.error(e);
     } finally {
@@ -85,10 +98,15 @@ export default function RankingPage() {
     }
   };
 
-  const faseActual     = FASES_CONFIG.find(f => f.key === tabActivo)!;
-  const dataActual     = ranking?.[tabActivo as keyof Omit<RankingTorneo, 'phaseIds'>] as FaseRanking | undefined;
-  const phaseIdActual  = ranking?.phaseIds?.[tabActivo as keyof typeof ranking.phaseIds] ?? null;
-  const fasesVisibles  = isAdmin ? FASES_CONFIG : FASES_CONFIG.filter(f => ranking?.[f.key as keyof Omit<RankingTorneo, 'phaseIds'>]?.publicado);
+  const faseActual    = FASES_CONFIG.find(f => f.key === tabActivo)!;
+  const dataActual    = ranking?.[tabActivo as keyof Omit<RankingTorneo, 'phaseIds'>] as FaseRanking | undefined;
+  const phaseIdActual = ranking?.phaseIds?.[tabActivo as keyof typeof ranking.phaseIds] ?? null;
+
+  // Tabs visibles: para admin, todas las que tienen phaseId; para público, solo las publicadas con datos
+  const fasesConDatos    = ranking ? getFasesConDatos(ranking) : FASES_CONFIG;
+  const fasesVisibles    = isAdmin
+    ? fasesConDatos
+    : fasesConDatos.filter(f => (ranking?.[f.key as keyof Omit<RankingTorneo, 'phaseIds'>] as FaseRanking | undefined)?.publicado);
 
   return (
     <div>
@@ -133,11 +151,14 @@ export default function RankingPage() {
 
         {ranking && !loading && (
           <>
-            {/* Tabs de fases */}
+            {/* Tabs de fases — dinámicos, solo muestra las que existen */}
             <div className="flex gap-2 flex-wrap">
-              {(isAdmin ? FASES_CONFIG : fasesVisibles).map(f => {
+              {fasesConDatos.map(f => {
                 const data = ranking[f.key as keyof Omit<RankingTorneo, 'phaseIds'>] as FaseRanking;
+                const phaseId = ranking.phaseIds?.[f.key as keyof typeof ranking.phaseIds];
                 const activo = tabActivo === f.key;
+                // Público: solo ve tabs publicadas
+                if (!isAdmin && !data.publicado) return null;
                 return (
                   <button
                     key={f.key}
@@ -156,6 +177,10 @@ export default function RankingPage() {
                       <span className={`text-xs ml-1 ${data.publicado ? 'text-green-400' : 'text-chalk/30'}`}>
                         {data.publicado ? '●' : '○'}
                       </span>
+                    )}
+                    {/* Indicador de que no tiene fase (solo admin) */}
+                    {isAdmin && !phaseId && (
+                      <span className="text-xs text-chalk/20 font-mono">—</span>
                     )}
                   </button>
                 );
