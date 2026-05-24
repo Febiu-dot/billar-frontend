@@ -12,19 +12,49 @@ interface PreviewSerie {
 }
 
 interface PreviewData {
-  inscriptos: { master: number; primera: number; segunda: number; tercera: number };
+  tipo?: 'nacional' | 'departamental';
+  categoriaFederal?: string;
+  config?: any;
+  inscriptos: {
+    total?: number;
+    clasificatorio?: number;
+    master?: number;
+    primera?: number;
+    segunda?: number;
+    tercera?: number;
+  };
   clasificatorio: {
     totalJugadores: number;
     totalSeries: number;
+    totalClasificados?: number;
     series: PreviewSerie[];
-    crucesReduccion: { cruce: number; slotA: string; slotB: string }[];
+    crucesReduccion?: { cruce: number; slotA: string; slotB: string }[];
   };
+  bracket?: { descripcion: string; totalPartidos: number };
   segundaPreview?: { totalSeries: number; series: any[] };
   primeraPreview?: { totalCruces: number; cruces: any[] };
   masterPreview?: { totalCruces: number; cruces: any[] };
 }
 
-type PreviewTab = 'series' | 'reduccion' | 'segunda' | 'primera' | 'master';
+type PreviewTab = 'series' | 'reduccion' | 'segunda' | 'primera' | 'master' | 'bracket';
+
+// ── Labels legibles para rounds del bracket Nacional ──────────────────
+function getNacRoundLabel(round: number): string {
+  if (round >= 101 && round <= 108) return `WB R1 · P${round - 100}`;
+  if (round >= 111 && round <= 114) return `WB R2 · P${round - 110}`;
+  if (round === 121) return 'WB SF · P1';
+  if (round === 122) return 'WB SF · P2';
+  if (round === 131) return 'WB Final';
+  if (round >= 201 && round <= 204) return `LB R1 · P${round - 200}`;
+  if (round >= 211 && round <= 214) return `LB R2 · P${round - 210}`;
+  if (round === 221) return 'LB R3 · P1';
+  if (round === 222) return 'LB R3 · P2';
+  if (round === 231) return 'LB R4 · P1';
+  if (round === 232) return 'LB R4 · P2';
+  if (round === 241) return 'LB Final';
+  if (round === 251) return '🏆 Grand Final';
+  return `Ronda ${round}`;
+}
 
 export default function FixturePage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -81,7 +111,6 @@ export default function FixturePage() {
       setSelectedTournament(r.data);
       setDetailLoading(false);
       setLoading(false);
-      // Ocultar todos los circuitos excepto el de mayor order
       const circuits: Circuit[] = r.data.circuits ?? [];
       if (circuits.length > 1) {
         const maxOrder = Math.max(...circuits.map((c: any) => c.order ?? 0));
@@ -239,6 +268,7 @@ export default function FixturePage() {
     finally { setPreviewLoading(null); }
   };
 
+  // ── Generar partidos — maneja Departamental y Nacional ───────────────
   const handleConfirmarGenerar = async () => {
     if (!previewModal) return;
     const circuit = previewModal.circuit;
@@ -246,7 +276,24 @@ export default function FixturePage() {
     try {
       const res = await api.post(`/circuits/${circuit.id}/generate`);
       const d = res.data.detalle;
-      alert(`✅ Partidos generados correctamente\n\nClasificatorio: ${d.clasificatorio}\nSegunda: ${d.segunda}\nPrimera: ${d.primera}\nMáster: ${d.master}\n\nTotal: ${res.data.total}`);
+      const esNac = res.data.config?.tipo === 'nacional';
+      if (esNac) {
+        alert(
+          `✅ Partidos Nacional generados correctamente\n\n` +
+          `Series (Clasificatorio): ${d.series ?? 0}\n` +
+          `Bracket (Master): ${d.bracket ?? 0}\n\n` +
+          `Total: ${res.data.total}`
+        );
+      } else {
+        alert(
+          `✅ Partidos generados correctamente\n\n` +
+          `Clasificatorio: ${d.clasificatorio}\n` +
+          `Segunda: ${d.segunda}\n` +
+          `Primera: ${d.primera}\n` +
+          `Máster: ${d.master}\n\n` +
+          `Total: ${res.data.total}`
+        );
+      }
       refreshSelected();
     } catch (err: any) { alert(err?.response?.data?.error ?? 'Error al generar partidos'); }
     finally { setGenerando(null); }
@@ -269,6 +316,23 @@ export default function FixturePage() {
   };
 
   if (loading) return <LoadingSpinner />;
+
+  // ── Tabs del preview modal — dinámicos según tipo ────────────────────
+  const buildPreviewTabs = (data: PreviewData) => {
+    if (data.tipo === 'nacional') {
+      return [
+        { key: 'series',  label: `Series (${data.clasificatorio.totalSeries})` },
+        { key: 'bracket', label: `Bracket (${data.bracket?.totalPartidos ?? 29} partidos)` },
+      ];
+    }
+    return [
+      { key: 'series',    label: `Series (${data.clasificatorio.totalSeries})` },
+      { key: 'reduccion', label: `Reducción (${data.clasificatorio.crucesReduccion?.length ?? 0})` },
+      { key: 'segunda',   label: `Segunda (${data.segundaPreview?.totalSeries ?? 0} series)` },
+      { key: 'primera',   label: `Primera (${data.primeraPreview?.totalCruces ?? 0} cruces)` },
+      { key: 'master',    label: `Master (${data.masterPreview?.totalCruces ?? 0} cruces)` },
+    ];
+  };
 
   return (
     <div>
@@ -318,7 +382,6 @@ export default function FixturePage() {
                 const oculto = circuitosOcultos.has(circuit.id);
                 return (
                   <div key={circuit.id}>
-                    {/* Header del circuito con toggle */}
                     <div className="flex items-center gap-3 mb-4 flex-wrap">
                       <h3 className="font-display text-2xl text-chalk">{circuit.name}</h3>
                       <span className={`badge-status ${circuit.active ? 'bg-blue-900/40 text-blue-300' : 'bg-chalk/10 text-chalk/30'}`}>
@@ -356,7 +419,6 @@ export default function FixturePage() {
                       </div>
                     </div>
 
-                    {/* Contenido del circuito — se oculta con el toggle */}
                     {!oculto && (
                       <>
                         {circuit.phases?.length === 0 ? (
@@ -382,7 +444,7 @@ export default function FixturePage() {
                                         <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2 font-mono">
                                           {matchesByRound[round][0]?.scheduledAt
                                             ? new Date(matchesByRound[round][0].scheduledAt!).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
-                                            : `Ronda ${round}`}
+                                            : getNacRoundLabel(round)}
                                         </p>
                                         <div className="space-y-2">
                                           {matchesByRound[round].map(m => <MatchCard key={m.id} match={m} />)}
@@ -622,105 +684,180 @@ export default function FixturePage() {
       )}
 
       {/* Preview modal */}
-      {previewModal && (
-        <Modal title={`VISTA PREVIA — ${previewModal.circuit.name}`} onClose={() => setPreviewModal(null)}>
-          <div className="space-y-4">
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                { label: 'Máster',  val: previewModal.data.inscriptos.master,  color: 'text-gold' },
-                { label: 'Primera', val: previewModal.data.inscriptos.primera, color: 'text-blue-400' },
-                { label: 'Segunda', val: previewModal.data.inscriptos.segunda, color: 'text-green-400' },
-                { label: 'Clasif.', val: previewModal.data.inscriptos.tercera, color: 'text-chalk/60' },
-              ].map(({ label, val, color }) => (
-                <div key={label} className="bg-felt-dark/50 rounded-lg p-2 text-center">
-                  <p className={`font-display text-xl ${color}`}>{val}</p>
-                  <p className="text-chalk/40 text-xs uppercase">{label}</p>
-                </div>
-              ))}
-            </div>
+      {previewModal && (() => {
+        const esNac = previewModal.data.tipo === 'nacional';
+        const tabs = buildPreviewTabs(previewModal.data);
+        return (
+          <Modal title={`VISTA PREVIA — ${previewModal.circuit.name}`} onClose={() => setPreviewModal(null)}>
+            <div className="space-y-4">
 
-            <div className="flex gap-2 flex-wrap">
-              {[
-                { key: 'series',    label: `Series (${previewModal.data.clasificatorio.totalSeries})` },
-                { key: 'reduccion', label: `Reducción (${previewModal.data.clasificatorio.crucesReduccion?.length ?? 0})` },
-                { key: 'segunda',   label: `Segunda (${previewModal.data.segundaPreview?.totalSeries ?? 0} series)` },
-                { key: 'primera',   label: `Primera (${previewModal.data.primeraPreview?.totalCruces ?? 0} cruces)` },
-                { key: 'master',    label: `Master (${previewModal.data.masterPreview?.totalCruces ?? 0} cruces)` },
-              ].map(tab => (
-                <button key={tab.key}
-                  className={`py-1 px-3 text-xs rounded-lg border transition-all ${previewTab === tab.key ? 'border-gold/40 text-gold bg-gold/10' : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'}`}
-                  onClick={() => setPreviewTab(tab.key as PreviewTab)}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="max-h-[50vh] overflow-y-auto space-y-3 pr-1">
-              {previewTab === 'series' && previewModal.data.clasificatorio.series.map(serie => (
-                <div key={serie.serie} className="bg-felt-dark/40 border border-felt-light/10 rounded-lg p-3">
-                  <p className="text-chalk/40 text-xs uppercase tracking-widest font-mono mb-2">Serie {serie.serie}</p>
-                  <div className="space-y-1">
-                    {serie.jugadores.map((j, idx) => (
-                      <div key={idx} className="flex items-center gap-2">
-                        <span className="text-chalk/20 text-xs font-mono w-4">{idx + 1}</span>
-                        <span className={`text-sm ${j.esLibre ? 'text-red-400/60 italic' : 'text-chalk/70'}`}>{j.nombre}</span>
-                        {j.esLibre && <span className="text-red-400/40 text-xs font-mono">(bye)</span>}
-                      </div>
-                    ))}
+              {/* Inscriptos — diferente para Nacional y Departamental */}
+              {esNac ? (
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-felt-dark/50 rounded-lg p-2 text-center">
+                    <p className="font-display text-xl text-blue-400">
+                      {previewModal.data.inscriptos.total ?? previewModal.data.inscriptos.clasificatorio ?? 0}
+                    </p>
+                    <p className="text-chalk/40 text-xs uppercase">Inscriptos</p>
+                  </div>
+                  <div className="bg-felt-dark/50 rounded-lg p-2 text-center">
+                    <p className="font-display text-xl text-green-400">
+                      {previewModal.data.clasificatorio.totalSeries}
+                    </p>
+                    <p className="text-chalk/40 text-xs uppercase">Series</p>
+                  </div>
+                  <div className="bg-felt-dark/50 rounded-lg p-2 text-center">
+                    <p className="font-display text-xl text-purple-400">
+                      {previewModal.data.bracket?.totalPartidos ?? 29}
+                    </p>
+                    <p className="text-chalk/40 text-xs uppercase">Partidos bracket</p>
                   </div>
                 </div>
-              ))}
-
-              {previewTab === 'reduccion' && previewModal.data.clasificatorio.crucesReduccion?.map(cruce => (
-                <div key={cruce.cruce} className="bg-felt-dark/40 border border-felt-light/10 rounded-lg px-3 py-2 flex items-center gap-3">
-                  <span className="text-chalk/30 text-xs font-mono w-16">Cruce {cruce.cruce}</span>
-                  <span className="text-chalk/70 text-sm flex-1">{cruce.slotA}</span>
-                  <span className="text-chalk/30 text-xs">vs</span>
-                  <span className="text-chalk/70 text-sm flex-1 text-right">{cruce.slotB}</span>
+              ) : (
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { label: 'Máster',  val: previewModal.data.inscriptos.master  ?? 0, color: 'text-gold' },
+                    { label: 'Primera', val: previewModal.data.inscriptos.primera ?? 0, color: 'text-blue-400' },
+                    { label: 'Segunda', val: previewModal.data.inscriptos.segunda ?? 0, color: 'text-green-400' },
+                    { label: 'Clasif.', val: previewModal.data.inscriptos.tercera ?? 0, color: 'text-chalk/60' },
+                  ].map(({ label, val, color }) => (
+                    <div key={label} className="bg-felt-dark/50 rounded-lg p-2 text-center">
+                      <p className={`font-display text-xl ${color}`}>{val}</p>
+                      <p className="text-chalk/40 text-xs uppercase">{label}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
 
-              {previewTab === 'segunda' && previewModal.data.segundaPreview?.series.map((serie: any) => (
-                <div key={serie.serie} className="bg-felt-dark/40 border border-felt-light/10 rounded-lg p-3">
-                  <p className="text-chalk/40 text-xs uppercase tracking-widest font-mono mb-2">Serie {serie.serie}</p>
-                  <div className="space-y-1">
-                    {serie.jugadores.map((j: any, idx: number) => (
-                      <div key={idx} className="flex items-center gap-2">
-                        <span className="text-chalk/20 text-xs font-mono w-4">{idx + 1}</span>
-                        <span className={`text-sm ${j.esSlot ? 'text-gold/50 italic' : 'text-chalk/70'}`}>{j.nombre}</span>
-                      </div>
-                    ))}
+              {/* Badge categoría para Nacional */}
+              {esNac && previewModal.data.categoriaFederal && (
+                <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg px-3 py-2 flex items-center gap-2">
+                  <span className="text-blue-400 text-xs uppercase tracking-widest font-mono">🏆 Nacional</span>
+                  <span className="text-blue-300 text-sm font-semibold capitalize">{previewModal.data.categoriaFederal}</span>
+                </div>
+              )}
+
+              {/* Tabs */}
+              <div className="flex gap-2 flex-wrap">
+                {tabs.map(tab => (
+                  <button key={tab.key}
+                    className={`py-1 px-3 text-xs rounded-lg border transition-all ${previewTab === tab.key ? 'border-gold/40 text-gold bg-gold/10' : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'}`}
+                    onClick={() => setPreviewTab(tab.key as PreviewTab)}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Contenido de tabs */}
+              <div className="max-h-[50vh] overflow-y-auto space-y-3 pr-1">
+
+                {/* Tab: Series */}
+                {previewTab === 'series' && previewModal.data.clasificatorio.series.map(serie => (
+                  <div key={serie.serie} className="bg-felt-dark/40 border border-felt-light/10 rounded-lg p-3">
+                    <p className="text-chalk/40 text-xs uppercase tracking-widest font-mono mb-2">Serie {serie.serie}</p>
+                    <div className="space-y-1">
+                      {serie.jugadores.map((j, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <span className="text-chalk/20 text-xs font-mono w-4">{idx + 1}</span>
+                          <span className={`text-sm ${j.esLibre ? 'text-red-400/60 italic' : 'text-chalk/70'}`}>{j.nombre}</span>
+                          {j.esLibre && <span className="text-red-400/40 text-xs font-mono">(bye)</span>}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
 
-              {previewTab === 'primera' && previewModal.data.primeraPreview?.cruces.map((cruce: any) => (
-                <div key={cruce.cruce} className="bg-felt-dark/40 border border-felt-light/10 rounded-lg px-3 py-2 flex items-center gap-3">
-                  <span className="text-chalk/30 text-xs font-mono w-16">Cruce {cruce.cruce}</span>
-                  <span className={`text-sm flex-1 ${cruce.esSlotA ? 'text-gold/50 italic' : 'text-chalk/70'}`}>{cruce.jugadorA}</span>
-                  <span className="text-chalk/30 text-xs">vs</span>
-                  <span className={`text-sm flex-1 text-right ${cruce.esSlotB ? 'text-gold/50 italic' : 'text-chalk/70'}`}>{cruce.jugadorB}</span>
-                </div>
-              ))}
+                {/* Tab: Bracket (solo Nacional) */}
+                {previewTab === 'bracket' && previewModal.data.bracket && (
+                  <div className="space-y-3">
+                    <div className="bg-felt-dark/40 border border-purple-700/30 rounded-lg p-4 space-y-3">
+                      <p className="text-purple-400 font-display text-sm uppercase tracking-widest">
+                        {previewModal.data.bracket.descripcion}
+                      </p>
+                      <div className="grid grid-cols-2 gap-4 text-sm font-mono">
+                        <div className="space-y-1">
+                          <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">Winners Bracket</p>
+                          <div className="flex justify-between"><span className="text-chalk/50">R1</span><span className="text-chalk">8 partidos</span></div>
+                          <div className="flex justify-between"><span className="text-chalk/50">R2</span><span className="text-chalk">4 partidos</span></div>
+                          <div className="flex justify-between"><span className="text-chalk/50">SF</span><span className="text-chalk">2 partidos</span></div>
+                          <div className="flex justify-between"><span className="text-chalk/50">Final</span><span className="text-chalk">1 partido</span></div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">Losers Bracket</p>
+                          <div className="flex justify-between"><span className="text-chalk/50">R1</span><span className="text-chalk">4 partidos</span></div>
+                          <div className="flex justify-between"><span className="text-chalk/50">R2</span><span className="text-chalk">4 partidos</span></div>
+                          <div className="flex justify-between"><span className="text-chalk/50">R3</span><span className="text-chalk">2 partidos</span></div>
+                          <div className="flex justify-between"><span className="text-chalk/50">R4</span><span className="text-chalk">2 partidos</span></div>
+                          <div className="flex justify-between"><span className="text-chalk/50">Final</span><span className="text-chalk">1 partido</span></div>
+                        </div>
+                      </div>
+                      <div className="border-t border-felt-light/10 pt-3 flex justify-between items-center">
+                        <span className="text-chalk/40 text-sm">🏆 Grand Final (WB vs LB)</span>
+                        <span className="text-gold font-mono font-bold text-lg">{previewModal.data.bracket.totalPartidos} partidos total</span>
+                      </div>
+                    </div>
+                    <p className="text-chalk/30 text-xs text-center font-mono">
+                      Los 16 clasificados se seedean automáticamente al completar las series
+                    </p>
+                  </div>
+                )}
 
-              {previewTab === 'master' && previewModal.data.masterPreview?.cruces.map((cruce: any) => (
-                <div key={cruce.cruce} className="bg-felt-dark/40 border border-felt-light/10 rounded-lg px-3 py-2 flex items-center gap-3">
-                  <span className="text-chalk/30 text-xs font-mono w-16">Cruce {cruce.cruce}</span>
-                  <span className={`text-sm flex-1 ${cruce.esSlotA ? 'text-gold/50 italic' : 'text-chalk/70'}`}>{cruce.jugadorA}</span>
-                  <span className="text-chalk/30 text-xs">vs</span>
-                  <span className={`text-sm flex-1 text-right ${cruce.esSlotB ? 'text-gold/50 italic' : 'text-chalk/70'}`}>{cruce.jugadorB}</span>
-                </div>
-              ))}
+                {/* Tab: Reducción (solo Departamental) */}
+                {previewTab === 'reduccion' && previewModal.data.clasificatorio.crucesReduccion?.map(cruce => (
+                  <div key={cruce.cruce} className="bg-felt-dark/40 border border-felt-light/10 rounded-lg px-3 py-2 flex items-center gap-3">
+                    <span className="text-chalk/30 text-xs font-mono w-16">Cruce {cruce.cruce}</span>
+                    <span className="text-chalk/70 text-sm flex-1">{cruce.slotA}</span>
+                    <span className="text-chalk/30 text-xs">vs</span>
+                    <span className="text-chalk/70 text-sm flex-1 text-right">{cruce.slotB}</span>
+                  </div>
+                ))}
+
+                {/* Tab: Segunda (solo Departamental) */}
+                {previewTab === 'segunda' && previewModal.data.segundaPreview?.series.map((serie: any) => (
+                  <div key={serie.serie} className="bg-felt-dark/40 border border-felt-light/10 rounded-lg p-3">
+                    <p className="text-chalk/40 text-xs uppercase tracking-widest font-mono mb-2">Serie {serie.serie}</p>
+                    <div className="space-y-1">
+                      {serie.jugadores.map((j: any, idx: number) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <span className="text-chalk/20 text-xs font-mono w-4">{idx + 1}</span>
+                          <span className={`text-sm ${j.esSlot ? 'text-gold/50 italic' : 'text-chalk/70'}`}>{j.nombre}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Tab: Primera (solo Departamental) */}
+                {previewTab === 'primera' && previewModal.data.primeraPreview?.cruces.map((cruce: any) => (
+                  <div key={cruce.cruce} className="bg-felt-dark/40 border border-felt-light/10 rounded-lg px-3 py-2 flex items-center gap-3">
+                    <span className="text-chalk/30 text-xs font-mono w-16">Cruce {cruce.cruce}</span>
+                    <span className={`text-sm flex-1 ${cruce.esSlotA ? 'text-gold/50 italic' : 'text-chalk/70'}`}>{cruce.jugadorA}</span>
+                    <span className="text-chalk/30 text-xs">vs</span>
+                    <span className={`text-sm flex-1 text-right ${cruce.esSlotB ? 'text-gold/50 italic' : 'text-chalk/70'}`}>{cruce.jugadorB}</span>
+                  </div>
+                ))}
+
+                {/* Tab: Master (solo Departamental) */}
+                {previewTab === 'master' && previewModal.data.masterPreview?.cruces.map((cruce: any) => (
+                  <div key={cruce.cruce} className="bg-felt-dark/40 border border-felt-light/10 rounded-lg px-3 py-2 flex items-center gap-3">
+                    <span className="text-chalk/30 text-xs font-mono w-16">Cruce {cruce.cruce}</span>
+                    <span className={`text-sm flex-1 ${cruce.esSlotA ? 'text-gold/50 italic' : 'text-chalk/70'}`}>{cruce.jugadorA}</span>
+                    <span className="text-chalk/30 text-xs">vs</span>
+                    <span className={`text-sm flex-1 text-right ${cruce.esSlotB ? 'text-gold/50 italic' : 'text-chalk/70'}`}>{cruce.jugadorB}</span>
+                  </div>
+                ))}
+
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button className="btn-primary flex-1" onClick={handleConfirmarGenerar}>⚡ Confirmar y generar</button>
+                <button className="btn-secondary flex-1" onClick={() => setPreviewModal(null)}>Cancelar</button>
+              </div>
             </div>
-
-            <div className="flex gap-3 pt-2">
-              <button className="btn-primary flex-1" onClick={handleConfirmarGenerar}>⚡ Confirmar y generar</button>
-              <button className="btn-secondary flex-1" onClick={() => setPreviewModal(null)}>Cancelar</button>
-            </div>
-          </div>
-        </Modal>
-      )}
+          </Modal>
+        );
+      })()}
     </div>
   );
 }
