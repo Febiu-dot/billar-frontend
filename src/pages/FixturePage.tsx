@@ -40,19 +40,11 @@ type PreviewTab = 'series' | 'reduccion' | 'segunda' | 'primera' | 'master' | 'b
 
 // ── Labels legibles para rounds del bracket Nacional ──────────────────
 function getNacRoundLabel(round: number): string {
-  if (round >= 101 && round <= 108) return `WB R1 · P${round - 100}`;
-  if (round >= 111 && round <= 114) return `WB R2 · P${round - 110}`;
-  if (round === 121) return 'WB SF · P1';
-  if (round === 122) return 'WB SF · P2';
-  if (round === 131) return 'WB Final';
-  if (round >= 201 && round <= 204) return `LB R1 · P${round - 200}`;
-  if (round >= 211 && round <= 214) return `LB R2 · P${round - 210}`;
-  if (round === 221) return 'LB R3 · P1';
-  if (round === 222) return 'LB R3 · P2';
-  if (round === 231) return 'LB R4 · P1';
-  if (round === 232) return 'LB R4 · P2';
-  if (round === 241) return 'LB Final';
-  if (round === 251) return '🏆 Grand Final';
+  if (round >= 101 && round <= 108) return `Octavos · P${round - 100}`;
+  if (round >= 111 && round <= 114) return `Cuartos · P${round - 110}`;
+  if (round === 121) return 'Semis · P1';
+  if (round === 122) return 'Semis · P2';
+  if (round === 131) return '🏆 Final';
   return `Ronda ${round}`;
 }
 
@@ -771,34 +763,41 @@ export default function FixturePage() {
                 {/* Tab: Bracket (solo Nacional) */}
                 {previewTab === 'bracket' && previewModal.data.bracket && (
                   <div className="space-y-3">
-                    <div className="bg-felt-dark/40 border border-purple-700/30 rounded-lg p-4 space-y-3">
+                    <div className="bg-felt-dark/40 border border-purple-700/30 rounded-lg p-4 space-y-4">
                       <p className="text-purple-400 font-display text-sm uppercase tracking-widest">
-                        {previewModal.data.bracket.descripcion}
+                        Eliminación simple — 16 clasificados
                       </p>
-                      <div className="grid grid-cols-2 gap-4 text-sm font-mono">
-                        <div className="space-y-1">
-                          <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">Winners Bracket</p>
-                          <div className="flex justify-between"><span className="text-chalk/50">R1</span><span className="text-chalk">8 partidos</span></div>
-                          <div className="flex justify-between"><span className="text-chalk/50">R2</span><span className="text-chalk">4 partidos</span></div>
-                          <div className="flex justify-between"><span className="text-chalk/50">SF</span><span className="text-chalk">2 partidos</span></div>
-                          <div className="flex justify-between"><span className="text-chalk/50">Final</span><span className="text-chalk">1 partido</span></div>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">Losers Bracket</p>
-                          <div className="flex justify-between"><span className="text-chalk/50">R1</span><span className="text-chalk">4 partidos</span></div>
-                          <div className="flex justify-between"><span className="text-chalk/50">R2</span><span className="text-chalk">4 partidos</span></div>
-                          <div className="flex justify-between"><span className="text-chalk/50">R3</span><span className="text-chalk">2 partidos</span></div>
-                          <div className="flex justify-between"><span className="text-chalk/50">R4</span><span className="text-chalk">2 partidos</span></div>
-                          <div className="flex justify-between"><span className="text-chalk/50">Final</span><span className="text-chalk">1 partido</span></div>
+
+                      {/* Octavos seeding */}
+                      <div>
+                        <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">Octavos de final</p>
+                        <div className="grid grid-cols-2 gap-1 text-xs font-mono">
+                          {(previewModal.data.bracket.octavos ?? [
+                            '#1 vs #16','#8 vs #9','#5 vs #12','#4 vs #13',
+                            '#3 vs #14','#6 vs #11','#7 vs #10','#2 vs #15',
+                          ]).map((cruce: string, idx: number) => (
+                            <div key={idx} className="flex items-center gap-2 bg-felt-dark/60 rounded px-2 py-1">
+                              <span className="text-chalk/30 w-4">{idx + 1}</span>
+                              <span className="text-chalk/70">{cruce}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                      <div className="border-t border-felt-light/10 pt-3 flex justify-between items-center">
-                        <span className="text-chalk/40 text-sm">🏆 Grand Final (WB vs LB)</span>
-                        <span className="text-gold font-mono font-bold text-lg">{previewModal.data.bracket.totalPartidos} partidos total</span>
+
+                      {/* Estructura */}
+                      <div className="space-y-1 text-sm font-mono border-t border-felt-light/10 pt-3">
+                        <div className="flex justify-between"><span className="text-chalk/50">Octavos</span><span className="text-chalk">8 partidos</span></div>
+                        <div className="flex justify-between"><span className="text-chalk/50">Cuartos</span><span className="text-chalk">4 partidos</span></div>
+                        <div className="flex justify-between"><span className="text-chalk/50">Semis</span><span className="text-chalk">2 partidos</span></div>
+                        <div className="flex justify-between"><span className="text-chalk/50">Final</span><span className="text-chalk">1 partido</span></div>
+                        <div className="flex justify-between border-t border-felt-light/10 pt-2 mt-2">
+                          <span className="text-gold font-semibold">Total bracket</span>
+                          <span className="text-gold font-bold">{previewModal.data.bracket.totalPartidos} partidos</span>
+                        </div>
                       </div>
                     </div>
                     <p className="text-chalk/30 text-xs text-center font-mono">
-                      Los 16 clasificados se seedean automáticamente al completar las series
+                      #1 y #2 del ranking solo se cruzan en la final ✅
                     </p>
                   </div>
                 )}
