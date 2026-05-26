@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
 import { Match, Table, MatchStatus } from '../types';
@@ -13,40 +13,67 @@ export default function MatchesPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [circuits, setCircuits]       = useState<Circuit[]>([]);
   const [loading, setLoading]         = useState(true);
-  const [filterStatus, setFilterStatus]       = useState<MatchStatus | ''>('');
+  const [filterStatus, setFilterStatus]         = useState<MatchStatus | ''>('');
   const [filterTournament, setFilterTournament] = useState('');
   const [filterCircuit, setFilterCircuit]       = useState('');
+
+  // Modal asignar mesa
   const [assignModal, setAssignModal]   = useState<Match | null>(null);
   const [selectedTable, setSelectedTable] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const fetchMatches = (circuitId?: string, tournamentId?: string) => {
+  // Modal cargar resultado
+  const [resultModal, setResultModal]   = useState<Match | null>(null);
+  const [resWinnerId, setResWinnerId]   = useState('');
+  const [resSetsA, setResSetsA]         = useState('');
+  const [resSetsB, setResSetsB]         = useState('');
+  const [resPtsA, setResPtsA]           = useState('');
+  const [resPtsB, setResPtsB]           = useState('');
+  const [resIsWO, setResIsWO]           = useState(false);
+  const [resWOPlayer, setResWOPlayer]   = useState('');
+  const [resSaving, setResSaving]       = useState(false);
+
+  // Refs para que el socket handler use siempre los valores actuales
+  const filterCircuitRef    = useRef(filterCircuit);
+  const filterTournamentRef = useRef(filterTournament);
+  useEffect(() => { filterCircuitRef.current    = filterCircuit; },    [filterCircuit]);
+  useEffect(() => { filterTournamentRef.current = filterTournament; }, [filterTournament]);
+
+  // ── Fetch partidos con filtro correcto ────────────────────────────
+  const fetchMatches = useCallback((circuitId?: string, tournamentId?: string) => {
     const params = new URLSearchParams();
-    if (circuitId)   params.append('circuitId',   circuitId);
-    else if (tournamentId) params.append('tournamentId', tournamentId);
+    if (circuitId && circuitId !== '') {
+      params.append('circuitId', circuitId);
+    } else if (tournamentId && tournamentId !== '') {
+      params.append('tournamentId', tournamentId);
+    }
     return api.get(`/matches?${params.toString()}`).then(r => setMatches(r.data));
-  };
-
-  const fetchAll = () =>
-    Promise.all([
-      api.get('/matches'),
-      api.get('/tables'),
-    ]).then(([m, t]) => {
-      setMatches(m.data);
-      setTables(t.data);
-      setLoading(false);
-    });
-
-  useEffect(() => {
-    fetchAll();
-    api.get('/tournaments').then(r => setTournaments(r.data));
-    api.get('/circuits').then(r => setCircuits(r.data));
-    socket.on('match:updated', () => fetchMatches(filterCircuit, filterTournament));
-    socket.on('table:updated', () => api.get('/tables').then(r => setTables(r.data)));
-    return () => { socket.off('match:updated'); socket.off('table:updated'); };
   }, []);
 
-  // Al cambiar torneo: resetear circuito y cargar partidos del torneo
+  const fetchTables = () => api.get('/tables').then(r => setTables(r.data));
+
+  // Carga inicial: sin filtro
+  useEffect(() => {
+    Promise.all([
+      fetchMatches(),
+      fetchTables(),
+      api.get('/tournaments').then(r => setTournaments(r.data)),
+      api.get('/circuits').then(r => setCircuits(r.data)),
+    ]).finally(() => setLoading(false));
+
+    // Socket: usar refs para tener siempre los valores actuales
+    const onMatchUpdated = () => fetchMatches(filterCircuitRef.current, filterTournamentRef.current);
+    const onTableUpdated = () => fetchTables();
+
+    socket.on('match:updated', onMatchUpdated);
+    socket.on('table:updated', onTableUpdated);
+    return () => {
+      socket.off('match:updated', onMatchUpdated);
+      socket.off('table:updated', onTableUpdated);
+    };
+  }, [fetchMatches]);
+
+  // ── Handlers de filtros ───────────────────────────────────────────
   const handleTournamentChange = (tournamentId: string) => {
     setFilterTournament(tournamentId);
     setFilterCircuit('');
@@ -54,18 +81,17 @@ export default function MatchesPage() {
     fetchMatches('', tournamentId).finally(() => setLoading(false));
   };
 
-  // Al cambiar circuito: cargar partidos del circuito
   const handleCircuitChange = (circuitId: string) => {
     setFilterCircuit(circuitId);
     setLoading(true);
     fetchMatches(circuitId, '').finally(() => setLoading(false));
   };
 
-  // Circuitos del torneo seleccionado
   const circuitsFiltrados = filterTournament
     ? circuits.filter(c => c.tournamentId === Number(filterTournament))
     : circuits;
 
+  // ── Asignar mesa ──────────────────────────────────────────────────
   const handleAssign = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!assignModal) return;
@@ -91,6 +117,55 @@ export default function MatchesPage() {
     fetchMatches(filterCircuit, filterTournament);
   };
 
+  // ── Abrir modal de resultado ──────────────────────────────────────
+  const openResultModal = (match: Match) => {
+    setResultModal(match);
+    setResWinnerId('');
+    setResSetsA('');
+    setResSetsB('');
+    setResPtsA('');
+    setResPtsB('');
+    setResIsWO(false);
+    setResWOPlayer('');
+  };
+
+  // ── Cargar resultado ──────────────────────────────────────────────
+  const handleCargarResultado = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resultModal) return;
+    setResSaving(true);
+    try {
+      const ruleSet = (resultModal as any).ruleSet;
+      const setsToWin = ruleSet?.setsToWin ?? 2;
+
+      if (resIsWO) {
+        // WO
+        if (!resWOPlayer) { alert('Seleccioná el jugador ausente (WO)'); setResSaving(false); return; }
+        await api.put(`/matches/${resultModal.id}/result`, {
+          setsA: 0, setsB: 0, pointsA: 0, pointsB: 0,
+          isWO: true, woPlayerId: Number(resWOPlayer),
+        });
+      } else {
+        // Resultado normal
+        const sA = Number(resSetsA); const sB = Number(resSetsB);
+        const pA = Number(resPtsA);  const pB = Number(resPtsB);
+        if (sA < setsToWin && sB < setsToWin) {
+          alert(`Uno de los jugadores debe tener ${setsToWin} sets ganados`);
+          setResSaving(false); return;
+        }
+        await api.put(`/matches/${resultModal.id}/result`, {
+          setsA: sA, setsB: sB, pointsA: pA, pointsB: pB,
+          isWO: false,
+        });
+      }
+      setResultModal(null);
+      fetchMatches(filterCircuit, filterTournament);
+    } catch (err: any) {
+      alert(err?.response?.data?.error ?? 'Error al cargar el resultado');
+    } finally { setResSaving(false); }
+  };
+
+  // ── Filtrado local por estado ─────────────────────────────────────
   const statusOrder: MatchStatus[] = ['en_juego', 'asignado', 'pendiente', 'finalizado', 'wo'];
   const statuses: (MatchStatus | '')[] = ['', 'pendiente', 'asignado', 'en_juego', 'finalizado', 'wo'];
   const statusLabels: Record<string, string> = {
@@ -114,6 +189,7 @@ export default function MatchesPage() {
       />
 
       <div className="p-6 space-y-4">
+
         {/* Filtros torneo / circuito */}
         <div className="flex flex-wrap gap-3 items-center">
           <select
@@ -142,20 +218,21 @@ export default function MatchesPage() {
 
         {/* Filtros de estado */}
         <div className="flex flex-wrap gap-2">
-          {statuses.map(s => (
-            <button
-              key={s}
-              onClick={() => setFilterStatus(s as MatchStatus | '')}
-              className={`badge-status cursor-pointer text-xs px-3 py-1 ${
-                filterStatus === s ? 'bg-gold/30 text-gold border border-gold/40' : 'bg-felt-light/20 text-chalk/60'
-              }`}
-            >
-              {statusLabels[s]}
-              <span className="ml-1 font-mono">
-                ({s === '' ? filtered.length : filtered.filter(m => m.status === s).length})
-              </span>
-            </button>
-          ))}
+          {statuses.map(s => {
+            const count = s === '' ? filtered.length : matches.filter(m => m.status === s).length;
+            return (
+              <button
+                key={s}
+                onClick={() => setFilterStatus(s as MatchStatus | '')}
+                className={`badge-status cursor-pointer text-xs px-3 py-1 ${
+                  filterStatus === s ? 'bg-gold/30 text-gold border border-gold/40' : 'bg-felt-light/20 text-chalk/60'
+                }`}
+              >
+                {statusLabels[s]}
+                <span className="ml-1 font-mono">({count})</span>
+              </button>
+            );
+          })}
         </div>
 
         {filtered.length === 0 ? (
@@ -214,13 +291,12 @@ export default function MatchesPage() {
                         {m.result.isWO && <span className="ml-2 text-red-400">W.O.</span>}
                       </p>
                     )}
-
                     {m.result?.isWO && (
                       <p className="text-xs text-red-400 font-mono mt-0.5">W.O.</p>
                     )}
                   </div>
 
-                  <div className="flex gap-2 flex-wrap">
+                  <div className="flex gap-2 flex-wrap justify-end">
                     {m.status === 'pendiente' && (
                       <>
                         <button
@@ -239,6 +315,14 @@ export default function MatchesPage() {
                         ▶ Iniciar
                       </button>
                     )}
+                    {m.status === 'en_juego' && (
+                      <button
+                        className="py-1 px-3 text-xs rounded-lg border border-gold/50 text-gold hover:bg-gold/10 transition-all font-semibold"
+                        onClick={() => openResultModal(m)}
+                      >
+                        📋 Cargar Resultado
+                      </button>
+                    )}
                     {(m.status === 'finalizado' || m.status === 'wo') && m.result?.winnerId && (
                       <span className="text-xs text-green-400 font-semibold">
                         🏆 {playerName(m.result.winnerId === m.playerAId ? m.playerA : m.playerB)}
@@ -252,6 +336,7 @@ export default function MatchesPage() {
         )}
       </div>
 
+      {/* Modal asignar mesa */}
       {assignModal && (
         <Modal title="ASIGNAR MESA" onClose={() => setAssignModal(null)}>
           <p className="text-chalk/60 text-sm mb-4">
@@ -276,6 +361,117 @@ export default function MatchesPage() {
                 {saving ? 'Asignando...' : 'Asignar'}
               </button>
               <button type="button" className="btn-secondary flex-1" onClick={() => setAssignModal(null)}>Cancelar</button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Modal cargar resultado */}
+      {resultModal && (
+        <Modal title="CARGAR RESULTADO" onClose={() => setResultModal(null)}>
+          <div className="mb-4">
+            <p className="text-chalk/80 font-semibold">
+              {playerName(resultModal.playerA)} <span className="text-chalk/30">vs</span> {playerName(resultModal.playerB)}
+            </p>
+            <p className="text-chalk/40 text-xs font-mono mt-1">
+              {resultModal.phase?.circuit?.tournament?.name} · {resultModal.phase?.name} · R{resultModal.round}
+            </p>
+            {(resultModal as any).ruleSet && (
+              <p className="text-chalk/40 text-xs font-mono">
+                Formato: {(resultModal as any).ruleSet.setsToWin} sets para ganar
+              </p>
+            )}
+          </div>
+
+          <form onSubmit={handleCargarResultado} className="space-y-4">
+
+            {/* WO toggle */}
+            <div className="flex items-center gap-3 bg-felt-dark/50 rounded-lg px-3 py-2">
+              <input
+                type="checkbox"
+                id="resIsWO"
+                checked={resIsWO}
+                onChange={e => setResIsWO(e.target.checked)}
+                className="w-4 h-4 accent-gold"
+              />
+              <label htmlFor="resIsWO" className="text-chalk/80 text-sm cursor-pointer">W.O. (jugador ausente)</label>
+            </div>
+
+            {resIsWO ? (
+              /* WO: seleccionar jugador ausente */
+              <div>
+                <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Jugador ausente</label>
+                <select className="input" value={resWOPlayer} onChange={e => setResWOPlayer(e.target.value)} required>
+                  <option value="">Seleccioná el jugador ausente</option>
+                  {resultModal.playerA && (
+                    <option value={resultModal.playerAId ?? ''}>
+                      {playerName(resultModal.playerA)} (Jugador A)
+                    </option>
+                  )}
+                  {resultModal.playerB && (
+                    <option value={resultModal.playerBId ?? ''}>
+                      {playerName(resultModal.playerB)} (Jugador B)
+                    </option>
+                  )}
+                </select>
+              </div>
+            ) : (
+              /* Resultado normal */
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5 truncate">
+                      Sets — {playerName(resultModal.playerA)}
+                    </label>
+                    <input
+                      type="number" min="0" max="5" className="input"
+                      value={resSetsA} onChange={e => setResSetsA(e.target.value)}
+                      required placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5 truncate">
+                      Sets — {playerName(resultModal.playerB)}
+                    </label>
+                    <input
+                      type="number" min="0" max="5" className="input"
+                      value={resSetsB} onChange={e => setResSetsB(e.target.value)}
+                      required placeholder="0"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">
+                      Puntos A
+                    </label>
+                    <input
+                      type="number" min="0" className="input"
+                      value={resPtsA} onChange={e => setResPtsA(e.target.value)}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">
+                      Puntos B
+                    </label>
+                    <input
+                      type="number" min="0" className="input"
+                      value={resPtsB} onChange={e => setResPtsB(e.target.value)}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <button type="submit" className="btn-primary flex-1" disabled={resSaving}>
+                {resSaving ? 'Guardando...' : '✅ Guardar resultado'}
+              </button>
+              <button type="button" className="btn-secondary flex-1" onClick={() => setResultModal(null)}>
+                Cancelar
+              </button>
             </div>
           </form>
         </Modal>
