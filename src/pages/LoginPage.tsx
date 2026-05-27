@@ -2,11 +2,31 @@ import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+function EyeIcon({ open }: { open: boolean }) {
+  if (open) return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      className="w-4 h-4">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      className="w-4 h-4">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  );
+}
+
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -15,7 +35,8 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      await login(username, password);
+      // trim para evitar espacios invisibles que rompen el login
+      await login(username.trim(), password.trim());
       navigate('/');
     } catch {
       setError('Usuario o contraseña incorrectos');
@@ -54,35 +75,60 @@ export default function LoginPage() {
           <div>
             <label className="block text-silver-dark text-xs uppercase tracking-widest mb-1.5">Usuario</label>
             <input
-              type="text" value={username} onChange={e => setUsername(e.target.value)}
-              className="input" placeholder="Ingresá tu usuario" autoFocus required
+              type="text"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              className="input"
+              placeholder="Ingresá tu usuario"
+              autoFocus
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              required
             />
           </div>
+
           <div>
             <label className="block text-silver-dark text-xs uppercase tracking-widest mb-1.5">Contraseña</label>
-            <input
-              type="password" value={password} onChange={e => setPassword(e.target.value)}
-              className="input" placeholder="••••••••" required
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="input pr-10"
+                placeholder="••••••••"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-chalk/40 hover:text-chalk/80 transition-colors"
+                tabIndex={-1}
+              >
+                <EyeIcon open={showPassword} />
+              </button>
+            </div>
           </div>
 
           {error && (
-            <div className="bg-red-900/20 border border-red-700/30 rounded-lg px-3 py-2 text-red-400 text-sm">{error}</div>
+            <div className="bg-red-900/20 border border-red-700/30 rounded-lg px-3 py-2 text-red-400 text-sm">
+              {error}
+            </div>
           )}
 
-          <button type="submit" className="btn-primary w-full py-3 text-base font-bold uppercase tracking-wider" disabled={loading}>
+          <button
+            type="submit"
+            className="btn-primary w-full py-3 text-base font-bold uppercase tracking-wider"
+            disabled={loading}
+          >
             {loading ? 'Ingresando...' : 'Ingresar'}
           </button>
         </form>
 
-        <div className="mt-4 card text-xs text-silver-dark space-y-1">
-          <p className="font-semibold text-silver mb-2">Usuarios de prueba:</p>
-          <p><span className="text-orange font-mono">admin</span> / admin123 → Administrador</p>
-          <p><span className="text-orange font-mono">juez1</span> / juez123 → Juez Sede 1</p>
-          <p><span className="text-orange font-mono">juez2</span> / juez123 → Juez Sede 2</p>
-          <div className="border-t border-silver-muted/10 pt-2 mt-2">
-            <a href="/publico" className="text-orange/70 hover:text-orange">Ver torneo sin login →</a>
-          </div>
+        <div className="mt-4 text-center">
+          <a href="/publico" className="text-orange/70 hover:text-orange text-xs">
+            Ver torneo sin login →
+          </a>
         </div>
       </div>
     </div>
