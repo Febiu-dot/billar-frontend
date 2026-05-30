@@ -81,6 +81,7 @@ export default function FixturePage() {
   const [inscribiendoClub, setInscribiendoClub] = useState<string | null>(null);
 
   const [generando, setGenerando] = useState<number | null>(null);
+  const [reseteando, setReseteando] = useState<number | null>(null);
   const [previewModal, setPreviewModal] = useState<{ circuit: Circuit; data: PreviewData } | null>(null);
   const [previewLoading, setPreviewLoading] = useState<number | null>(null);
   const [previewTab, setPreviewTab] = useState<PreviewTab>('series');
@@ -250,6 +251,20 @@ export default function FixturePage() {
     finally { setInscripcionSaving(null); }
   };
 
+  const handleReset = async (circuit: Circuit) => {
+    if (!confirm(`⚠️ ¿Limpiar el circuito "${circuit.name}"?\n\nEsto borrará TODOS los partidos y resultados.\nSe mantendrán los jugadores inscriptos y la configuración.\n\nEsta acción no se puede deshacer.`)) return;
+    setReseteando(circuit.id);
+    try {
+      const res = await api.delete(`/circuits/${circuit.id}/reset`);
+      alert(`✅ ${res.data.message}`);
+      refreshSelected();
+    } catch (err: any) {
+      alert(err?.response?.data?.error ?? 'Error al limpiar el circuito');
+    } finally {
+      setReseteando(null);
+    }
+  };
+
   const handleAbrirPreview = async (circuit: Circuit) => {
     setPreviewLoading(circuit.id);
     try {
@@ -388,6 +403,13 @@ export default function FixturePage() {
                       <div className="flex gap-2 ml-auto flex-wrap">
                         {!oculto && (
                           <>
+                            <button
+                              className="py-1 px-3 text-xs rounded-lg border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all disabled:opacity-40"
+                              disabled={reseteando === circuit.id}
+                              onClick={() => handleReset(circuit)}
+                            >
+                              {reseteando === circuit.id ? 'Limpiando...' : '🗑 Limpiar'}
+                            </button>
                             <button className="py-1 px-3 text-xs rounded-lg border border-blue-700/40 text-blue-300 hover:bg-blue-900/20 transition-all" onClick={() => openInscripcion(circuit)}>
                               👥 Inscripción ({circuit.players?.length ?? 0})
                             </button>
