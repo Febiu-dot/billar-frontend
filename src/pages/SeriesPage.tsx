@@ -2,108 +2,94 @@ import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { LoadingSpinner, EmptyState, Modal } from '../components/ui';
 
-interface Venue { id: number; name: string; departamentoId?: number; tables?: { id: number; number: number; status: string }[]; }
-interface Serie { serieId: string; fase: string; circuitId: number; circuitName: string; circuitOrder: number; partidos: any[]; }
+interface Tournament { id: number; name: string; year: number; }
+interface Circuit    { id: number; name: string; tournamentId: number; order: number; }
+interface Venue      { id: number; name: string; departamentoId?: number; tables?: { id: number; number: number; status: string }[]; }
+interface Serie      { serieId: string; fase: string; circuitId: number; partidos: any[]; }
 
 export default function SeriesPage() {
-  const [venues, setVenues] = useState<Venue[]>([]);
-  const [series, setSeries] = useState<Serie[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [torneoDepId, setTorneoDepId] = useState<number | null>(null);
-  const [asignandoModal, setAsignandoModal] = useState<{ serie: Serie; partido: any } | null>(null);
-  const [form, setForm] = useState({ venueId: '', tableId: '', scheduledAt: '', hora: '', minutos: '' });
-  const [saving, setSaving] = useState(false);
-  const [circuitosOcultos, setCircuitosOcultos] = useState<Set<number>>(new Set());
-  const [circuitoSeleccionado, setCircuitoSeleccionado] = useState<number | null>(null);
+  const [tournaments, setTournaments]             = useState<Tournament[]>([]);
+  const [circuits, setCircuits]                   = useState<Circuit[]>([]);
+  const [venues, setVenues]                       = useState<Venue[]>([]);
+  const [series, setSeries]                       = useState<Serie[]>([]);
+  const [loading, setLoading]                     = useState(true);
+  const [loadingMatches, setLoadingMatches]       = useState(false);
+  const [selectedTournament, setSelectedTournament] = useState('');
+  const [selectedCircuit, setSelectedCircuit]     = useState('');
+  const [torneoDepId, setTorneoDepId]             = useState<number | null>(null);
+  const [asignandoModal, setAsignandoModal]       = useState<{ serie: Serie; partido: any } | null>(null);
+  const [form, setForm]                           = useState({ venueId: '', tableId: '', scheduledAt: '', hora: '', minutos: '' });
+  const [saving, setSaving]                       = useState(false);
 
-  const filtrarPartidos = (matches: any[]) =>
-    matches.filter((m: any) =>
-      m.serieId &&
-      (m.round % 10 === 1 || m.round % 10 === 2) &&
-      !m.serieId.includes('reduccion') &&
-      !m.serieId.includes('repechaje') &&
-      !m.serieId.includes('primera') &&
-      !m.serieId.includes('master') &&
-      (m.playerA !== null || m.slotA !== null) &&
-      (m.playerB !== null || m.slotB !== null)
-    );
+  useEffect(() => {
+    Promise.all([
+      api.get('/tournaments').then(r => setTournaments(r.data)),
+      api.get('/circuits').then(r => setCircuits(r.data)),
+      api.get('/venues').then(r => setVenues(r.data)),
+    ]).finally(() => setLoading(false));
+  }, []);
 
-  const getNumSerie = (id: string) => {
-    const match = id.match(/(\d+)$/);
-    return match ? parseInt(match[1]) : 0;
-  };
+  const circuitsFiltrados = selectedTournament
+    ? circuits.filter(c => c.tournamentId === Number(selectedTournament)).sort((a, b) => a.order - b.order)
+    : [];
 
-  const agruparEnSeries = (matches: any[]): Serie[] => {
-  const seriesMap: Record<string, Serie> = {};
-  for (const m of matches) {
-    const key = `${m.phase?.circuit?.id ?? 0}-${m.serieId}`;
-    if (!seriesMap[key]) {
-      seriesMap[key] = {
-        serieId: m.serieId,
-        fase: m.phase?.type ?? '',
-        circuitId: m.phase?.circuit?.id ?? 0,
-        circuitName: m.phase?.circuit?.name ?? 'Sin circuito',
-        circuitOrder: m.phase?.circuit?.order ?? 0,
-        partidos: []
-      };
+  // ── Filtrar series (departamental + Nacional) ──────────────────────
+  const filtrarSeries = (matches: any[]): Serie[] => {
+    const seriesMap: Record<string, Serie> = {};
+
+    for (const m of matches) {
+      if (!m.serieId) continue;
+      const sid = m.serieId;
+      // Excluir no-series
+      if (sid.includes('reduccion') || sid.includes('repechaje')) continue;
+      if (sid.includes('primera-cruce') || sid.includes('master')) continue;
+      if (sid.startsWith('nac-oct') || sid.startsWith('nac-cua') ||
+          sid.startsWith('nac-semi') || sid === 'nac-final') continue;
+
+      const key = sid;
+      if (!seriesMap[key]) {
+        seriesMap[key] = {
+          serieId: sid,
+          fase: m.phase?.type ?? '',
+          circuitId: m.phase?.circuit?.id ?? 0,
+          partidos: [],
+        };
+      }
+      seriesMap[key].partidos.push(m);
     }
-    seriesMap[key].partidos.push(m);
-  }
+
     Object.values(seriesMap).forEach(s => s.partidos.sort((a, b) => a.round - b.round));
+
     return Object.values(seriesMap).sort((a, b) => {
-      if (a.circuitOrder !== b.circuitOrder) return a.circuitOrder - b.circuitOrder;
       const faseA = a.serieId.split('-serie-')[0];
       const faseB = b.serieId.split('-serie-')[0];
       if (faseA !== faseB) return faseA.localeCompare(faseB);
-      return getNumSerie(a.serieId) - getNumSerie(b.serieId);
+      const numA = parseInt(a.serieId.match(/(\d+)$/)?.[1] ?? '0');
+      const numB = parseInt(b.serieId.match(/(\d+)$/)?.[1] ?? '0');
+      return numA - numB;
     });
   };
 
-  const cargarDatos = async () => {
-    const [vRes, mRes, tRes] = await Promise.all([
-      api.get('/venues'),
-      api.get('/matches'),
-      api.get('/tournaments'),
-    ]);
-    setVenues(vRes.data);
-    const seriesData = agruparEnSeries(filtrarPartidos(mRes.data));
-    setSeries(seriesData);
-
-    // Detectar circuitos disponibles y seleccionar el más reciente por defecto
-    const circuitIds = [...new Set(seriesData.map(s => s.circuitId))];
-    const maxCircuitOrder = Math.max(...seriesData.map(s => s.circuitOrder));
-    const circuitMasReciente = seriesData.find(s => s.circuitOrder === maxCircuitOrder)?.circuitId ?? null;
-
-    if (circuitoSeleccionado === null && circuitMasReciente) {
-      setCircuitoSeleccionado(circuitMasReciente);
-      // Ocultar todos los anteriores por defecto
-      const anteriores: Set<number> = new Set(
-        seriesData.filter(s => s.circuitId !== circuitMasReciente).map(s => s.circuitId)
-      );
-      setCircuitosOcultos(anteriores);
-    }
-
-    const torneoActivo = tRes.data.find((t: any) => t.active) ?? tRes.data[0];
-    setTorneoDepId(torneoActivo?.departamentoId ?? null);
-    setLoading(false);
+  const handleCircuitChange = async (circuitId: string) => {
+    setSelectedCircuit(circuitId);
+    setSeries([]);
+    if (!circuitId) return;
+    setLoadingMatches(true);
+    try {
+      const res = await api.get(`/matches?circuitId=${circuitId}`);
+      setSeries(filtrarSeries(res.data));
+      // Departamento para filtrar sedes
+      const torneo = tournaments.find(t => t.id === Number(selectedTournament)) as any;
+      setTorneoDepId(torneo?.departamentoId ?? null);
+    } catch { setSeries([]); }
+    finally { setLoadingMatches(false); }
   };
 
-  useEffect(() => {
-    cargarDatos().catch(() => setLoading(false));
-  }, []);
-
-  const toggleCircuito = (circuitId: number) => {
-    setCircuitosOcultos(prev => {
-      const next: Set<number> = new Set(prev);
-      if (next.has(circuitId)) next.delete(circuitId);
-      else next.add(circuitId);
-      return next;
-    });
+  const handleTournamentChange = (tournamentId: string) => {
+    setSelectedTournament(tournamentId);
+    setSelectedCircuit('');
+    setSeries([]);
   };
-
-  // Agrupar series por circuito
-  const circuitos = [...new Map(series.map(s => [s.circuitId, { id: s.circuitId, name: s.circuitName, order: s.circuitOrder }])).values()]
-    .sort((a, b) => a.order - b.order);
 
   const abrirAsignacion = (serie: Serie, partido: any) => {
     setAsignandoModal({ serie, partido });
@@ -128,12 +114,10 @@ export default function SeriesPage() {
       if (form.tableId) await api.put(`/matches/${partido.id}/assign`, { tableId: parseInt(form.tableId) });
       if (scheduledAt) await api.put(`/matches/${partido.id}`, { scheduledAt });
       setAsignandoModal(null);
-      await cargarDatos();
+      await handleCircuitChange(selectedCircuit);
     } catch (err: any) {
       alert(err?.response?.data?.error ?? 'Error al asignar');
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
 
   const sedesFiltradas = torneoDepId ? venues.filter(v => v.departamentoId === torneoDepId) : venues;
@@ -149,9 +133,18 @@ export default function SeriesPage() {
     id
       .replace('clasif-serie-', 'Clasificatorio Serie ')
       .replace('segunda-serie-', 'Segunda Serie ')
-      .replace('primera-serie-', 'Primera Serie ')
+      .replace('nac-serie-', 'Serie Nacional ')
       .replace(/-/g, ' ')
       .replace(/\b\w/g, c => c.toUpperCase());
+
+  const labelPartido = (round: number, serieId: string): string => {
+    const isNac = serieId.startsWith('nac-');
+    if (!isNac) return `P${(round % 10) || 10}`;
+    const base = Math.floor((round - 1) / 10) * 10 + 1;
+    const pos = round - base + 1;
+    const labels: Record<number, string> = { 1: 'P1', 2: 'P2', 3: 'Final G', 4: 'Final P', 5: '2° vs 3°' };
+    return labels[pos] ?? `P${pos}`;
+  };
 
   if (loading) return <LoadingSpinner />;
 
@@ -163,75 +156,90 @@ export default function SeriesPage() {
       </div>
 
       <div className="p-6 space-y-6">
-        {series.length === 0 ? (
-          <EmptyState message="No hay series. Generá los partidos desde Fixture primero." />
-        ) : (
-          circuitos.map(circuito => {
-            const seriesCircuito = series.filter(s => s.circuitId === circuito.id);
-            const oculto = circuitosOcultos.has(circuito.id);
-            const totalSeries = seriesCircuito.length;
-            const asignadas = seriesCircuito.filter(s => s.partidos.some(p => p.tableId || p.scheduledAt)).length;
 
-            return (
-              <div key={circuito.id}>
-                {/* Header circuito */}
-                <div className="flex items-center gap-3 mb-3 pb-2 border-b border-felt-light/15">
-                  <h2 className="font-display text-2xl text-gold">{circuito.name}</h2>
-                  <span className="text-chalk/30 text-xs font-mono">
-                    {asignadas}/{totalSeries} series asignadas
+        {/* Selectores */}
+        <div className="flex flex-wrap gap-3 items-center">
+          <select className="input w-64" value={selectedTournament}
+            onChange={e => handleTournamentChange(e.target.value)}>
+            <option value="">Seleccioná un torneo</option>
+            {tournaments.map(t => <option key={t.id} value={t.id}>{t.name} ({t.year})</option>)}
+          </select>
+          <select className="input w-56" value={selectedCircuit}
+            onChange={e => handleCircuitChange(e.target.value)} disabled={!selectedTournament}>
+            <option value="">Seleccioná un circuito</option>
+            {circuitsFiltrados.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
+
+        {/* Estado inicial */}
+        {!selectedCircuit && !loadingMatches && (
+          <div className="text-center py-16 text-chalk/30">
+            <p className="text-5xl mb-4">🎱</p>
+            <p className="text-lg font-display">Seleccioná un torneo y circuito</p>
+          </div>
+        )}
+
+        {loadingMatches && <LoadingSpinner />}
+
+        {selectedCircuit && !loadingMatches && series.length === 0 && (
+          <EmptyState message="No hay series en este circuito. Generá los partidos desde Fixture primero." />
+        )}
+
+        {series.length > 0 && !loadingMatches && (
+          <div className="space-y-4">
+            {series.map(serie => (
+              <div key={serie.serieId} className="card">
+                <div className="flex items-center gap-3 mb-3">
+                  <h3 className="font-display text-lg text-chalk">{formatSerieId(serie.serieId)}</h3>
+                  <span className="badge-status bg-felt-light/20 text-chalk/40 text-xs capitalize">{serie.fase}</span>
+                  <span className="text-chalk/30 text-xs font-mono ml-auto">
+                    {serie.partidos.filter(p => p.tableId || p.scheduledAt).length}/{serie.partidos.length} asignados
                   </span>
-                  <button
-                    className={`ml-auto py-1 px-3 text-xs rounded-lg border transition-all ${
-                      oculto
-                        ? 'border-gold/30 text-gold/70 hover:bg-gold/10'
-                        : 'border-chalk/20 text-chalk/40 hover:border-chalk/40'
-                    }`}
-                    onClick={() => toggleCircuito(circuito.id)}
-                  >
-                    {oculto ? '👁 Mostrar' : '🙈 Ocultar'}
-                  </button>
                 </div>
-
-                {/* Series del circuito */}
-                {!oculto && (
-                  <div className="space-y-4">
-                    {seriesCircuito.map(serie => (
-                      <div key={serie.serieId} className="card">
-                        <div className="flex items-center gap-3 mb-3">
-                          <h3 className="font-display text-lg text-chalk">{formatSerieId(serie.serieId)}</h3>
-                          <span className="badge-status bg-felt-light/20 text-chalk/40 text-xs capitalize">{serie.fase}</span>
+                <div className="space-y-2">
+                  {serie.partidos.map((partido: any) => {
+                    const asignado = partido.tableId || partido.scheduledAt;
+                    return (
+                      <div key={partido.id} className={`flex items-center justify-between rounded-lg px-3 py-2 border ${asignado ? 'border-green-700/30 bg-green-900/10' : 'border-felt-light/10 bg-felt-dark/30'}`}>
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <span className="text-chalk/30 text-xs font-mono w-14 shrink-0">
+                            {labelPartido(partido.round, serie.serieId)}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <span className={`text-sm ${partido.playerA ? 'text-chalk/80' : 'text-gold/60 italic'}`}>
+                              {pn(partido.playerA, partido.slotA)}
+                            </span>
+                            <span className="text-chalk/30 text-xs mx-2">vs</span>
+                            <span className={`text-sm ${partido.playerB ? 'text-chalk/80' : 'text-gold/60 italic'}`}>
+                              {pn(partido.playerB, partido.slotB)}
+                            </span>
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          {serie.partidos.map((partido: any, idx: number) => {
-                            const asignado = partido.tableId || partido.scheduledAt;
-                            return (
-                              <div key={partido.id} className={`flex items-center justify-between rounded-lg px-3 py-2 border ${asignado ? 'border-green-700/30 bg-green-900/10' : 'border-felt-light/10 bg-felt-dark/30'}`}>
-                                <div className="flex items-center gap-3 flex-1 min-w-0">
-                                  <span className="text-chalk/30 text-xs font-mono w-6">P{idx + 1}</span>
-                                  <div className="flex-1 min-w-0">
-                                    <span className={`text-sm ${partido.playerA ? 'text-chalk/80' : 'text-gold/60 italic'}`}>{pn(partido.playerA, partido.slotA)}</span>
-                                    <span className="text-chalk/30 text-xs mx-2">vs</span>
-                                    <span className={`text-sm ${partido.playerB ? 'text-chalk/80' : 'text-gold/60 italic'}`}>{pn(partido.playerB, partido.slotB)}</span>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-3 shrink-0">
-                                  {partido.table && <span className="text-green-400/60 text-xs font-mono">{partido.table.venue?.name} — Mesa {partido.table.number}</span>}
-                                  {partido.scheduledAt && <span className="text-chalk/40 text-xs font-mono">{new Date(partido.scheduledAt).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}</span>}
-                                  <button className="py-0.5 px-2 text-xs rounded border border-gold/30 text-gold/70 hover:bg-gold/10 transition-all" onClick={() => abrirAsignacion(serie, partido)}>
-                                    {asignado ? 'Editar' : 'Asignar'}
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })}
+                        <div className="flex items-center gap-3 shrink-0">
+                          {partido.table && (
+                            <span className="text-green-400/60 text-xs font-mono hidden sm:inline">
+                              {partido.table.venue?.name} — Mesa {partido.table.number}
+                            </span>
+                          )}
+                          {partido.scheduledAt && (
+                            <span className="text-chalk/40 text-xs font-mono hidden sm:inline">
+                              {new Date(partido.scheduledAt).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
+                            </span>
+                          )}
+                          <button
+                            className="py-0.5 px-2 text-xs rounded border border-gold/30 text-gold/70 hover:bg-gold/10 transition-all"
+                            onClick={() => abrirAsignacion(serie, partido)}
+                          >
+                            {asignado ? 'Editar' : 'Asignar'}
+                          </button>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
+                    );
+                  })}
+                </div>
               </div>
-            );
-          })
+            ))}
+          </div>
         )}
       </div>
 
@@ -241,10 +249,14 @@ export default function SeriesPage() {
           <div className="space-y-4">
             <div>
               <p className="text-chalk/60 text-xs uppercase tracking-widest mb-1">Partido</p>
-              <p className="text-chalk/80 text-sm">{pn(asignandoModal.partido.playerA, asignandoModal.partido.slotA)} vs {pn(asignandoModal.partido.playerB, asignandoModal.partido.slotB)}</p>
+              <p className="text-chalk/80 text-sm">
+                {pn(asignandoModal.partido.playerA, asignandoModal.partido.slotA)} vs {pn(asignandoModal.partido.playerB, asignandoModal.partido.slotB)}
+              </p>
             </div>
             <div>
-              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Sede {torneoDepId ? '(filtradas por departamento)' : ''}</label>
+              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">
+                Sede {torneoDepId ? '(filtradas por departamento)' : '(todas)'}
+              </label>
               <select className="input" value={form.venueId} onChange={e => setForm({ ...form, venueId: e.target.value, tableId: '' })}>
                 <option value="">Seleccionar sede...</option>
                 {sedesFiltradas.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
@@ -279,7 +291,9 @@ export default function SeriesPage() {
               </div>
             </div>
             <div className="flex gap-3 pt-2">
-              <button className="btn-primary flex-1" disabled={saving} onClick={handleGuardar}>{saving ? 'Guardando...' : 'Guardar'}</button>
+              <button className="btn-primary flex-1" disabled={saving} onClick={handleGuardar}>
+                {saving ? 'Guardando...' : 'Guardar'}
+              </button>
               <button className="btn-secondary flex-1" onClick={() => setAsignandoModal(null)}>Cancelar</button>
             </div>
           </div>
