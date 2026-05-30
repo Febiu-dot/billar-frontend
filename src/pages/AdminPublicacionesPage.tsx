@@ -340,52 +340,10 @@ export default function AdminPublicacionesPage() {
     if (!circuitId) return;
     setLoading(true); setError(''); setPubData(null);
     try {
+      // ranking y ranking-final: usar endpoint publicaciones (filtra posiciones nulas)
       if (tipoFase === 'ranking' || tipoFase === 'ranking-final') {
-        const todosCircuitos = torneos.flatMap((t: any) =>
-          (t.circuits ?? []).map((c: any) => ({ ...c, torneoNombre: t.name, torneoYear: t.year, torneoId: t.id }))
-        );
-        let circuito = todosCircuitos.find((c: any) => c.id === Number(circuitId));
-        let rankRes = await api.get(`/rankings/circuit/${circuitId}`);
-
-        if (rankRes.data.length === 0 && circuito) {
-          // ── Buscar circuito anterior del MISMO torneo ─────────────
-          const prevCircuito = todosCircuitos.find((c: any) =>
-            c.torneoId === circuito!.torneoId && c.order === (circuito!.order - 1)
-          );
-          if (prevCircuito) {
-            rankRes = await api.get(`/rankings/circuit/${prevCircuito.id}`);
-            circuito = prevCircuito;
-          }
-        }
-
-        if (rankRes.data.length === 0) {
-          setError('No hay ranking guardado. Generalo desde Ranking Final → "Usar como base para el Segundo Circuito".');
-          setLoading(false);
-          return;
-        }
-
-        const jugadores = rankRes.data.map((e: any) => ({
-          posicion: e.position,
-          nombre: `${e.player.lastName}, ${e.player.firstName}`,
-          club: abrevClub(e.player.club),
-          puntos: e.points,
-          categoria: e.player?.category?.name ?? null,
-          seccion: (e.position ?? 999) <= 8 ? 'MÁSTER' : (e.position ?? 999) <= 32 ? 'PRIMERA' : (e.position ?? 999) <= 64 ? 'SEGUNDA' : 'TERCERA',
-        }));
-
-        setPubData({
-          tipo: 'ranking',
-          tipoFase,
-          torneo: circuito?.torneoNombre ?? 'FEBIU',
-          circuito: circuito?.name ?? '',
-          temporada: String(circuito?.torneoYear ?? ''),
-          fase: tipoFase === 'ranking-final'
-            ? `RANKING FINAL — ${(circuito?.name ?? '').toUpperCase()}`
-            : `RANKING — ${(circuito?.name ?? '').toUpperCase()}`,
-          formato: '',
-          fechaPrincipal: '',
-          jugadores,
-        });
+        const res = await api.get(`/publicaciones/${circuitId}/${tipoFase}`);
+        setPubData(res.data);
         setNotas('');
         setLoading(false);
         return;
