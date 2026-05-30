@@ -38,14 +38,12 @@ export default function JudgePage() {
 
   const openResultModal = (match: Match) => {
     setResultModal(match);
-    // Si ya hay sets guardados, cargarlos
     if (match.sets && match.sets.length > 0) {
       const loadedSets: SetScore[] = match.sets.map(s => ({
         a: s.pointsA.toString(),
         b: s.pointsB.toString(),
         saved: true,
       }));
-      // Agregar fila vacía al final si el partido no tiene ganador
       const setsToWin = match.ruleSet?.setsToWin ?? 3;
       const winsA = loadedSets.filter(s => Number(s.a) > Number(s.b)).length;
       const winsB = loadedSets.filter(s => Number(s.b) > Number(s.a)).length;
@@ -67,15 +65,18 @@ export default function JudgePage() {
     fetchTables();
   };
 
+  // ── Validación de set: gana quien llega a pointsPerSet Y tiene ventaja ──
   const calcSetWinner = (sa: string, sb: string, pointsPerSet: number) => {
     const a = Number(sa), b = Number(sb);
-    if (!sa || !sb) return null;
+    if (!sa || !sb || isNaN(a) || isNaN(b)) return null;
     if (a >= pointsPerSet && a > b) return 'a';
     if (b >= pointsPerSet && b > a) return 'b';
     return null;
   };
 
   const updateSet = (index: number, side: 'a' | 'b', value: string) => {
+    // Solo permitir números positivos
+    if (value !== '' && (isNaN(Number(value)) || Number(value) < 0)) return;
     const newSets = sets.map((s, i) => i === index ? { ...s, [side]: value, saved: false } : s);
     setSets(newSets);
   };
@@ -86,7 +87,7 @@ export default function JudgePage() {
     const pointsPerSet = resultModal.ruleSet?.pointsPerSet ?? 60;
     const winner = calcSetWinner(s.a, s.b, pointsPerSet);
     if (!winner) {
-      setError(`Set ${index + 1}: ingresá tantos válidos (alguno debe llegar a ${pointsPerSet})`);
+      setError(`Set ${index + 1}: el ganador debe llegar a ${pointsPerSet} tantos y tener más que el rival`);
       return;
     }
     setSavingSet(index);
@@ -100,12 +101,10 @@ export default function JudgePage() {
 
       const newSets = sets.map((set, i) => i === index ? { ...set, saved: true } : set);
 
-      // Calcular si hay ganador
       const setsToWin = resultModal.ruleSet?.setsToWin ?? 3;
       const winsA = newSets.filter(set => Number(set.a) > Number(set.b) && set.saved).length;
       const winsB = newSets.filter(set => Number(set.b) > Number(set.a) && set.saved).length;
 
-      // Agregar nueva fila si el partido no terminó
       if (winsA < setsToWin && winsB < setsToWin && newSets.length === index + 1) {
         newSets.push({ a: '', b: '', saved: false });
       }
@@ -147,10 +146,7 @@ export default function JudgePage() {
       }
 
       await api.put(`/matches/${resultModal.id}/result`, {
-        setsA,
-        setsB,
-        pointsA,
-        pointsB,
+        setsA, setsB, pointsA, pointsB,
         isWO,
         woPlayerId: isWO && woPlayerId ? Number(woPlayerId) : undefined,
         notes: notes || undefined,
@@ -296,6 +292,7 @@ export default function JudgePage() {
         const { winsA, winsB } = getSummary();
         const setsToWin    = resultModal.ruleSet?.setsToWin ?? 3;
         const pointsPerSet = resultModal.ruleSet?.pointsPerSet ?? 60;
+        const bestOf       = resultModal.ruleSet?.bestOf ?? 5;
         const nameA = resultModal.playerA?.firstName ?? 'Jugador A';
         const nameB = resultModal.playerB?.firstName ?? 'Jugador B';
         const matchHasWinner = winsA >= setsToWin || winsB >= setsToWin;
@@ -308,7 +305,7 @@ export default function JudgePage() {
                 {playerName(resultModal.playerA)} <span className="text-gold/60">vs</span> {playerName(resultModal.playerB)}
               </p>
               <p className="text-chalk/40 text-xs mt-1">
-                Al mejor de {resultModal.ruleSet?.bestOf ?? 5} · {pointsPerSet} tantos por set
+                Al mejor de {bestOf} sets · {pointsPerSet} tantos por set · Gana quien llega a {setsToWin} sets
               </p>
             </div>
 
@@ -378,8 +375,7 @@ export default function JudgePage() {
                         <input
                           type="number"
                           min="0"
-                          max={pointsPerSet}
-                          className={`col-span-2 input text-center font-mono ${winner === 'a' ? 'border-gold/50' : ''}`}
+                          className={`col-span-2 input text-center font-mono text-lg ${winner === 'a' ? 'border-gold/50' : ''}`}
                           value={s.a}
                           onChange={e => updateSet(i, 'a', e.target.value)}
                           disabled={s.saved}
@@ -396,8 +392,7 @@ export default function JudgePage() {
                         <input
                           type="number"
                           min="0"
-                          max={pointsPerSet}
-                          className={`col-span-2 input text-center font-mono ${winner === 'b' ? 'border-gold/50' : ''}`}
+                          className={`col-span-2 input text-center font-mono text-lg ${winner === 'b' ? 'border-gold/50' : ''}`}
                           value={s.b}
                           onChange={e => updateSet(i, 'b', e.target.value)}
                           disabled={s.saved}
@@ -420,6 +415,10 @@ export default function JudgePage() {
                       </div>
                     );
                   })}
+
+                  <p className="text-chalk/30 text-xs text-center font-mono">
+                    El ganador del set debe llegar a {pointsPerSet} tantos
+                  </p>
                 </div>
               )}
 
