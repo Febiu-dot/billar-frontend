@@ -19,6 +19,7 @@ const TEMAS: Record<string, { header: string; accent: string; light: string; bad
   primera:        { header: '#014f86', accent: '#0277bd', light: '#e8f4fd', badge: '#014f86' },
   master:         { header: '#4a1070', accent: '#7b1fa2', light: '#f5eef8', badge: '#4a1070' },
   ranking:        { header: '#7c4d00', accent: '#b8860b', light: '#fffbf0', badge: '#7c4d00' },
+  'ranking-final':{ header: '#1a3560', accent: '#1e40af', light: '#eff6ff', badge: '#1a3560' },
   acumulado:      { header: '#1a3a5c', accent: '#1565c0', light: '#e8f0fe', badge: '#1a3a5c' },
 };
 
@@ -56,6 +57,7 @@ const FASES = [
   { value: 'primera',        label: '🔵 Cruces Primera' },
   { value: 'master',         label: '🟣 Fase Máster' },
   { value: 'ranking',        label: '🏅 Ranking del Circuito' },
+  { value: 'ranking-final',  label: '🏆 Ranking Final' },
   { value: 'acumulado',      label: '📊 Ranking Acumulado' },
 ];
 
@@ -338,7 +340,7 @@ export default function AdminPublicacionesPage() {
     if (!circuitId) return;
     setLoading(true); setError(''); setPubData(null);
     try {
-      if (tipoFase === 'ranking') {
+      if (tipoFase === 'ranking' || tipoFase === 'ranking-final') {
         const todosCircuitos = torneos.flatMap((t: any) =>
           (t.circuits ?? []).map((c: any) => ({ ...c, torneoNombre: t.name, torneoYear: t.year }))
         );
@@ -370,11 +372,13 @@ export default function AdminPublicacionesPage() {
 
         setPubData({
           tipo: 'ranking',
-          tipoFase: 'ranking',
+          tipoFase,
           torneo: circuito?.torneoNombre ?? 'FEBIU',
           circuito: circuito?.name ?? '',
           temporada: String(circuito?.torneoYear ?? ''),
-          fase: `RANKING FINAL — ${(circuito?.name ?? '').toUpperCase()}`,
+          fase: tipoFase === 'ranking-final'
+            ? `RANKING FINAL — ${(circuito?.name ?? '').toUpperCase()}`
+            : `RANKING — ${(circuito?.name ?? '').toUpperCase()}`,
           formato: '',
           fechaPrincipal: '',
           jugadores,
