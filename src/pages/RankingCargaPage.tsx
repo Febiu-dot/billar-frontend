@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import * as XLSX from 'xlsx';
 import { api } from '../services/api';
 import { LoadingSpinner } from '../components/ui';
 
@@ -7,6 +6,26 @@ interface Tournament { id: number; name: string; year: number; }
 interface Circuit    { id: number; name: string; tournamentId: number; order: number; }
 interface Player     { id: number; firstName: string; lastName: string; dni?: string; club?: string; }
 interface RankingRow { posicion: number; dni: string; apellido: string; nombre: string; club: string; }
+
+// ── Parser CSV manual (sin dependencias) ─────────────────────────────
+function parseCSV(text: string): string[][] {
+  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  return lines
+    .filter(l => l.trim() !== '')
+    .map(line => {
+      const cells: string[] = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') { inQuotes = !inQuotes; }
+        else if ((ch === ',' || ch === ';') && !inQuotes) { cells.push(current.trim()); current = ''; }
+        else { current += ch; }
+      }
+      cells.push(current.trim());
+      return cells;
+    });
+}
 
 export default function RankingCargaPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -17,14 +36,11 @@ export default function RankingCargaPage() {
   const [loading, setLoading]         = useState(true);
   const [loadingPlayers, setLoadingPlayers] = useState(false);
 
-  // Datos parseados del Excel
-  const [rows, setRows]       = useState<RankingRow[]>([]);
+  const [rows, setRows]         = useState<RankingRow[]>([]);
   const [fileName, setFileName] = useState('');
   const [parseError, setParseError] = useState('');
-
-  // Resultado de la carga
-  const [uploading, setUploading]     = useState(false);
-  const [resultado, setResultado]     = useState<{ cargados: number; errores: string[] } | null>(null);
+  const [uploading, setUploading]   = useState(false);
+  const [resultado, setResultado]   = useState<{ cargados: number; errores: string[] } | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -53,36 +69,29 @@ export default function RankingCargaPage() {
     finally { setLoadingPlayers(false); }
   };
 
-  // ── Descargar template con jugadores del circuito ─────────────────
+  // ── Descargar template CSV ────────────────────────────────────────
   const handleDownloadTemplate = () => {
-    if (players.length === 0) {
-      alert('Primero seleccioná un circuito con jugadores inscriptos');
-      return;
-    }
-    const data = [
-      ['Posicion', 'DNI', 'Apellido', 'Nombre', 'Club'],
-      ...players.map((p, i) => [
-        i + 1,
-        p.dni ?? '',
-        p.lastName,
-        p.firstName,
-        p.club ?? '',
-      ])
-    ];
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    ws['!cols'] = [{ wch: 10 }, { wch: 12 }, { wch: 20 }, { wch: 20 }, { wch: 20 }];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Ranking');
+    if (players.length === 0) { alert('Primero seleccioná un circuito con jugadores inscriptos'); return; }
 
-    const circuit = circuits.find(c => c.id === Number(selectedCircuit));
+    const header = 'Posicion,DNI,Apellido,Nombre,Club';
+    const rows = players.map((p, i) =>
+      `${i + 1},${p.dni ?? ''},${p.lastName},${p.firstName},${p.club ?? ''}`
+    );
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
     const tournament = tournaments.find(t => t.id === Number(selectedTournament));
-    const fileName = `ranking_${tournament?.name ?? 'torneo'}_${circuit?.name ?? 'circuito'}.xlsx`
+    const circuit    = circuits.find(c => c.id === Number(selectedCircuit));
+    link.href     = url;
+    link.download = `ranking_${tournament?.name ?? 'torneo'}_${circuit?.name ?? 'circuito'}.csv`
       .replace(/\s+/g, '_').toLowerCase();
-
-    XLSX.writeFile(wb, fileName);
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
-  // ── Parsear Excel subido ──────────────────────────────────────────
+  // ── Subir y parsear CSV ───────────────────────────────────────────
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -92,19 +101,15 @@ export default function RankingCargaPage() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
-        const data = ev.target?.result;
-        const wb = XLSX.read(data, { type: 'binary' });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const raw: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
+        const text = ev.target?.result as string;
+        const raw  = parseCSV(text);
+        if (raw.length < 2) { setParseError('El archivo está vacío'); return; }
 
-        if (raw.length < 2) { setParseError('El archivo está vacío o no tiene datos'); return; }
-
-        // Detectar fila de encabezados
-        const headers = raw[0].map((h: any) => String(h ?? '').toLowerCase().trim());
-        const colPos  = headers.findIndex(h => h.includes('posic'));
+        const headers = raw[0].map(h => h.toLowerCase().replace(/[^a-z]/g, ''));
+        const colPos  = headers.findIndex(h => h.startsWith('pos'));
         const colDni  = headers.findIndex(h => h.includes('dni'));
-        const colApe  = headers.findIndex(h => h.includes('apel'));
-        const colNom  = headers.findIndex(h => h.includes('nomb'));
+        const colApe  = headers.findIndex(h => h.startsWith('ape'));
+        const colNom  = headers.findIndex(h => h.startsWith('nom'));
         const colClub = headers.findIndex(h => h.includes('club'));
 
         if (colDni === -1) { setParseError('No se encontró la columna DNI'); return; }
@@ -114,9 +119,9 @@ export default function RankingCargaPage() {
           const row = raw[i];
           const dni = String(row[colDni] ?? '').trim();
           if (!dni) continue;
-          const posicion = colPos >= 0 ? Number(row[colPos]) : i;
+          const posRaw  = colPos >= 0 ? Number(row[colPos]) : i;
           parsed.push({
-            posicion:  isNaN(posicion) ? i : posicion,
+            posicion: isNaN(posRaw) ? i : posRaw,
             dni,
             apellido: colApe  >= 0 ? String(row[colApe]  ?? '') : '',
             nombre:   colNom  >= 0 ? String(row[colNom]  ?? '') : '',
@@ -126,12 +131,9 @@ export default function RankingCargaPage() {
 
         if (parsed.length === 0) { setParseError('No se encontraron filas válidas'); return; }
         setRows(parsed);
-      } catch (err) {
-        setParseError('Error al leer el archivo. Verificá que sea un Excel válido (.xlsx o .xls)');
-      }
+      } catch { setParseError('Error al leer el archivo. Verificá que sea un CSV válido.'); }
     };
-    reader.readAsBinaryString(file);
-    // Reset input para poder subir el mismo archivo de nuevo
+    reader.readAsText(file, 'UTF-8');
     e.target.value = '';
   };
 
@@ -144,7 +146,7 @@ export default function RankingCargaPage() {
         rankings: rows.map(r => ({ dni: r.dni, position: r.posicion }))
       });
       setResultado({ cargados: res.data.cargados, errores: res.data.errores ?? [] });
-      if (res.data.errores?.length === 0) setRows([]);
+      if ((res.data.errores ?? []).length === 0) setRows([]);
     } catch (err: any) {
       setResultado({ cargados: 0, errores: [err?.response?.data?.error ?? 'Error al cargar'] });
     } finally { setUploading(false); }
@@ -159,7 +161,7 @@ export default function RankingCargaPage() {
     <div>
       <div className="px-6 pt-6 pb-4 border-b border-felt-light/20">
         <h1 className="font-display text-4xl text-gold">CARGA DE RANKING</h1>
-        <p className="text-chalk/50 text-sm mt-1">Importar ranking inicial desde Excel</p>
+        <p className="text-chalk/50 text-sm mt-1">Importar ranking inicial desde archivo CSV (se abre con Excel)</p>
       </div>
 
       <div className="p-6 space-y-6">
@@ -168,107 +170,77 @@ export default function RankingCargaPage() {
         <div className="card space-y-4">
           <h2 className="font-display text-lg text-chalk">Seleccionar circuito</h2>
           <div className="flex flex-wrap gap-3">
-            <select
-              className="input w-64"
-              value={selectedTournament}
-              onChange={e => { setSelectedTournament(e.target.value); setSelectedCircuit(''); setPlayers([]); setRows([]); setResultado(null); }}
-            >
+            <select className="input w-64" value={selectedTournament}
+              onChange={e => { setSelectedTournament(e.target.value); setSelectedCircuit(''); setPlayers([]); setRows([]); setResultado(null); }}>
               <option value="">Seleccioná un torneo</option>
               {tournaments.map(t => <option key={t.id} value={t.id}>{t.name} ({t.year})</option>)}
             </select>
-
-            <select
-              className="input w-56"
-              value={selectedCircuit}
-              onChange={e => handleCircuitChange(e.target.value)}
-              disabled={!selectedTournament}
-            >
+            <select className="input w-56" value={selectedCircuit}
+              onChange={e => handleCircuitChange(e.target.value)} disabled={!selectedTournament}>
               <option value="">Seleccioná un circuito</option>
               {circuitsFiltrados.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
-
           {selectedCircuit && (
-            <div className="flex items-center gap-3 pt-1">
-              {loadingPlayers ? (
-                <span className="text-chalk/40 text-sm">Cargando jugadores...</span>
-              ) : (
-                <span className="text-chalk/50 text-sm font-mono">{players.length} jugadores inscriptos</span>
-              )}
-            </div>
+            <p className="text-chalk/50 text-sm font-mono">
+              {loadingPlayers ? 'Cargando jugadores...' : `${players.length} jugadores inscriptos`}
+            </p>
           )}
         </div>
 
-        {/* Paso 1: Descargar template */}
+        {/* Paso 1 */}
         <div className="card space-y-3">
           <div className="flex items-start justify-between flex-wrap gap-3">
             <div>
               <h2 className="font-display text-lg text-chalk">Paso 1 — Descargar template</h2>
-              <p className="text-chalk/40 text-sm mt-1">Descargá el Excel con los jugadores del circuito ya cargados. Solo tenés que ordenarlos por posición.</p>
+              <p className="text-chalk/40 text-sm mt-1">
+                Descargá el CSV con los jugadores. Abrilo en Excel, ordenalos por posición y guardalo como CSV.
+              </p>
             </div>
-            <button
-              className="btn-primary"
-              onClick={handleDownloadTemplate}
-              disabled={!selectedCircuit || players.length === 0}
-            >
-              📥 Descargar template
+            <button className="btn-primary" onClick={handleDownloadTemplate}
+              disabled={!selectedCircuit || players.length === 0}>
+              📥 Descargar template CSV
             </button>
           </div>
-
           <div className="bg-felt-dark/30 rounded-lg p-3 text-xs text-chalk/40 space-y-1">
-            <p className="font-semibold text-chalk/60 mb-1">Formato del Excel:</p>
+            <p className="font-semibold text-chalk/60 mb-1">Formato del CSV:</p>
             <p>• Columna <span className="text-gold font-mono">Posicion</span> — número de ranking (1 = mejor)</p>
-            <p>• Columna <span className="text-gold font-mono">DNI</span> — clave de identificación del jugador</p>
-            <p>• Columnas Apellido, Nombre, Club — solo informativas, no se usan para matching</p>
+            <p>• Columna <span className="text-gold font-mono">DNI</span> — clave del jugador (no modificar)</p>
+            <p>• Columnas Apellido, Nombre, Club — solo informativas</p>
+            <p className="text-blue-400/60 pt-1">💡 En Excel: Guardar como → CSV UTF-8 (delimitado por comas)</p>
           </div>
         </div>
 
-        {/* Paso 2: Subir Excel */}
+        {/* Paso 2 */}
         <div className="card space-y-3">
-          <h2 className="font-display text-lg text-chalk">Paso 2 — Subir Excel completado</h2>
-          <p className="text-chalk/40 text-sm">Una vez que ordenaste los jugadores por ranking en el Excel, subilo acá.</p>
-
+          <h2 className="font-display text-lg text-chalk">Paso 2 — Subir CSV completado</h2>
           <div className="flex items-center gap-3 flex-wrap">
             <label className={`btn-secondary cursor-pointer ${!selectedCircuit ? 'opacity-40 pointer-events-none' : ''}`}>
-              📂 Seleccionar archivo
-              <input
-                type="file"
-                accept=".xlsx,.xls"
-                className="hidden"
-                onChange={handleFileUpload}
-                disabled={!selectedCircuit}
-              />
+              📂 Seleccionar archivo CSV
+              <input type="file" accept=".csv,.txt" className="hidden"
+                onChange={handleFileUpload} disabled={!selectedCircuit} />
             </label>
             {fileName && <span className="text-chalk/60 text-sm font-mono">{fileName}</span>}
           </div>
-
           {parseError && (
-            <div className="bg-red-900/20 border border-red-700/40 rounded-lg px-3 py-2 text-red-400 text-sm">
-              ❌ {parseError}
-            </div>
+            <div className="bg-red-900/20 border border-red-700/40 rounded-lg px-3 py-2 text-red-400 text-sm">❌ {parseError}</div>
           )}
         </div>
 
-        {/* Paso 3: Preview y confirmar */}
+        {/* Paso 3: Preview */}
         {rows.length > 0 && (
           <div className="card space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
                 <h2 className="font-display text-lg text-chalk">Paso 3 — Confirmar carga</h2>
                 <p className="text-chalk/40 text-sm mt-1">
-                  {rows.length} jugadores listos para cargar en <span className="text-gold">{tournament?.name} — {circuit?.name}</span>
+                  {rows.length} jugadores listos para <span className="text-gold">{tournament?.name} — {circuit?.name}</span>
                 </p>
               </div>
-              <button
-                className="btn-primary px-8"
-                onClick={handleConfirmar}
-                disabled={uploading}
-              >
-                {uploading ? 'Cargando...' : `✅ Confirmar carga (${rows.length} jugadores)`}
+              <button className="btn-primary px-8" onClick={handleConfirmar} disabled={uploading}>
+                {uploading ? 'Cargando...' : `✅ Confirmar (${rows.length} jugadores)`}
               </button>
             </div>
-
-            {/* Preview table */}
             <div className="overflow-x-auto max-h-96 overflow-y-auto">
               <table className="w-full text-sm font-mono">
                 <thead className="sticky top-0 bg-felt-dark">
@@ -284,9 +256,7 @@ export default function RankingCargaPage() {
                   {rows.map((row, i) => (
                     <tr key={i} className={`border-t border-felt-light/5 ${i % 2 === 0 ? 'bg-felt-dark/20' : ''}`}>
                       <td className="px-3 py-1.5">
-                        <span className={`font-bold ${row.posicion <= 3 ? 'text-gold' : 'text-chalk/60'}`}>
-                          {row.posicion}
-                        </span>
+                        <span className={`font-bold ${row.posicion <= 3 ? 'text-gold' : 'text-chalk/60'}`}>{row.posicion}</span>
                       </td>
                       <td className="px-3 py-1.5 text-blue-400/80">{row.dni}</td>
                       <td className="px-3 py-1.5 text-chalk/80">{row.apellido}</td>
@@ -306,17 +276,13 @@ export default function RankingCargaPage() {
             <h2 className="font-display text-lg text-chalk">Resultado</h2>
             <div className={`rounded-lg px-4 py-3 text-sm ${resultado.errores.length === 0 ? 'bg-green-900/20 text-green-400' : 'bg-yellow-900/20 text-yellow-400'}`}>
               ✅ <span className="font-semibold">{resultado.cargados} jugadores</span> cargados correctamente
-              {resultado.errores.length > 0 && (
-                <span className="ml-2 text-yellow-400">· {resultado.errores.length} errores</span>
-              )}
+              {resultado.errores.length > 0 && <span className="ml-2">· {resultado.errores.length} errores</span>}
             </div>
             {resultado.errores.length > 0 && (
               <div className="space-y-1">
                 <p className="text-chalk/40 text-xs uppercase tracking-widest">Errores:</p>
                 {resultado.errores.map((e, i) => (
-                  <div key={i} className="bg-red-900/20 border border-red-700/30 rounded px-3 py-1 text-red-400 text-xs font-mono">
-                    {e}
-                  </div>
+                  <div key={i} className="bg-red-900/20 border border-red-700/30 rounded px-3 py-1 text-red-400 text-xs font-mono">{e}</div>
                 ))}
               </div>
             )}
