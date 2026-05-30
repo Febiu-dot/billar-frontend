@@ -22,6 +22,8 @@ const TEMAS: Record<string, { header: string; accent: string; light: string; bad
   acumulado:      { header: '#1a3a5c', accent: '#1565c0', light: '#e8f0fe', badge: '#1a3a5c' },
 };
 
+// ── Colores por sección del ranking ──────────────────────────────────
+// MÁSTER=morado, PRIMERA=azul, SEGUNDA=naranja, TERCERA=verde
 const SECCION_COLORES: Record<string, { bg: string; badge: string; light: string }> = {
   'MÁSTER':  { bg: '#4a1070', badge: '#7b1fa2', light: '#f5eef8' },
   'PRIMERA': { bg: '#014f86', badge: '#0277bd', light: '#e8f4fd' },
@@ -29,6 +31,8 @@ const SECCION_COLORES: Record<string, { bg: string; badge: string; light: string
   'TERCERA': { bg: '#1a5c2a', badge: '#2d8a3e', light: '#edf7ef' },
 };
 
+// ── Colores por categoría individual (series/cruces) ─────────────────
+// MÁSTER=morado, PRIMERA=azul, SEGUNDA=naranja, TERCERA=verde
 const getCatColor = (categoria: string | null): { text: string; badge: string; light: string } => {
   const c = categoria?.toLowerCase();
   if (c === 'master')  return { text: '#4a1070', badge: '#4a1070', light: '#f5eef8' };
@@ -36,6 +40,13 @@ const getCatColor = (categoria: string | null): { text: string; badge: string; l
   if (c === 'segunda') return { text: '#b83c00', badge: '#b83c00', light: '#fff4f0' };
   if (c === 'tercera') return { text: '#1a5c2a', badge: '#1a5c2a', light: '#edf7ef' };
   return { text: '#999', badge: '#aaa', light: '#f5f5f5' };
+};
+
+// Convierte nombre de sección a color (para ranking) 
+const getSeccionColor = (seccion: string): { text: string; badge: string; light: string } => {
+  const s = SECCION_COLORES[seccion];
+  if (!s) return { text: '#999', badge: '#aaa', light: '#f5f5f5' };
+  return { text: s.bg, badge: s.badge, light: s.light };
 };
 
 const FASES = [
@@ -245,7 +256,10 @@ function PlantillaRanking({ data, tema }: { data: any; tema: any }) {
                     <span style={{ width: 44, fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'right' }}>Pts</span>
                   </div>
                   {col.map((j: any, idx: number) => {
-                    const catColor = getCatColor(j.categoria);
+                    // ── FIX: usar color de SECCIÓN, no de categoría individual ──
+                    // Esto garantiza que PRIMERA=azul, SEGUNDA=naranja, etc.
+                    // independientemente de la categoría DB del jugador
+                    const catColor = getSeccionColor(j.seccion);
                     return (
                       <div key={j.posicion} style={{ display: 'flex', alignItems: 'center', padding: '8px 10px', gap: 8, background: idx % 2 === 0 ? catColor.light : '#fff', borderBottom: `1px solid #eee` }}>
                         <div style={{ width: 44, height: 30, borderRadius: 4, flexShrink: 0, background: catColor.badge, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900 }}>
@@ -323,7 +337,6 @@ export default function AdminPublicacionesPage() {
     if (!circuitId) return;
     setLoading(true); setError(''); setPubData(null);
     try {
-      // RANKING DEL CIRCUITO
       if (tipoFase === 'ranking') {
         const todosCircuitos = torneos.flatMap((t: any) =>
           (t.circuits ?? []).map((c: any) => ({ ...c, torneoNombre: t.name, torneoYear: t.year }))
@@ -370,7 +383,6 @@ export default function AdminPublicacionesPage() {
         return;
       }
 
-      // RANKING ACUMULADO
       if (tipoFase === 'acumulado') {
         const todosCircuitos = torneos.flatMap((t: any) =>
           (t.circuits ?? []).map((c: any) => ({ ...c, torneoNombre: t.name, torneoYear: t.year, torneoId: t.id }))
@@ -413,7 +425,6 @@ export default function AdminPublicacionesPage() {
         return;
       }
 
-      // FASES DE PARTIDOS
       const res = await api.get(`/publicaciones/${circuitId}/${tipoFase}`);
       setPubData(res.data); setNotas('');
     } catch (e: any) {
