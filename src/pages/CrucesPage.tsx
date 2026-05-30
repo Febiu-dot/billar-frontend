@@ -2,133 +2,120 @@ import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { LoadingSpinner, EmptyState, Modal } from '../components/ui';
 
-interface Venue { id: number; name: string; departamentoId?: number; tables?: { id: number; number: number; status: string }[]; }
+interface Tournament { id: number; name: string; year: number; departamentoId?: number; }
+interface Circuit    { id: number; name: string; tournamentId: number; order: number; configTorneo?: any; }
+interface Venue      { id: number; name: string; departamentoId?: number; tables?: { id: number; number: number; status: string }[]; }
+interface PhaseInfo  { id: number; type: string; }
 interface Cruce {
-  id: number;
-  round: number;
-  serieId?: string;
-  fase: string;
-  phaseId: number;
-  circuitId: number;
-  circuitName: string;
-  circuitOrder: number;
-  playerA?: any;
-  playerB?: any;
-  slotA?: string;
-  slotB?: string;
-  tableId?: number;
-  table?: any;
-  scheduledAt?: string;
-  status: string;
-}
-interface CircuitoInfo {
-  id: number;
-  name: string;
-  order: number;
-  phases: { id: number; type: string }[];
+  id: number; round: number; serieId?: string; fase: string;
+  phaseId: number; circuitId: number;
+  playerA?: any; playerB?: any; slotA?: string; slotB?: string;
+  tableId?: number; table?: any; scheduledAt?: string; status: string;
 }
 
 export default function CrucesPage() {
-  const [venues, setVenues] = useState<Venue[]>([]);
-  const [cruces, setCruces] = useState<Cruce[]>([]);
-  const [circuitos, setCircuitos] = useState<CircuitoInfo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [torneoDepId, setTorneoDepId] = useState<number | null>(null);
-  const [asignandoModal, setAsignandoModal] = useState<Cruce | null>(null);
-  const [form, setForm] = useState({ venueId: '', tableId: '', scheduledAt: '', hora: '', minutos: '' });
-  const [saving, setSaving] = useState(false);
-  const [filtroFase, setFiltroFase] = useState<string>('todas');
-  const [disparando, setDisparando] = useState(false);
-  const [disparoMsg, setDisparoMsg] = useState('');
-  const [circuitosOcultos, setCircuitosOcultos] = useState<Set<number>>(new Set());
+  const [tournaments, setTournaments]           = useState<Tournament[]>([]);
+  const [allCircuits, setAllCircuits]           = useState<Circuit[]>([]);
+  const [venues, setVenues]                     = useState<Venue[]>([]);
+  const [cruces, setCruces]                     = useState<Cruce[]>([]);
+  const [phases, setPhases]                     = useState<PhaseInfo[]>([]);
+  const [loading, setLoading]                   = useState(true);
+  const [loadingMatches, setLoadingMatches]     = useState(false);
+  const [selectedTournament, setSelectedTournament] = useState('');
+  const [selectedCircuit, setSelectedCircuit]   = useState('');
+  const [torneoDepId, setTorneoDepId]           = useState<number | null>(null);
+  const [esNacional, setEsNacional]             = useState(false);
+  const [asignandoModal, setAsignandoModal]     = useState<Cruce | null>(null);
+  const [form, setForm]                         = useState({ venueId: '', tableId: '', scheduledAt: '', hora: '', minutos: '' });
+  const [saving, setSaving]                     = useState(false);
+  const [filtroFase, setFiltroFase]             = useState('todas');
+  const [disparando, setDisparando]             = useState(false);
+  const [disparoMsg, setDisparoMsg]             = useState('');
 
-  const cargarDatos = async () => {
-    const [vRes, mRes, tRes] = await Promise.all([
-      api.get('/venues'),
-      api.get('/matches'),
-      api.get('/tournaments'),
-    ]);
-    setVenues(vRes.data);
+  useEffect(() => {
+    Promise.all([
+      api.get('/tournaments').then(r => setTournaments(r.data)),
+      api.get('/circuits').then(r => setAllCircuits(r.data)),
+      api.get('/venues').then(r => setVenues(r.data)),
+    ]).finally(() => setLoading(false));
+  }, []);
 
-    // Extraer info de circuitos con sus fases desde los torneos
-    const circuitosMap = new Map<number, CircuitoInfo>();
-    for (const torneo of tRes.data) {
-      for (const circuit of (torneo.circuits ?? [])) {
-        circuitosMap.set(circuit.id, {
-          id: circuit.id,
-          name: circuit.name,
-          order: circuit.order,
-          phases: (circuit.phases ?? []).map((p: any) => ({ id: p.id, type: p.type })),
-        });
-      }
-    }
-    const circuitosArr = [...circuitosMap.values()].sort((a, b) => a.order - b.order);
-    setCircuitos(circuitosArr);
+  const circuitsFiltrados = selectedTournament
+    ? allCircuits.filter(c => c.tournamentId === Number(selectedTournament)).sort((a, b) => a.order - b.order)
+    : [];
 
-    // Ocultar circuitos anteriores por defecto (solo la primera vez)
-    if (circuitosArr.length > 1) {
-      setCircuitosOcultos(prev => {
-        if (prev.size === 0) {
-          const maxOrder = Math.max(...circuitosArr.map(c => c.order));
-          return new Set(circuitosArr.filter(c => c.order < maxOrder).map(c => c.id));
+  // ── Filtrar cruces según tipo de torneo ───────────────────────────
+  const filtrarCruces = (matches: any[], esNac: boolean): Cruce[] => {
+    return matches
+      .filter((m: any) => {
+        const tipo = m.phase?.type;
+        const sid = m.serieId ?? '';
+        if (esNac) {
+          // Nacional: solo bracket (master phase con serieId nac-oct/cua/semi/final)
+          return tipo === 'master' && (
+            sid.startsWith('nac-oct') || sid.startsWith('nac-cua') ||
+            sid.startsWith('nac-semi') || sid === 'nac-final'
+          );
+        } else {
+          // Departamental: reduccion, primera, master
+          return tipo === 'primera' || tipo === 'master' ||
+            (sid.includes('reduccion') || sid.includes('repechaje'));
         }
-        return prev;
+      })
+      .map((m: any) => ({
+        id: m.id, round: m.round, serieId: m.serieId,
+        fase: m.serieId?.includes('reduccion') || m.serieId?.includes('repechaje') ? 'reduccion' : m.phase?.type ?? '',
+        phaseId: m.phaseId,
+        circuitId: m.phase?.circuit?.id ?? 0,
+        playerA: m.playerA, playerB: m.playerB,
+        slotA: m.slotA, slotB: m.slotB,
+        tableId: m.tableId, table: m.table,
+        scheduledAt: m.scheduledAt, status: m.status,
+      }))
+      .sort((a: Cruce, b: Cruce) => {
+        const ordenFase: Record<string, number> = { reduccion: 1, primera: 2, master: 3 };
+        if (a.fase !== b.fase) return (ordenFase[a.fase] ?? 9) - (ordenFase[b.fase] ?? 9);
+        if (!a.scheduledAt && !b.scheduledAt) return a.round - b.round;
+        if (!a.scheduledAt) return 1;
+        if (!b.scheduledAt) return -1;
+        return new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime();
       });
-    }
-
-    const matchesCruces = mRes.data.filter((m: any) =>
-      m.phase?.type === 'primera' ||
-      m.phase?.type === 'master' ||
-      (m.serieId && (m.serieId.includes('reduccion') || m.serieId.includes('repechaje')))
-    ).map((m: any) => ({
-      id: m.id,
-      round: m.round,
-      serieId: m.serieId,
-      fase: m.serieId?.includes('reduccion') || m.serieId?.includes('repechaje') ? 'reduccion' : m.phase?.type ?? '',
-      phaseId: m.phaseId,
-      circuitId: m.phase?.circuit?.id ?? 0,
-      circuitName: m.phase?.circuit?.name ?? 'Sin circuito',
-      circuitOrder: m.phase?.circuit?.order ?? 0,
-      playerA: m.playerA,
-      playerB: m.playerB,
-      slotA: m.slotA,
-      slotB: m.slotB,
-      tableId: m.tableId,
-      table: m.table,
-      scheduledAt: m.scheduledAt,
-      status: m.status,
-    }));
-
-    matchesCruces.sort((a: Cruce, b: Cruce) => {
-      if (a.circuitOrder !== b.circuitOrder) return a.circuitOrder - b.circuitOrder;
-      const orden: Record<string, number> = { reduccion: 1, primera: 2, master: 3 };
-      if (a.fase !== b.fase) return (orden[a.fase] ?? 9) - (orden[b.fase] ?? 9);
-      if (!a.scheduledAt && !b.scheduledAt) return a.round - b.round;
-      if (!a.scheduledAt) return 1;
-      if (!b.scheduledAt) return -1;
-      return new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime();
-    });
-
-    setCruces(matchesCruces);
-    const torneoActivo = tRes.data.find((t: any) => t.active) ?? tRes.data[0];
-    setTorneoDepId(torneoActivo?.departamentoId ?? null);
-    setLoading(false);
   };
 
-  useEffect(() => { cargarDatos().catch(() => setLoading(false)); }, []);
-
-  const toggleCircuito = (circuitId: number) => {
-    setCircuitosOcultos(prev => {
-      const next: Set<number> = new Set(prev);
-      if (next.has(circuitId)) next.delete(circuitId); else next.add(circuitId);
-      return next;
-    });
+  const handleTournamentChange = (tournamentId: string) => {
+    setSelectedTournament(tournamentId);
+    setSelectedCircuit('');
+    setCruces([]); setPhases([]); setDisparoMsg(''); setFiltroFase('todas');
   };
 
-  const getPhaseId = (circuitId: number, type: string): number | null => {
-    const c = circuitos.find(c => c.id === circuitId);
-    return c?.phases.find(p => p.type === type)?.id ?? null;
+  const handleCircuitChange = async (circuitId: string) => {
+    setSelectedCircuit(circuitId);
+    setCruces([]); setPhases([]); setDisparoMsg('');
+    if (!circuitId) return;
+    setLoadingMatches(true);
+    try {
+      const [mRes, cRes] = await Promise.all([
+        api.get(`/matches?circuitId=${circuitId}`),
+        api.get(`/circuits/${circuitId}`),
+      ]);
+      const cfg = cRes.data.configTorneo ?? {};
+      const esNac = cfg.tipo === 'nacional';
+      setEsNacional(esNac);
+
+      // Departamento para filtrar sedes (null para Nacional)
+      const torneo = tournaments.find(t => t.id === Number(selectedTournament));
+      setTorneoDepId(esNac ? null : (torneo?.departamentoId ?? null));
+
+      // Fases disponibles
+      setPhases((cRes.data.phases ?? []).map((p: any) => ({ id: p.id, type: p.type })));
+
+      setCruces(filtrarCruces(mRes.data, esNac));
+    } catch { setCruces([]); }
+    finally { setLoadingMatches(false); }
   };
+
+  const getPhaseId = (type: string): number | null =>
+    phases.find(p => p.type === type)?.id ?? null;
 
   const disparar = async (endpoint: string, phaseId: number | null) => {
     if (!phaseId) { setDisparoMsg('❌ Fase no encontrada'); return; }
@@ -136,12 +123,10 @@ export default function CrucesPage() {
     try {
       const res = await api.post(`/matches/${endpoint}/${phaseId}`);
       setDisparoMsg(`✅ ${res.data.message}`);
-      await cargarDatos();
+      await handleCircuitChange(selectedCircuit);
     } catch (err: any) {
       setDisparoMsg(`❌ ${err?.response?.data?.error ?? 'Error'}`);
-    } finally {
-      setDisparando(false);
-    }
+    } finally { setDisparando(false); }
   };
 
   const abrirAsignacion = (cruce: Cruce) => {
@@ -166,12 +151,10 @@ export default function CrucesPage() {
       if (form.tableId) await api.put(`/matches/${asignandoModal.id}/assign`, { tableId: parseInt(form.tableId) });
       if (scheduledAt) await api.put(`/matches/${asignandoModal.id}`, { scheduledAt });
       setAsignandoModal(null);
-      await cargarDatos();
+      await handleCircuitChange(selectedCircuit);
     } catch (err: any) {
       alert(err?.response?.data?.error ?? 'Error al asignar');
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
 
   const sedesFiltradas = torneoDepId ? venues.filter(v => v.departamentoId === torneoDepId) : venues;
@@ -183,54 +166,68 @@ export default function CrucesPage() {
     return '—';
   };
 
-  const labelFaseFiltro = (fase: string) => {
-    if (fase === 'todas') return 'Todas';
-    if (fase === 'reduccion') return 'Reducción';
-    if (fase === 'primera') return 'Primera';
-    if (fase === 'master') return 'Master';
-    return fase;
-  };
-
-  const labelCruce = (cruce: Cruce): string => {
+  // ── Labels para departamental y Nacional ──────────────────────────
+  const labelFase = (cruce: Cruce): string => {
     if (cruce.fase === 'reduccion') return 'Reducción';
     if (cruce.fase === 'primera') return 'Primera';
     if (cruce.fase === 'master') {
-      if (cruce.round <= 16) return 'Cruce Master';
-      if (cruce.round <= 24) return 'Octavos';
-      if (cruce.round <= 28) return 'Cuartos';
-      if (cruce.round <= 30) return 'Semifinal';
+      const r = cruce.round;
+      if (r >= 101 && r <= 108) return 'Octavos';
+      if (r >= 111 && r <= 114) return 'Cuartos';
+      if (r === 121 || r === 122) return 'Semis';
+      if (r === 131) return 'Final';
+      if (r <= 16) return 'Cruce Master';
+      if (r <= 24) return 'Octavos';
+      if (r <= 28) return 'Cuartos';
+      if (r <= 30) return 'Semifinal';
       return 'Final';
     }
     return cruce.fase;
   };
 
-  const badgeColor = (cruce: Cruce): string => {
-    if (cruce.fase === 'reduccion') return 'bg-orange-900/30 text-orange-400';
-    if (cruce.fase === 'primera') return 'bg-blue-900/30 text-blue-400';
-    if (cruce.fase === 'master') {
-      if (cruce.round <= 16) return 'bg-purple-900/30 text-purple-400';
-      if (cruce.round <= 24) return 'bg-gold/10 text-gold';
-      if (cruce.round <= 28) return 'bg-gold/20 text-gold';
-      if (cruce.round <= 30) return 'bg-gold/30 text-gold';
-      return 'bg-gold/40 text-gold font-bold';
-    }
-    return 'bg-felt-light/20 text-chalk/40';
-  };
-
   const numeroCruce = (cruce: Cruce): string => {
     if (cruce.serieId?.includes('repechaje')) return 'Repechaje';
+    const r = cruce.round;
+    if (r >= 101 && r <= 108) return `Oct. ${r - 100}`;
+    if (r >= 111 && r <= 114) return `Cua. ${r - 110}`;
+    if (r === 121) return 'Semi 1';
+    if (r === 122) return 'Semi 2';
+    if (r === 131) return '🏆 Final';
     if (cruce.fase === 'master') {
-      if (cruce.round <= 16) return `Cruce ${cruce.round}`;
-      if (cruce.round <= 24) return `Octavo ${cruce.round - 16}`;
-      if (cruce.round <= 28) return `Cuarto ${cruce.round - 24}`;
-      if (cruce.round <= 30) return `Semi ${cruce.round - 28}`;
+      if (r <= 16) return `Cruce ${r}`;
+      if (r <= 24) return `Oct. ${r - 16}`;
+      if (r <= 28) return `Cua. ${r - 24}`;
+      if (r <= 30) return `Semi ${r - 28}`;
       return 'Final';
     }
-    return `#${cruce.round}`;
+    return `#${r}`;
   };
 
-  // Circuitos que tienen cruces
-  const circuitosConCruces = circuitos.filter(c => cruces.some(cr => cr.circuitId === c.id));
+  const badgeColor = (cruce: Cruce): string => {
+    if (cruce.fase === 'reduccion') return 'bg-orange-900/30 text-orange-400';
+    if (cruce.fase === 'primera')   return 'bg-blue-900/30 text-blue-400';
+    const r = cruce.round;
+    if (r === 131 || (cruce.fase === 'master' && r === 31)) return 'bg-gold/40 text-gold font-bold';
+    if (r === 121 || r === 122 || (r >= 29 && r <= 30)) return 'bg-gold/30 text-gold';
+    if ((r >= 111 && r <= 114) || (r >= 25 && r <= 28)) return 'bg-gold/20 text-gold';
+    if ((r >= 101 && r <= 108) || (r >= 17 && r <= 24)) return 'bg-gold/10 text-gold';
+    return 'bg-purple-900/30 text-purple-400';
+  };
+
+  // Fases disponibles para el filtro
+  const fasesDisponibles = esNacional
+    ? ['todas', 'master']
+    : ['todas', 'reduccion', 'primera', 'master'];
+
+  const labelFiltro = (f: string) => {
+    if (f === 'todas') return 'Todas';
+    if (f === 'reduccion') return 'Reducción';
+    if (f === 'primera') return 'Primera';
+    if (f === 'master') return esNacional ? 'Bracket' : 'Master';
+    return f;
+  };
+
+  const crucesFiltrados = filtroFase === 'todas' ? cruces : cruces.filter(c => c.fase === filtroFase);
 
   if (loading) return <LoadingSpinner />;
 
@@ -238,137 +235,150 @@ export default function CrucesPage() {
     <div>
       <div className="px-6 pt-6 pb-4 border-b border-felt-light/20">
         <h1 className="font-display text-4xl text-gold">CRUCES</h1>
-        <p className="text-chalk/50 text-sm mt-1">Reducción, Primera y Master</p>
+        <p className="text-chalk/50 text-sm mt-1">Reducción, Primera, Master y Bracket Nacional</p>
       </div>
 
       <div className="p-6 space-y-6">
-        {/* Filtro de fase */}
-        <div className="flex gap-2 flex-wrap items-center">
-          {['todas', 'reduccion', 'primera', 'master'].map(f => (
-            <button
-              key={f}
-              className={`py-1 px-3 text-xs rounded-lg border transition-all ${filtroFase === f ? 'border-gold/40 text-gold bg-gold/10' : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'}`}
-              onClick={() => setFiltroFase(f)}
-            >
-              {labelFaseFiltro(f)}
-            </button>
-          ))}
+
+        {/* Selectores */}
+        <div className="flex flex-wrap gap-3 items-center">
+          <select className="input w-64" value={selectedTournament}
+            onChange={e => handleTournamentChange(e.target.value)}>
+            <option value="">Seleccioná un torneo</option>
+            {tournaments.map(t => <option key={t.id} value={t.id}>{t.name} ({t.year})</option>)}
+          </select>
+          <select className="input w-56" value={selectedCircuit}
+            onChange={e => handleCircuitChange(e.target.value)} disabled={!selectedTournament}>
+            <option value="">Seleccioná un circuito</option>
+            {circuitsFiltrados.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          {esNacional && selectedCircuit && (
+            <span className="badge-status bg-blue-900/40 text-blue-400 text-xs">🏆 Nacional</span>
+          )}
         </div>
 
-        {cruces.length === 0 ? (
-          <EmptyState message="No hay cruces. Generá los partidos desde Fixture primero." />
-        ) : (
-          circuitosConCruces.map(circuito => {
-            const crucesCircuito = cruces.filter(c =>
-              c.circuitId === circuito.id &&
-              (filtroFase === 'todas' || c.fase === filtroFase)
-            );
-            if (crucesCircuito.length === 0) return null;
+        {/* Estado inicial */}
+        {!selectedCircuit && !loadingMatches && (
+          <div className="text-center py-16 text-chalk/30">
+            <p className="text-5xl mb-4">🎱</p>
+            <p className="text-lg font-display">Seleccioná un torneo y circuito</p>
+          </div>
+        )}
 
-            const oculto = circuitosOcultos.has(circuito.id);
-            const asignados = crucesCircuito.filter(c => c.tableId || c.scheduledAt).length;
+        {loadingMatches && <LoadingSpinner />}
 
-            return (
-              <div key={circuito.id}>
-                {/* Header circuito */}
-                <div className="flex items-center gap-3 mb-3 pb-2 border-b border-felt-light/15 flex-wrap">
-                  <h2 className="font-display text-2xl text-gold">{circuito.name}</h2>
-                  <span className="text-chalk/30 text-xs font-mono">{asignados}/{crucesCircuito.length} asignados</span>
+        {selectedCircuit && !loadingMatches && cruces.length === 0 && (
+          <EmptyState message="No hay cruces en este circuito. Generá los partidos desde Fixture primero." />
+        )}
 
-                  {/* Botones disparar para este circuito */}
-                  {!oculto && (
-                    <div className="flex gap-2 flex-wrap ml-2">
-                      <button className="btn-secondary text-xs py-1 px-2" disabled={disparando} onClick={() => disparar('trigger-reduccion', getPhaseId(circuito.id, 'clasificatorio'))}>
-                        ⚡ Cruces reducción
-                      </button>
-                      <button className="btn-secondary text-xs py-1 px-2" disabled={disparando} onClick={() => disparar('trigger-segunda', getPhaseId(circuito.id, 'segunda'))}>
-                        ⚡ Slots Primera
-                      </button>
-                      <button className="btn-secondary text-xs py-1 px-2" disabled={disparando} onClick={() => disparar('trigger-primera', getPhaseId(circuito.id, 'primera'))}>
-                        ⚡ Slots Master
-                      </button>
-                      <button className="btn-secondary text-xs py-1 px-2" disabled={disparando} onClick={() => disparar('trigger-master', getPhaseId(circuito.id, 'master'))}>
-                        ⚡ Octavos
-                      </button>
-                    </div>
-                  )}
-
-                  <button
-                    className={`ml-auto py-1 px-3 text-xs rounded-lg border transition-all ${oculto ? 'border-gold/30 text-gold/70 hover:bg-gold/10' : 'border-chalk/20 text-chalk/40 hover:border-chalk/40'}`}
-                    onClick={() => toggleCircuito(circuito.id)}
-                  >
-                    {oculto ? '👁 Mostrar' : '🙈 Ocultar'}
+        {selectedCircuit && !loadingMatches && cruces.length > 0 && (
+          <>
+            {/* Botones disparar */}
+            <div className="card space-y-3">
+              <p className="text-chalk/50 text-xs uppercase tracking-widest">Acciones manuales</p>
+              <div className="flex gap-2 flex-wrap">
+                {esNacional ? (
+                  <button className="btn-secondary text-xs py-1 px-3" disabled={disparando}
+                    onClick={() => disparar('trigger-nac-bracket', getPhaseId('clasificatorio'))}>
+                    ⚡ Seedear bracket (cuando terminan las series)
                   </button>
-                </div>
-
-                {disparoMsg && !oculto && (
-                  <p className={`text-xs mb-2 ${disparoMsg.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>{disparoMsg}</p>
-                )}
-
-                {/* Tabla de cruces */}
-                {!oculto && (
-                  <div className="card p-0 overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-felt-light/10 text-chalk/40 text-xs uppercase tracking-widest">
-                          <th className="text-left px-4 py-3">Fase</th>
-                          <th className="text-left px-4 py-3">Cruce</th>
-                          <th className="text-left px-4 py-3">Jugador A</th>
-                          <th className="text-left px-4 py-3">Jugador B</th>
-                          <th className="text-left px-4 py-3 hidden md:table-cell">Sede / Mesa</th>
-                          <th className="text-left px-4 py-3 hidden md:table-cell">Fecha / Hora</th>
-                          <th className="px-4 py-3"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {crucesCircuito.map(cruce => {
-                          const asignado = cruce.tableId || cruce.scheduledAt;
-                          return (
-                            <tr key={cruce.id} className={`border-b border-felt-light/5 ${asignado ? 'bg-green-900/5' : ''}`}>
-                              <td className="px-4 py-3">
-                                <span className={`badge-status text-xs ${badgeColor(cruce)}`}>{labelCruce(cruce)}</span>
-                              </td>
-                              <td className="px-4 py-3 text-chalk/40 text-xs font-mono">{numeroCruce(cruce)}</td>
-                              <td className="px-4 py-3 text-chalk/80">{pn(cruce.playerA, cruce.slotA)}</td>
-                              <td className="px-4 py-3 text-chalk/80">{pn(cruce.playerB, cruce.slotB)}</td>
-                              <td className="px-4 py-3 hidden md:table-cell">
-                                {cruce.table
-                                  ? <span className="text-green-400/60 text-xs font-mono">{cruce.table.venue?.name} — Mesa {cruce.table.number}</span>
-                                  : <span className="text-chalk/20 text-xs">Sin asignar</span>}
-                              </td>
-                              <td className="px-4 py-3 hidden md:table-cell">
-                                {cruce.scheduledAt
-                                  ? <span className="text-chalk/60 text-xs font-mono">{new Date(cruce.scheduledAt).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}</span>
-                                  : <span className="text-chalk/20 text-xs">Sin fecha</span>}
-                              </td>
-                              <td className="px-4 py-3 text-right">
-                                <button className="py-0.5 px-2 text-xs rounded border border-gold/30 text-gold/70 hover:bg-gold/10 transition-all" onClick={() => abrirAsignacion(cruce)}>
-                                  {asignado ? 'Editar' : 'Asignar'}
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                ) : (
+                  <>
+                    <button className="btn-secondary text-xs py-1 px-2" disabled={disparando}
+                      onClick={() => disparar('trigger-reduccion', getPhaseId('clasificatorio'))}>⚡ Cruces reducción</button>
+                    <button className="btn-secondary text-xs py-1 px-2" disabled={disparando}
+                      onClick={() => disparar('trigger-segunda', getPhaseId('segunda'))}>⚡ Slots Primera</button>
+                    <button className="btn-secondary text-xs py-1 px-2" disabled={disparando}
+                      onClick={() => disparar('trigger-primera', getPhaseId('primera'))}>⚡ Slots Master</button>
+                    <button className="btn-secondary text-xs py-1 px-2" disabled={disparando}
+                      onClick={() => disparar('trigger-master', getPhaseId('master'))}>⚡ Octavos Master</button>
+                  </>
                 )}
               </div>
-            );
-          })
+              {disparoMsg && (
+                <p className={`text-xs font-mono ${disparoMsg.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>
+                  {disparoMsg}
+                </p>
+              )}
+            </div>
+
+            {/* Filtro de fase */}
+            <div className="flex gap-2 flex-wrap">
+              {fasesDisponibles.map(f => (
+                <button key={f}
+                  className={`py-1 px-3 text-xs rounded-lg border transition-all ${filtroFase === f ? 'border-gold/40 text-gold bg-gold/10' : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'}`}
+                  onClick={() => setFiltroFase(f)}>
+                  {labelFiltro(f)}
+                  <span className="ml-1 font-mono opacity-60">
+                    ({f === 'todas' ? cruces.length : cruces.filter(c => c.fase === f).length})
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Tabla de cruces */}
+            <div className="card p-0 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-felt-light/10 text-chalk/40 text-xs uppercase tracking-widest">
+                    <th className="text-left px-4 py-3">Fase</th>
+                    <th className="text-left px-4 py-3">Cruce</th>
+                    <th className="text-left px-4 py-3">Jugador A</th>
+                    <th className="text-left px-4 py-3">Jugador B</th>
+                    <th className="text-left px-4 py-3 hidden md:table-cell">Sede / Mesa</th>
+                    <th className="text-left px-4 py-3 hidden md:table-cell">Fecha / Hora</th>
+                    <th className="px-4 py-3"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {crucesFiltrados.map(cruce => {
+                    const asignado = cruce.tableId || cruce.scheduledAt;
+                    return (
+                      <tr key={cruce.id} className={`border-b border-felt-light/5 ${asignado ? 'bg-green-900/5' : ''}`}>
+                        <td className="px-4 py-3">
+                          <span className={`badge-status text-xs ${badgeColor(cruce)}`}>{labelFase(cruce)}</span>
+                        </td>
+                        <td className="px-4 py-3 text-chalk/40 text-xs font-mono">{numeroCruce(cruce)}</td>
+                        <td className="px-4 py-3 text-chalk/80">{pn(cruce.playerA, cruce.slotA)}</td>
+                        <td className="px-4 py-3 text-chalk/80">{pn(cruce.playerB, cruce.slotB)}</td>
+                        <td className="px-4 py-3 hidden md:table-cell">
+                          {cruce.table
+                            ? <span className="text-green-400/60 text-xs font-mono">{cruce.table.venue?.name} — Mesa {cruce.table.number}</span>
+                            : <span className="text-chalk/20 text-xs">Sin asignar</span>}
+                        </td>
+                        <td className="px-4 py-3 hidden md:table-cell">
+                          {cruce.scheduledAt
+                            ? <span className="text-chalk/60 text-xs font-mono">{new Date(cruce.scheduledAt).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}</span>
+                            : <span className="text-chalk/20 text-xs">Sin fecha</span>}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button className="py-0.5 px-2 text-xs rounded border border-gold/30 text-gold/70 hover:bg-gold/10 transition-all"
+                            onClick={() => abrirAsignacion(cruce)}>
+                            {asignado ? 'Editar' : 'Asignar'}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
       {/* Modal asignación */}
       {asignandoModal && (
-        <Modal title={`ASIGNAR — ${labelCruce(asignandoModal)} ${numeroCruce(asignandoModal)}`} onClose={() => setAsignandoModal(null)}>
+        <Modal title={`ASIGNAR — ${labelFase(asignandoModal)} ${numeroCruce(asignandoModal)}`} onClose={() => setAsignandoModal(null)}>
           <div className="space-y-4">
             <div>
               <p className="text-chalk/60 text-xs uppercase tracking-widest mb-1">Partido</p>
               <p className="text-chalk/80 text-sm">{pn(asignandoModal.playerA, asignandoModal.slotA)} vs {pn(asignandoModal.playerB, asignandoModal.slotB)}</p>
             </div>
             <div>
-              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Sede {torneoDepId ? '(filtradas por departamento)' : ''}</label>
+              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">
+                Sede {torneoDepId ? '(filtradas por departamento)' : '(todas)'}
+              </label>
               <select className="input" value={form.venueId} onChange={e => setForm({ ...form, venueId: e.target.value, tableId: '' })}>
                 <option value="">Seleccionar sede...</option>
                 {sedesFiltradas.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
