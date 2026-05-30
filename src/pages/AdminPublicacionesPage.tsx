@@ -342,13 +342,16 @@ export default function AdminPublicacionesPage() {
     try {
       if (tipoFase === 'ranking' || tipoFase === 'ranking-final') {
         const todosCircuitos = torneos.flatMap((t: any) =>
-          (t.circuits ?? []).map((c: any) => ({ ...c, torneoNombre: t.name, torneoYear: t.year }))
+          (t.circuits ?? []).map((c: any) => ({ ...c, torneoNombre: t.name, torneoYear: t.year, torneoId: t.id }))
         );
         let circuito = todosCircuitos.find((c: any) => c.id === Number(circuitId));
         let rankRes = await api.get(`/rankings/circuit/${circuitId}`);
 
         if (rankRes.data.length === 0 && circuito) {
-          const prevCircuito = todosCircuitos.find((c: any) => c.order === (circuito!.order - 1));
+          // ── Buscar circuito anterior del MISMO torneo ─────────────
+          const prevCircuito = todosCircuitos.find((c: any) =>
+            c.torneoId === circuito!.torneoId && c.order === (circuito!.order - 1)
+          );
           if (prevCircuito) {
             rankRes = await api.get(`/rankings/circuit/${prevCircuito.id}`);
             circuito = prevCircuito;
