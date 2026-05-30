@@ -1,82 +1,108 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import LoginPage from './pages/LoginPage';
-import AdminDashboard from './pages/AdminDashboard';
-import VenuesPage from './pages/VenuesPage';
-import TablesPage from './pages/TablesPage';
-import PlayersPage from './pages/PlayersPage';
-import MatchesPage from './pages/MatchesPage';
-import JudgePage from './pages/JudgePage';
-import PublicPage from './pages/PublicPage';
-import FixturePage from './pages/FixturePage';
-import SeriesPage from './pages/SeriesPage';
-import CrucesPage from './pages/CrucesPage';
-import UsersPage from './pages/UsersPage';
-import FaseConfigPage from './pages/FaseConfigPage';
-import RankingPage from './pages/RankingPage';
-import RankingFinalPage from './pages/RankingFinalPage';
-import AdminPublicacionesPage from './pages/AdminPublicacionesPage';
-import ConfigTorneoPage from './pages/ConfigTorneoPage';
-import RankingCargaPage from './pages/RankingCargaPage';
-import Layout from './components/layout/Layout';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { useState } from 'react';
 
-function ProtectedRoute({ children, roles }: { children: React.ReactNode; roles?: string[] }) {
-  const { user, loading } = useAuth();
-  if (loading) return <div className="flex items-center justify-center h-screen"><span className="text-gold font-display text-2xl">Cargando...</span></div>;
-  if (!user) return <Navigate to="/login" replace />;
-  if (roles && !roles.includes(user.role)) return <Navigate to="/" replace />;
-  return <>{children}</>;
-}
-
-function AppRoutes() {
-  const { user } = useAuth();
+function NavItem({ a, etiqueta, icono }: { a: string; etiqueta: string; icono: string }) {
   return (
-    <Routes>
-      {/* Rutas públicas */}
-      <Route path="/login"         element={<LoginPage />} />
-      <Route path="/publico"       element={<PublicPage />} />
-      <Route path="/fixture"       element={<FixturePage />} />
-      <Route path="/ranking"       element={<RankingPage />} />
-      <Route path="/ranking-final" element={<RankingFinalPage />} />
-      <Route path="/publicaciones" element={<AdminPublicacionesPage />} />
-      <Route path="/" element={
-        <ProtectedRoute>
-          {user?.role === 'admin' ? <Navigate to="/admin" replace /> :
-           user?.role === 'juez_sede' ? <Navigate to="/juez" replace /> :
-           <Navigate to="/publico" replace />}
-        </ProtectedRoute>
-      } />
-      {/* Admin */}
-      <Route path="/admin" element={<ProtectedRoute roles={['admin']}><Layout /></ProtectedRoute>}>
-        <Route index element={<AdminDashboard />} />
-        <Route path="sedes"           element={<VenuesPage />} />
-        <Route path="mesas"           element={<TablesPage />} />
-        <Route path="jugadores"       element={<PlayersPage />} />
-        <Route path="partidos"        element={<MatchesPage />} />
-        <Route path="fixture"         element={<FixturePage />} />
-        <Route path="series"          element={<SeriesPage />} />
-        <Route path="cruces"          element={<CrucesPage />} />
-        <Route path="usuarios"        element={<UsersPage />} />
-        <Route path="faseconfig"      element={<FaseConfigPage />} />
-        <Route path="ranking"         element={<RankingPage />} />
-        <Route path="ranking-final"   element={<RankingFinalPage />} />
-        <Route path="publicaciones"   element={<AdminPublicacionesPage />} />
-        <Route path="config-torneo"   element={<ConfigTorneoPage />} />
-        <Route path="ranking-carga"   element={<RankingCargaPage />} />
-      </Route>
-      {/* Juez */}
-      <Route path="/juez" element={<ProtectedRoute roles={['juez_sede', 'admin']}><Layout /></ProtectedRoute>}>
-        <Route index element={<JudgePage />} />
-      </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <NavLink
+      to={a}
+      className={({ isActive }) =>
+        `flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-150${
+          isActive ? ' sidebar-item-active' : ' sidebar-item'
+        }`
+      }
+    >
+      <span className="text-base">{icono}</span>
+      <span>{etiqueta}</span>
+    </NavLink>
   );
 }
 
-export default function App() {
+export default function Layout() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [menuAbierto, setMenuAbierto] = useState(false);
+
+  const handleLogout = () => { logout(); navigate('/login'); };
+
+  const adminLinks = [
+    { a: '/admin',               etiqueta: 'Panel Principal',      icono: 'o' },
+    { a: '/admin/partidos',      etiqueta: 'Partidos',             icono: 'x' },
+    { a: '/admin/sedes',         etiqueta: 'Sedes',                icono: 's' },
+    { a: '/admin/mesas',         etiqueta: 'Mesas',                icono: 'm' },
+    { a: '/admin/jugadores',     etiqueta: 'Jugadores',            icono: 'j' },
+    { a: '/admin/fixture',       etiqueta: 'Fixture',              icono: 'f' },
+    { a: '/admin/series',        etiqueta: 'Series',               icono: 'r' },
+    { a: '/admin/cruces',        etiqueta: 'Cruces',               icono: 'c' },
+    { a: '/admin/faseconfig',    etiqueta: 'Programación',         icono: 'g' },
+    { a: '/admin/ranking',       etiqueta: 'Ranking',              icono: 'k' },
+    { a: '/admin/ranking-final', etiqueta: 'Ranking Final',        icono: '🏆' },
+    { a: '/admin/publicaciones', etiqueta: 'Publicaciones',        icono: '📢' },
+    { a: '/admin/config-torneo', etiqueta: 'Config. Torneo',       icono: '⚙️' },
+    { a: '/admin/ranking-carga', etiqueta: 'Carga de Ranking',     icono: '📊' },
+    { a: '/admin/usuarios',      etiqueta: 'Jueces',               icono: 'u' },
+  ];
+
+  const juezLinks = [
+    { a: '/juez', etiqueta: user?.venueName ?? 'Mi Sede', icono: 'o' },
+  ];
+
+  const isJuez = user?.role === 'juez_sede';
+  const links = isJuez ? juezLinks : adminLinks;
+
+  const SidebarContent = () => (
+    <>
+      <div className="px-4 py-4 border-b border-gray-700 flex items-center space-x-3">
+        <img src="/logo-febiu.png" alt="FEBIU" className="w-12 h-12 object-cover rounded-full" />
+        <div>
+          <p className="text-orange-400 font-bold text-sm uppercase">FEBIU</p>
+          <p className="text-gray-400 text-xs">Federacion de Billar</p>
+          <p className="text-gray-400 text-xs">del Uruguay</p>
+          <p className="text-gray-500 text-xs">Sistema de Torneos</p>
+        </div>
+      </div>
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        {links.map(l => <NavItem key={l.a} {...l} />)}
+        {!isJuez && (
+          <div className="pt-3 border-t border-gray-700 mt-3">
+            <NavItem a="/publico"       etiqueta="Vista Publica"   icono="p" />
+            <NavItem a="/ranking"       etiqueta="Ranking Público" icono="🏆" />
+            <NavItem a="/ranking-final" etiqueta="Ranking Final"   icono="🥇" />
+            <NavItem a="/publicaciones" etiqueta="Publicaciones"   icono="📢" />
+          </div>
+        )}
+      </nav>
+      <div className="px-3 py-4 border-t border-gray-700">
+        <div className="px-3 py-2 mb-2">
+          <p className="text-gray-500 text-xs">Conectado como</p>
+          <p className="text-orange-400 font-semibold text-sm">{user?.username}</p>
+          <p className="text-gray-400 text-xs uppercase">{user?.role}</p>
+        </div>
+        <button onClick={handleLogout} className="w-full btn-secondary text-left text-xs">Cerrar sesion</button>
+      </div>
+    </>
+  );
+
   return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <div className="flex h-screen overflow-hidden">
+      <aside className="hidden md:flex w-60 bg-carbon-50 border-r border-gray-700 flex-col flex-shrink-0">
+        <SidebarContent />
+      </aside>
+      {menuAbierto && <div className="fixed inset-0 bg-black/60 z-20 md:hidden" onClick={() => setMenuAbierto(false)} />}
+      <aside className={`fixed top-0 left-0 h-full w-72 bg-carbon-50 border-r border-gray-700 flex flex-col flex-shrink-0 z-30 transition-transform duration-300 md:hidden ${menuAbierto ? 'translate-x-0' : '-translate-x-full'}`}>
+        <button onClick={() => setMenuAbierto(false)} className="absolute top-3 right-3 text-gray-400 hover:text-orange-400 text-xl z-40">X</button>
+        <SidebarContent />
+      </aside>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="md:hidden flex items-center gap-3 px-4 py-3 bg-carbon-50 border-b border-gray-700 flex-shrink-0">
+          <button onClick={() => setMenuAbierto(true)} className="text-orange-400 text-2xl leading-none">=</button>
+          <img src="/logo-febiu.png" alt="FEBIU" className="w-8 h-8 object-cover rounded-full" />
+          <span className="text-orange-400 font-bold text-sm uppercase">FEBIU</span>
+        </header>
+        <main className="flex-1 overflow-y-auto bg-carbon-100">
+          <Outlet />
+        </main>
+      </div>
+    </div>
   );
 }
