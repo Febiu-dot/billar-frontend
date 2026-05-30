@@ -309,6 +309,7 @@ export default function AdminPublicacionesPage() {
   const [pubData, setPubData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [exportando, setExportando] = useState(false);
+  const [vaciando, setVaciando]     = useState(false);
   const [notas, setNotas] = useState('');
   const [error, setError] = useState('');
   const exportRef = useRef<HTMLDivElement>(null);
@@ -432,6 +433,18 @@ export default function AdminPublicacionesPage() {
     } finally { setLoading(false); }
   };
 
+  const vaciarTodo = async () => {
+    if (!confirm('⚠️ ¿Vaciar todos los reportes y ranking acumulado?\n\nEsto elimina los reportes generados automáticamente y el ranking acumulado de todos los torneos.\n\nEsta acción no se puede deshacer.')) return;
+    setVaciando(true);
+    try {
+      const res = await api.delete('/publicaciones/reset');
+      alert(`✅ ${res.data.message}\n\nReportes borrados: ${res.data.reportes_borrados}\nAcumulado borrado: ${res.data.acumulado_borrado}`);
+      setPubData(null);
+    } catch (err: any) {
+      alert(err?.response?.data?.error ?? 'Error al vaciar');
+    } finally { setVaciando(false); }
+  };
+
   const exportar = async () => {
     if (!exportRef.current) return;
     setExportando(true);
@@ -462,9 +475,20 @@ export default function AdminPublicacionesPage() {
         </div>
       )}
 
-      <div className="px-6 pt-6 pb-4 border-b border-felt-light/20">
-        <h1 className="font-display text-4xl text-gold">PUBLICACIONES</h1>
-        <p className="text-chalk/50 text-sm mt-1">{esAdmin ? 'Generación y exportación de gráficos para difusión' : 'Gráficos del torneo'}</p>
+      <div className="px-6 pt-6 pb-4 border-b border-felt-light/20 flex items-center justify-between">
+        <div>
+          <h1 className="font-display text-4xl text-gold">PUBLICACIONES</h1>
+          <p className="text-chalk/50 text-sm mt-1">{esAdmin ? 'Generación y exportación de gráficos para difusión' : 'Gráficos del torneo'}</p>
+        </div>
+        {esAdmin && (
+          <button
+            className="py-1.5 px-4 text-xs rounded-lg border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all disabled:opacity-40"
+            onClick={vaciarTodo}
+            disabled={vaciando}
+          >
+            {vaciando ? 'Vaciando...' : '🗑 Vaciar todo'}
+          </button>
+        )}
       </div>
 
       <div className="p-6 space-y-5">
