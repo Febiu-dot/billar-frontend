@@ -39,6 +39,8 @@ export default function Layout() {
     { a: '/admin/ranking-final', etiqueta: 'Ranking Final',        icono: '🏆' },
     { a: '/admin/publicaciones', etiqueta: 'Publicaciones',        icono: '📢' },
     { a: '/admin/config-torneo', etiqueta: 'Config. Torneo',       icono: '⚙️' },
+    { a: '/admin/config-torneo', etiqueta: 'Config. Torneo',       icono: '⚙️' },
+{ a: '/admin/ranking-carga', etiqueta: 'Carga de Ranking',     icono: '📊' },
     { a: '/admin/usuarios',      etiqueta: 'Jueces',               icono: 'u' },
   ];
 
