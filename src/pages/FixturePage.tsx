@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { api } from '../services/api';
 import { Tournament, Match, Phase, Circuit, Player, Departamento } from '../types';
 import { MatchStatusBadge, playerName, LoadingSpinner, EmptyState, Modal } from '../components/ui';
+import * as XLSX from 'xlsx';
 
 const PHASE_TYPES = ['clasificatorio', 'segunda', 'primera', 'master'];
 const CATEGORY_ORDER: Record<string, number> = { master: 1, primera: 2, segunda: 3, tercera: 4 };
@@ -38,7 +39,6 @@ interface PreviewData {
 
 type PreviewTab = 'series' | 'reduccion' | 'segunda' | 'primera' | 'master' | 'bracket';
 
-// ── Labels legibles para rounds del bracket Nacional ──────────────────
 function getNacRoundLabel(round: number): string {
   if (round >= 101 && round <= 108) return `Octavos · P${round - 100}`;
   if (round >= 111 && round <= 114) return `Cuartos · P${round - 110}`;
@@ -89,6 +89,13 @@ export default function FixturePage() {
   const [previewModal, setPreviewModal] = useState<{ circuit: Circuit; data: PreviewData } | null>(null);
   const [previewLoading, setPreviewLoading] = useState<number | null>(null);
   const [previewTab, setPreviewTab] = useState<PreviewTab>('series');
+
+  // ── Ranking upload ────────────────────────────────────────────────
+  const [rankingModal, setRankingModal] = useState<Circuit | null>(null);
+  const [rankingData, setRankingData] = useState<{ dni: string; position: number; nombre: string }[]>([]);
+  const [rankingError, setRankingError] = useState('');
+  const [rankingSaving, setRankingSaving] = useState(false);
+  const rankingFileRef = useRef<HTMLInputElement>(null);
 
   const fetchTournaments = () =>
     api.get('/tournaments').then(r => { setTournaments(r.data); setLoading(false); });
@@ -192,7 +199,8 @@ export default function FixturePage() {
     } finally { setEcSaving(false); }
   };
 
-  const openAddCircuit = (t: Tournament) => {    setCircuitModal(t);
+  const openAddCircuit = (t: Tournament) => {
+    setCircuitModal(t);
     const nextOrder = (t.circuits?.length ?? 0) + 1;
     setCForm({ name: `Circuito ${nextOrder}`, order: nextOrder.toString(), startDate: '', endDate: '' });
     setCError('');
@@ -307,7 +315,6 @@ export default function FixturePage() {
     finally { setPreviewLoading(null); }
   };
 
-  // ── Generar partidos — maneja Departamental y Nacional ───────────────
   const handleConfirmarGenerar = async () => {
     if (!previewModal) return;
     const circuit = previewModal.circuit;
@@ -338,6 +345,69 @@ export default function FixturePage() {
     finally { setGenerando(null); }
   };
 
+  // ── Ranking upload handlers ───────────────────────────────────────
+  const openRankingModal = (circuit: Circuit) => {
+    setRankingModal(circuit);
+    setRankingData([]);
+    setRankingError('');
+    if (rankingFileRef.current) rankingFileRef.current.value = '';
+  };
+
+  const handleRankingFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setRankingError('');
+    setRankingData([]);
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = evt.target?.result;
+        const wb = XLSX.read(data, { type: 'binary' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows: any[] = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+        // Buscar columnas: Posicion, DNI, Apellido, Nombre
+        // Saltar filas de cabecera hasta encontrar datos numéricos en col 0
+        const parsed: { dni: string; position: number; nombre: string }[] = [];
+        for (const row of rows) {
+          const pos = Number(row[0]);
+          const dni = String(row[1] ?? '').trim();
+          const apellido = String(row[2] ?? '').trim();
+          const nombre = String(row[3] ?? '').trim();
+          if (!pos || isNaN(pos) || !dni || dni === 'undefined') continue;
+          parsed.push({ position: pos, dni, nombre: `${apellido}, ${nombre}` });
+        }
+
+        if (parsed.length === 0) {
+          setRankingError('No se encontraron datos válidos en el archivo. Verificá que el formato sea: Posicion | DNI | Apellido | Nombre');
+          return;
+        }
+
+        setRankingData(parsed);
+      } catch (err) {
+        setRankingError('Error al leer el archivo. Asegurate de subir un .xlsx válido.');
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const handleGuardarRanking = async () => {
+    if (!rankingModal || rankingData.length === 0) return;
+    setRankingSaving(true);
+    try {
+      const res = await api.post(`/circuits/${rankingModal.id}/ranking-upload`, {
+        rankings: rankingData.map(r => ({ dni: r.dni, position: r.position }))
+      });
+      alert(`✅ Ranking cargado correctamente\n\nCargados: ${res.data.cargados} / ${res.data.total}${res.data.errores?.length ? `\n\nNo encontrados:\n${res.data.errores.join('\n')}` : ''}`);
+      setRankingModal(null);
+    } catch (err: any) {
+      setRankingError(err?.response?.data?.error ?? 'Error al cargar el ranking');
+    } finally {
+      setRankingSaving(false);
+    }
+  };
+
   const getMatchesByRound = (matches: Match[]) => {
     const rounds: Record<number, Match[]> = {};
     matches.forEach(m => { if (!rounds[m.round]) rounds[m.round] = []; rounds[m.round].push(m); });
@@ -356,7 +426,6 @@ export default function FixturePage() {
 
   if (loading) return <LoadingSpinner />;
 
-  // ── Tabs del preview modal — dinámicos según tipo ────────────────────
   const buildPreviewTabs = (data: PreviewData) => {
     if (data.tipo === 'nacional') {
       return [
@@ -444,6 +513,9 @@ export default function FixturePage() {
                             </button>
                             <button className="py-1 px-3 text-xs rounded-lg border border-blue-700/40 text-blue-300 hover:bg-blue-900/20 transition-all" onClick={() => openInscripcion(circuit)}>
                               👥 Inscripción ({circuit.players?.length ?? 0})
+                            </button>
+                            <button className="py-1 px-3 text-xs rounded-lg border border-purple-700/40 text-purple-300 hover:bg-purple-900/20 transition-all" onClick={() => openRankingModal(circuit)}>
+                              📊 Ranking
                             </button>
                             <button
                               className="py-1 px-3 text-xs rounded-lg border border-gold/40 text-gold hover:bg-gold/10 transition-all disabled:opacity-40"
@@ -766,6 +838,61 @@ export default function FixturePage() {
         </Modal>
       )}
 
+      {/* Ranking upload modal */}
+      {rankingModal && (
+        <Modal title={`CARGAR RANKING — ${rankingModal.name}`} onClose={() => setRankingModal(null)}>
+          <div className="space-y-4">
+            <div className="bg-felt-dark/50 border border-felt-light/10 rounded-lg px-3 py-2 text-chalk/40 text-xs">
+              El archivo Excel debe tener columnas en este orden:<br />
+              <span className="text-gold/60 font-mono">Posicion | DNI | Apellido | Nombre</span>
+            </div>
+
+            <div>
+              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Archivo Excel (.xlsx)</label>
+              <input
+                ref={rankingFileRef}
+                type="file"
+                accept=".xlsx,.xls"
+                className="block w-full text-sm text-chalk/60 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border file:border-gold/30 file:text-gold/70 file:bg-transparent file:text-xs hover:file:bg-gold/10 cursor-pointer"
+                onChange={handleRankingFile}
+              />
+            </div>
+
+            {rankingError && (
+              <p className="text-red-400 text-sm">{rankingError}</p>
+            )}
+
+            {rankingData.length > 0 && (
+              <div>
+                <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">
+                  Vista previa — {rankingData.length} jugadores
+                </p>
+                <div className="max-h-64 overflow-y-auto space-y-1 pr-1">
+                  {rankingData.map((r, i) => (
+                    <div key={i} className="flex items-center gap-3 bg-felt-dark/40 border border-felt-light/10 rounded px-3 py-1.5">
+                      <span className="text-gold font-mono text-xs w-6 shrink-0">#{r.position}</span>
+                      <span className="text-chalk/70 text-sm flex-1">{r.nombre}</span>
+                      <span className="text-chalk/30 text-xs font-mono">{r.dni}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <button
+                className="btn-primary flex-1 disabled:opacity-40"
+                disabled={rankingData.length === 0 || rankingSaving}
+                onClick={handleGuardarRanking}
+              >
+                {rankingSaving ? 'Cargando...' : `✅ Cargar ${rankingData.length} jugadores`}
+              </button>
+              <button className="btn-secondary flex-1" onClick={() => setRankingModal(null)}>Cancelar</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {/* Preview modal */}
       {previewModal && (() => {
         const esNac = previewModal.data.tipo === 'nacional';
@@ -773,8 +900,6 @@ export default function FixturePage() {
         return (
           <Modal title={`VISTA PREVIA — ${previewModal.circuit.name}`} onClose={() => setPreviewModal(null)}>
             <div className="space-y-4">
-
-              {/* Inscriptos — diferente para Nacional y Departamental */}
               {esNac ? (
                 <div className="grid grid-cols-3 gap-2">
                   <div className="bg-felt-dark/50 rounded-lg p-2 text-center">
@@ -812,7 +937,6 @@ export default function FixturePage() {
                 </div>
               )}
 
-              {/* Badge categoría para Nacional */}
               {esNac && previewModal.data.categoriaFederal && (
                 <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg px-3 py-2 flex items-center gap-2">
                   <span className="text-blue-400 text-xs uppercase tracking-widest font-mono">🏆 Nacional</span>
@@ -820,7 +944,6 @@ export default function FixturePage() {
                 </div>
               )}
 
-              {/* Tabs */}
               <div className="flex gap-2 flex-wrap">
                 {tabs.map(tab => (
                   <button key={tab.key}
@@ -832,10 +955,7 @@ export default function FixturePage() {
                 ))}
               </div>
 
-              {/* Contenido de tabs */}
               <div className="max-h-[50vh] overflow-y-auto space-y-3 pr-1">
-
-                {/* Tab: Series */}
                 {previewTab === 'series' && previewModal.data.clasificatorio.series.map(serie => (
                   <div key={serie.serie} className="bg-felt-dark/40 border border-felt-light/10 rounded-lg p-3">
                     <p className="text-chalk/40 text-xs uppercase tracking-widest font-mono mb-2">Serie {serie.serie}</p>
@@ -851,15 +971,12 @@ export default function FixturePage() {
                   </div>
                 ))}
 
-                {/* Tab: Bracket (solo Nacional) */}
                 {previewTab === 'bracket' && previewModal.data.bracket && (
                   <div className="space-y-3">
                     <div className="bg-felt-dark/40 border border-purple-700/30 rounded-lg p-4 space-y-4">
                       <p className="text-purple-400 font-display text-sm uppercase tracking-widest">
                         Eliminación simple — 16 clasificados
                       </p>
-
-                      {/* Octavos seeding */}
                       <div>
                         <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">Octavos de final</p>
                         <div className="grid grid-cols-2 gap-1 text-xs font-mono">
@@ -874,8 +991,6 @@ export default function FixturePage() {
                           ))}
                         </div>
                       </div>
-
-                      {/* Estructura */}
                       <div className="space-y-1 text-sm font-mono border-t border-felt-light/10 pt-3">
                         <div className="flex justify-between"><span className="text-chalk/50">Octavos</span><span className="text-chalk">8 partidos</span></div>
                         <div className="flex justify-between"><span className="text-chalk/50">Cuartos</span><span className="text-chalk">4 partidos</span></div>
@@ -893,7 +1008,6 @@ export default function FixturePage() {
                   </div>
                 )}
 
-                {/* Tab: Reducción (solo Departamental) */}
                 {previewTab === 'reduccion' && previewModal.data.clasificatorio.crucesReduccion?.map(cruce => (
                   <div key={cruce.cruce} className="bg-felt-dark/40 border border-felt-light/10 rounded-lg px-3 py-2 flex items-center gap-3">
                     <span className="text-chalk/30 text-xs font-mono w-16">Cruce {cruce.cruce}</span>
@@ -903,7 +1017,6 @@ export default function FixturePage() {
                   </div>
                 ))}
 
-                {/* Tab: Segunda (solo Departamental) */}
                 {previewTab === 'segunda' && previewModal.data.segundaPreview?.series.map((serie: any) => (
                   <div key={serie.serie} className="bg-felt-dark/40 border border-felt-light/10 rounded-lg p-3">
                     <p className="text-chalk/40 text-xs uppercase tracking-widest font-mono mb-2">Serie {serie.serie}</p>
@@ -918,7 +1031,6 @@ export default function FixturePage() {
                   </div>
                 ))}
 
-                {/* Tab: Primera (solo Departamental) */}
                 {previewTab === 'primera' && previewModal.data.primeraPreview?.cruces.map((cruce: any) => (
                   <div key={cruce.cruce} className="bg-felt-dark/40 border border-felt-light/10 rounded-lg px-3 py-2 flex items-center gap-3">
                     <span className="text-chalk/30 text-xs font-mono w-16">Cruce {cruce.cruce}</span>
@@ -928,7 +1040,6 @@ export default function FixturePage() {
                   </div>
                 ))}
 
-                {/* Tab: Master (solo Departamental) */}
                 {previewTab === 'master' && previewModal.data.masterPreview?.cruces.map((cruce: any) => (
                   <div key={cruce.cruce} className="bg-felt-dark/40 border border-felt-light/10 rounded-lg px-3 py-2 flex items-center gap-3">
                     <span className="text-chalk/30 text-xs font-mono w-16">Cruce {cruce.cruce}</span>
@@ -937,7 +1048,6 @@ export default function FixturePage() {
                     <span className={`text-sm flex-1 text-right ${cruce.esSlotB ? 'text-gold/50 italic' : 'text-chalk/70'}`}>{cruce.jugadorB}</span>
                   </div>
                 ))}
-
               </div>
 
               <div className="flex gap-3 pt-2">
