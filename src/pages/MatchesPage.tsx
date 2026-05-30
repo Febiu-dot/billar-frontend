@@ -6,6 +6,7 @@ import { PageHeader, MatchStatusBadge, playerName, LoadingSpinner, Modal, EmptyS
 
 interface Tournament { id: number; name: string; }
 interface Circuit    { id: number; name: string; tournamentId: number; }
+interface SetScore   { a: string; b: string; saved: boolean; }
 
 export default function MatchesPage() {
   const [matches, setMatches]         = useState<Match[]>([]);
@@ -17,19 +18,20 @@ export default function MatchesPage() {
   const [filterTournament, setFilterTournament] = useState('');
   const [filterCircuit, setFilterCircuit]       = useState('');
 
-  const [assignModal, setAssignModal]   = useState<Match | null>(null);
+  // Modal asignar mesa
+  const [assignModal, setAssignModal]     = useState<Match | null>(null);
   const [selectedTable, setSelectedTable] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving]               = useState(false);
 
-  const [resultModal, setResultModal]   = useState<Match | null>(null);
-  const [resWinnerId, setResWinnerId]   = useState('');
-  const [resSetsA, setResSetsA]         = useState('');
-  const [resSetsB, setResSetsB]         = useState('');
-  const [resPtsA, setResPtsA]           = useState('');
-  const [resPtsB, setResPtsB]           = useState('');
-  const [resIsWO, setResIsWO]           = useState(false);
-  const [resWOPlayer, setResWOPlayer]   = useState('');
-  const [resSaving, setResSaving]       = useState(false);
+  // Modal cargar resultado — set por set
+  const [resultModal, setResultModal] = useState<Match | null>(null);
+  const [sets, setSets]               = useState<SetScore[]>([{ a: '', b: '', saved: false }]);
+  const [isWO, setIsWO]               = useState(false);
+  const [woPlayerId, setWoPlayerId]   = useState('');
+  const [notes, setNotes]             = useState('');
+  const [resSaving, setResSaving]     = useState(false);
+  const [savingSet, setSavingSet]     = useState<number | null>(null);
+  const [resError, setResError]       = useState('');
 
   const filterCircuitRef    = useRef(filterCircuit);
   const filterTournamentRef = useRef(filterTournament);
@@ -58,7 +60,6 @@ export default function MatchesPage() {
 
     const onMatchUpdated = () => fetchMatches(filterCircuitRef.current, filterTournamentRef.current);
     const onTableUpdated = () => fetchTables();
-
     socket.on('match:updated', onMatchUpdated);
     socket.on('table:updated', onTableUpdated);
     return () => {
@@ -109,48 +110,135 @@ export default function MatchesPage() {
     fetchMatches(filterCircuit, filterTournament);
   };
 
+  // ── Abrir modal resultado ─────────────────────────────────────────
   const openResultModal = (match: Match) => {
     setResultModal(match);
-    setResWinnerId('');
-    setResSetsA('');
-    setResSetsB('');
-    setResPtsA('');
-    setResPtsB('');
-    setResIsWO(false);
-    setResWOPlayer('');
+    if (match.sets && match.sets.length > 0) {
+      const loadedSets: SetScore[] = match.sets.map(s => ({
+        a: s.pointsA.toString(),
+        b: s.pointsB.toString(),
+        saved: true,
+      }));
+      const setsToWin = (match as any).ruleSet?.setsToWin ?? 3;
+      const winsA = loadedSets.filter(s => Number(s.a) > Number(s.b)).length;
+      const winsB = loadedSets.filter(s => Number(s.b) > Number(s.a)).length;
+      if (winsA < setsToWin && winsB < setsToWin) {
+        loadedSets.push({ a: '', b: '', saved: false });
+      }
+      setSets(loadedSets);
+    } else {
+      setSets([{ a: '', b: '', saved: false }]);
+    }
+    setIsWO(false);
+    setWoPlayerId('');
+    setNotes('');
+    setResError('');
   };
 
-  const handleCargarResultado = async (e: React.FormEvent) => {
+  // ── Validación de set ─────────────────────────────────────────────
+  const calcSetWinner = (sa: string, sb: string, pointsPerSet: number) => {
+    const a = Number(sa), b = Number(sb);
+    if (!sa || !sb || isNaN(a) || isNaN(b)) return null;
+    if (a >= pointsPerSet && a > b) return 'a';
+    if (b >= pointsPerSet && b > a) return 'b';
+    return null;
+  };
+
+  const updateSet = (index: number, side: 'a' | 'b', value: string) => {
+    if (value !== '' && (isNaN(Number(value)) || Number(value) < 0)) return;
+    const newSets = sets.map((s, i) => i === index ? { ...s, [side]: value, saved: false } : s);
+    setSets(newSets);
+  };
+
+  const handleSaveSet = async (index: number) => {
+    if (!resultModal) return;
+    const s = sets[index];
+    const pointsPerSet = (resultModal as any).ruleSet?.pointsPerSet ?? 60;
+    const winner = calcSetWinner(s.a, s.b, pointsPerSet);
+    if (!winner) {
+      setResError(`Set ${index + 1}: el ganador debe llegar a ${pointsPerSet} tantos y tener más que el rival`);
+      return;
+    }
+    setSavingSet(index);
+    setResError('');
+    try {
+      await api.put(`/matches/${resultModal.id}/set`, {
+        setNumber: index + 1,
+        pointsA: Number(s.a),
+        pointsB: Number(s.b),
+      });
+
+      const newSets = sets.map((set, i) => i === index ? { ...set, saved: true } : set);
+      const setsToWin = (resultModal as any).ruleSet?.setsToWin ?? 3;
+      const winsA = newSets.filter(set => Number(set.a) > Number(set.b) && set.saved).length;
+      const winsB = newSets.filter(set => Number(set.b) > Number(set.a) && set.saved).length;
+      if (winsA < setsToWin && winsB < setsToWin && newSets.length === index + 1) {
+        newSets.push({ a: '', b: '', saved: false });
+      }
+      setSets(newSets);
+      fetchMatches(filterCircuit, filterTournament);
+    } catch {
+      setResError('Error al guardar el set');
+    } finally {
+      setSavingSet(null);
+    }
+  };
+
+  const handleCloseMatch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resultModal) return;
     setResSaving(true);
-    try {
-      const ruleSet = (resultModal as any).ruleSet;
-      const setsToWin = ruleSet?.setsToWin ?? 2;
+    setResError('');
 
-      if (resIsWO) {
-        if (!resWOPlayer) { alert('Seleccioná el jugador ausente (WO)'); setResSaving(false); return; }
-        await api.put(`/matches/${resultModal.id}/result`, {
-          setsA: 0, setsB: 0, pointsA: 0, pointsB: 0,
-          isWO: true, woPlayerId: Number(resWOPlayer),
-        });
-      } else {
-        const sA = Number(resSetsA); const sB = Number(resSetsB);
-        const pA = Number(resPtsA);  const pB = Number(resPtsB);
-        if (sA < setsToWin && sB < setsToWin) {
-          alert(`Uno de los jugadores debe tener ${setsToWin} sets ganados`);
-          setResSaving(false); return;
-        }
-        await api.put(`/matches/${resultModal.id}/result`, {
-          setsA: sA, setsB: sB, pointsA: pA, pointsB: pB,
-          isWO: false,
-        });
+    const pointsPerSet = (resultModal as any).ruleSet?.pointsPerSet ?? 60;
+    const setsToWin    = (resultModal as any).ruleSet?.setsToWin ?? 3;
+
+    try {
+      let setsA = 0, setsB = 0, pointsA = 0, pointsB = 0;
+      const savedSets = sets.filter(s => s.saved);
+      for (const s of savedSets) {
+        const w = calcSetWinner(s.a, s.b, pointsPerSet);
+        if (w === 'a') setsA++;
+        if (w === 'b') setsB++;
+        pointsA += Number(s.a) || 0;
+        pointsB += Number(s.b) || 0;
       }
+
+      if (!isWO && setsA < setsToWin && setsB < setsToWin) {
+        setResError(`El partido no tiene ganador. Algún jugador debe ganar ${setsToWin} sets.`);
+        setResSaving(false);
+        return;
+      }
+
+      await api.put(`/matches/${resultModal.id}/result`, {
+        setsA, setsB, pointsA, pointsB,
+        isWO,
+        woPlayerId: isWO && woPlayerId ? Number(woPlayerId) : undefined,
+        notes: notes || undefined,
+        sets: savedSets.map((s, i) => ({
+          setNumber: i + 1,
+          pointsA: Number(s.a),
+          pointsB: Number(s.b),
+        })),
+      });
+
       setResultModal(null);
       fetchMatches(filterCircuit, filterTournament);
-    } catch (err: any) {
-      alert(err?.response?.data?.error ?? 'Error al cargar el resultado');
-    } finally { setResSaving(false); }
+    } catch {
+      setResError('Error al cerrar el partido');
+    } finally {
+      setResSaving(false);
+    }
+  };
+
+  const getSummary = () => {
+    let winsA = 0, winsB = 0;
+    for (const s of sets) {
+      if (!s.saved) continue;
+      if (Number(s.a) > Number(s.b)) winsA++;
+      if (Number(s.b) > Number(s.a)) winsB++;
+    }
+    return { winsA, winsB };
   };
 
   const statusOrder: MatchStatus[] = ['en_juego', 'asignado', 'pendiente', 'finalizado', 'wo'];
@@ -170,35 +258,18 @@ export default function MatchesPage() {
 
   return (
     <div>
-      <PageHeader
-        title="PARTIDOS"
-        subtitle={`${matches.length} partidos`}
-      />
+      <PageHeader title="PARTIDOS" subtitle={`${matches.length} partidos`} />
 
       <div className="p-6 space-y-4">
 
         <div className="flex flex-wrap gap-3 items-center">
-          <select
-            className="input w-56"
-            value={filterTournament}
-            onChange={e => handleTournamentChange(e.target.value)}
-          >
+          <select className="input w-56" value={filterTournament} onChange={e => handleTournamentChange(e.target.value)}>
             <option value="">Todos los torneos</option>
-            {tournaments.map(t => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
+            {tournaments.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
-
-          <select
-            className="input w-56"
-            value={filterCircuit}
-            onChange={e => handleCircuitChange(e.target.value)}
-            disabled={!filterTournament}
-          >
+          <select className="input w-56" value={filterCircuit} onChange={e => handleCircuitChange(e.target.value)} disabled={!filterTournament}>
             <option value="">Todos los circuitos</option>
-            {circuitsFiltrados.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
+            {circuitsFiltrados.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
 
@@ -206,15 +277,9 @@ export default function MatchesPage() {
           {statuses.map(s => {
             const count = s === '' ? filtered.length : matches.filter(m => m.status === s).length;
             return (
-              <button
-                key={s}
-                onClick={() => setFilterStatus(s as MatchStatus | '')}
-                className={`badge-status cursor-pointer text-xs px-3 py-1 ${
-                  filterStatus === s ? 'bg-gold/30 text-gold border border-gold/40' : 'bg-felt-light/20 text-chalk/60'
-                }`}
-              >
-                {statusLabels[s]}
-                <span className="ml-1 font-mono">({count})</span>
+              <button key={s} onClick={() => setFilterStatus(s as MatchStatus | '')}
+                className={`badge-status cursor-pointer text-xs px-3 py-1 ${filterStatus === s ? 'bg-gold/30 text-gold border border-gold/40' : 'bg-felt-light/20 text-chalk/60'}`}>
+                {statusLabels[s]}<span className="ml-1 font-mono">({count})</span>
               </button>
             );
           })}
@@ -230,28 +295,18 @@ export default function MatchesPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <MatchStatusBadge status={m.status} />
-                      {m.table && (
-                        <span className="text-xs text-chalk/40 font-mono">
-                          Mesa {m.table.number} — {m.table.venue?.name}
-                        </span>
-                      )}
-                      <span className="text-xs text-chalk/30 font-mono">
-                        {m.phase?.circuit?.tournament?.name} · {m.phase?.name} · R{m.round}
-                      </span>
+                      {m.table && <span className="text-xs text-chalk/40 font-mono">Mesa {m.table.number} — {m.table.venue?.name}</span>}
+                      <span className="text-xs text-chalk/30 font-mono">{m.phase?.circuit?.tournament?.name} · {m.phase?.name} · R{m.round}</span>
                     </div>
-
                     <div className="flex items-center gap-3">
                       <span className="font-semibold text-chalk truncate">{playerName(m.playerA)}</span>
                       {m.result ? (
-                        <span className="font-mono text-gold font-bold text-lg shrink-0">
-                          {m.result.setsA} — {m.result.setsB}
-                        </span>
+                        <span className="font-mono text-gold font-bold text-lg shrink-0">{m.result.setsA} — {m.result.setsB}</span>
                       ) : (
                         <span className="text-chalk/20 font-mono shrink-0">vs</span>
                       )}
                       <span className="font-semibold text-chalk truncate">{playerName(m.playerB)}</span>
                     </div>
-
                     {m.sets && m.sets.length > 0 && (
                       <div className="mt-2 space-y-0.5">
                         {m.sets.map(s => (
@@ -260,51 +315,26 @@ export default function MatchesPage() {
                             <span className={s.pointsA > s.pointsB ? 'text-gold font-bold' : 'text-chalk/50'}>{s.pointsA}</span>
                             <span className="text-chalk/20">—</span>
                             <span className={s.pointsB > s.pointsA ? 'text-gold font-bold' : 'text-chalk/50'}>{s.pointsB}</span>
-                            {s.pointsA > s.pointsB ? (
-                              <span className="text-gold text-xs">← ✓</span>
-                            ) : (
-                              <span className="text-gold text-xs">✓ →</span>
-                            )}
+                            {s.pointsA > s.pointsB ? <span className="text-gold text-xs">← ✓</span> : <span className="text-gold text-xs">✓ →</span>}
                           </div>
                         ))}
                       </div>
                     )}
-
-                    {m.result && !m.sets?.length && (m.result.pointsA > 0 || m.result.pointsB > 0) && (
-                      <p className="text-xs text-chalk/30 font-mono mt-0.5">
-                        {m.result.pointsA} pts — {m.result.pointsB} pts
-                        {m.result.isWO && <span className="ml-2 text-red-400">W.O.</span>}
-                      </p>
-                    )}
-                    {m.result?.isWO && (
-                      <p className="text-xs text-red-400 font-mono mt-0.5">W.O.</p>
-                    )}
+                    {m.result?.isWO && <p className="text-xs text-red-400 font-mono mt-0.5">W.O.</p>}
                   </div>
 
                   <div className="flex gap-2 flex-wrap justify-end">
                     {m.status === 'pendiente' && (
                       <>
-                        <button
-                          className="btn-secondary text-xs py-1"
-                          onClick={() => { setAssignModal(m); setSelectedTable(''); }}
-                        >Asignar Mesa</button>
-                        <button
-                          className="btn-primary text-xs py-1"
-                          onClick={() => handleAutoAssign(m.id)}
-                          disabled={freeTables.length === 0}
-                        >Auto-Asignar</button>
+                        <button className="btn-secondary text-xs py-1" onClick={() => { setAssignModal(m); setSelectedTable(''); }}>Asignar Mesa</button>
+                        <button className="btn-primary text-xs py-1" onClick={() => handleAutoAssign(m.id)} disabled={freeTables.length === 0}>Auto-Asignar</button>
                       </>
                     )}
                     {m.status === 'asignado' && (
-                      <button className="btn-primary text-xs py-1" onClick={() => handleStart(m.id)}>
-                        ▶ Iniciar
-                      </button>
+                      <button className="btn-primary text-xs py-1" onClick={() => handleStart(m.id)}>▶ Iniciar</button>
                     )}
                     {m.status === 'en_juego' && (
-                      <button
-                        className="py-1 px-3 text-xs rounded-lg border border-gold/50 text-gold hover:bg-gold/10 transition-all font-semibold"
-                        onClick={() => openResultModal(m)}
-                      >
+                      <button className="py-1 px-3 text-xs rounded-lg border border-gold/50 text-gold hover:bg-gold/10 transition-all font-semibold" onClick={() => openResultModal(m)}>
                         📋 Cargar Resultado
                       </button>
                     )}
@@ -324,9 +354,7 @@ export default function MatchesPage() {
       {/* Modal asignar mesa */}
       {assignModal && (
         <Modal title="ASIGNAR MESA" onClose={() => setAssignModal(null)}>
-          <p className="text-chalk/60 text-sm mb-4">
-            {playerName(assignModal.playerA)} vs {playerName(assignModal.playerB)}
-          </p>
+          <p className="text-chalk/60 text-sm mb-4">{playerName(assignModal.playerA)} vs {playerName(assignModal.playerB)}</p>
           <form onSubmit={handleAssign} className="space-y-4">
             <div>
               <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Mesa libre</label>
@@ -335,129 +363,135 @@ export default function MatchesPage() {
               ) : (
                 <select className="input" value={selectedTable} onChange={e => setSelectedTable(e.target.value)} required>
                   <option value="">Seleccionar mesa</option>
-                  {freeTables.map(t => (
-                    <option key={t.id} value={t.id}>Mesa {t.number} — {t.venue?.name}</option>
-                  ))}
+                  {freeTables.map(t => <option key={t.id} value={t.id}>Mesa {t.number} — {t.venue?.name}</option>)}
                 </select>
               )}
             </div>
             <div className="flex gap-3 pt-2">
-              <button type="submit" className="btn-primary flex-1" disabled={saving || freeTables.length === 0}>
-                {saving ? 'Asignando...' : 'Asignar'}
-              </button>
+              <button type="submit" className="btn-primary flex-1" disabled={saving || freeTables.length === 0}>{saving ? 'Asignando...' : 'Asignar'}</button>
               <button type="button" className="btn-secondary flex-1" onClick={() => setAssignModal(null)}>Cancelar</button>
             </div>
           </form>
         </Modal>
       )}
 
-      {/* Modal cargar resultado */}
-      {resultModal && (
-        <Modal title="CARGAR RESULTADO" onClose={() => setResultModal(null)}>
-          <div className="mb-4">
-            <p className="text-chalk/80 font-semibold">
-              {playerName(resultModal.playerA)} <span className="text-chalk/30">vs</span> {playerName(resultModal.playerB)}
-            </p>
-            <p className="text-chalk/40 text-xs font-mono mt-1">
-              {resultModal.phase?.circuit?.tournament?.name} · {resultModal.phase?.name} · R{resultModal.round}
-            </p>
-            {(resultModal as any).ruleSet && (
-              <p className="text-chalk/40 text-xs font-mono">
-                Formato: al mejor de {(resultModal as any).ruleSet.bestOf} sets · {(resultModal as any).ruleSet.pointsPerSet} tantos por set
+      {/* Modal cargar resultado — set por set */}
+      {resultModal && (() => {
+        const { winsA, winsB } = getSummary();
+        const setsToWin    = (resultModal as any).ruleSet?.setsToWin ?? 3;
+        const pointsPerSet = (resultModal as any).ruleSet?.pointsPerSet ?? 60;
+        const bestOf       = (resultModal as any).ruleSet?.bestOf ?? 5;
+        const nameA = resultModal.playerA?.firstName ?? 'Jugador A';
+        const nameB = resultModal.playerB?.firstName ?? 'Jugador B';
+        const matchHasWinner = winsA >= setsToWin || winsB >= setsToWin;
+
+        return (
+          <Modal title="CARGAR RESULTADO" onClose={() => setResultModal(null)}>
+            <div className="mb-4 text-center">
+              <p className="text-chalk/50 text-xs mb-1">{resultModal.phase?.circuit?.tournament?.name} · {resultModal.phase?.name}</p>
+              <p className="text-chalk font-semibold">
+                {playerName(resultModal.playerA)} <span className="text-gold/60">vs</span> {playerName(resultModal.playerB)}
               </p>
-            )}
-          </div>
-
-          <form onSubmit={handleCargarResultado} className="space-y-4">
-
-            <div className="flex items-center gap-3 bg-felt-dark/50 rounded-lg px-3 py-2">
-              <input
-                type="checkbox"
-                id="resIsWO"
-                checked={resIsWO}
-                onChange={e => setResIsWO(e.target.checked)}
-                className="w-4 h-4 accent-gold"
-              />
-              <label htmlFor="resIsWO" className="text-chalk/80 text-sm cursor-pointer">W.O. (jugador ausente)</label>
+              <p className="text-chalk/40 text-xs mt-1">
+                Al mejor de {bestOf} sets · {pointsPerSet} tantos por set · Gana quien llega a {setsToWin} sets
+              </p>
             </div>
 
-            {resIsWO ? (
-              <div>
-                <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Jugador ausente</label>
-                <select className="input" value={resWOPlayer} onChange={e => setResWOPlayer(e.target.value)} required>
-                  <option value="">Seleccioná el jugador ausente</option>
-                  {resultModal.playerA && (
-                    <option value={resultModal.playerAId ?? ''}>
-                      {playerName(resultModal.playerA)} (Jugador A)
-                    </option>
-                  )}
-                  {resultModal.playerB && (
-                    <option value={resultModal.playerBId ?? ''}>
-                      {playerName(resultModal.playerB)} (Jugador B)
-                    </option>
-                  )}
-                </select>
+            {/* Marcador en tiempo real */}
+            <div className="flex justify-center items-center gap-6 bg-felt-dark/50 rounded-lg py-3 mb-4">
+              <div className="text-center">
+                <p className="text-chalk/50 text-xs truncate max-w-[80px]">{nameA}</p>
+                <p className="font-display text-4xl text-gold">{winsA}</p>
               </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5 truncate">
-                      Sets — {playerName(resultModal.playerA)}
-                    </label>
-                    <input
-                      type="number" min="0" className="input"
-                      value={resSetsA} onChange={e => setResSetsA(e.target.value)}
-                      required placeholder="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5 truncate">
-                      Sets — {playerName(resultModal.playerB)}
-                    </label>
-                    <input
-                      type="number" min="0" className="input"
-                      value={resSetsB} onChange={e => setResSetsB(e.target.value)}
-                      required placeholder="0"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">
-                      Puntos A
-                    </label>
-                    <input
-                      type="number" min="0" className="input"
-                      value={resPtsA} onChange={e => setResPtsA(e.target.value)}
-                      placeholder="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">
-                      Puntos B
-                    </label>
-                    <input
-                      type="number" min="0" className="input"
-                      value={resPtsB} onChange={e => setResPtsB(e.target.value)}
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-
-            <div className="flex gap-3 pt-2">
-              <button type="submit" className="btn-primary flex-1" disabled={resSaving}>
-                {resSaving ? 'Guardando...' : '✅ Guardar resultado'}
-              </button>
-              <button type="button" className="btn-secondary flex-1" onClick={() => setResultModal(null)}>
-                Cancelar
-              </button>
+              <p className="text-chalk/30 font-mono text-xl">sets</p>
+              <div className="text-center">
+                <p className="text-chalk/50 text-xs truncate max-w-[80px]">{nameB}</p>
+                <p className="font-display text-4xl text-gold">{winsB}</p>
+              </div>
             </div>
-          </form>
-        </Modal>
-      )}
+
+            <form onSubmit={handleCloseMatch} className="space-y-4">
+              {/* W.O. toggle */}
+              <div className="flex items-center gap-3 bg-felt-dark/50 rounded-lg px-3 py-2">
+                <input type="checkbox" id="isWO2" checked={isWO} onChange={e => setIsWO(e.target.checked)} className="w-4 h-4 accent-gold" />
+                <label htmlFor="isWO2" className="text-chalk/80 text-sm font-medium cursor-pointer">Marcar como W.O. (ausente)</label>
+              </div>
+
+              {isWO ? (
+                <div>
+                  <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Jugador ausente</label>
+                  <select className="input" value={woPlayerId} onChange={e => setWoPlayerId(e.target.value)} required>
+                    <option value="">Seleccionar</option>
+                    <option value={resultModal.playerAId ?? ''}>{playerName(resultModal.playerA)}</option>
+                    <option value={resultModal.playerBId ?? ''}>{playerName(resultModal.playerB)}</option>
+                  </select>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-7 gap-2 text-center">
+                    <p className="col-span-2 text-chalk/60 text-xs uppercase tracking-widest truncate">{nameA}</p>
+                    <p className="col-span-1 text-chalk/30 text-xs uppercase tracking-widest">Set</p>
+                    <p className="col-span-2 text-chalk/60 text-xs uppercase tracking-widest truncate">{nameB}</p>
+                    <p className="col-span-2"></p>
+                  </div>
+
+                  {sets.map((s, i) => {
+                    const winner = calcSetWinner(s.a, s.b, pointsPerSet);
+                    const isSaving = savingSet === i;
+                    return (
+                      <div key={i} className={`grid grid-cols-7 gap-2 items-center rounded-lg px-2 py-1 ${s.saved ? 'bg-gold/10' : 'bg-felt-dark/30'}`}>
+                        <input
+                          type="number" min="0"
+                          className={`col-span-2 input text-center font-mono text-lg ${winner === 'a' ? 'border-gold/50' : ''}`}
+                          value={s.a} onChange={e => updateSet(i, 'a', e.target.value)}
+                          disabled={s.saved} placeholder="0"
+                        />
+                        <div className="col-span-1 text-center">
+                          <span className="text-chalk/40 font-mono text-sm">{i + 1}</span>
+                          {winner && s.saved && <span className="ml-1 text-xs text-gold">{winner === 'a' ? '←' : '→'}</span>}
+                        </div>
+                        <input
+                          type="number" min="0"
+                          className={`col-span-2 input text-center font-mono text-lg ${winner === 'b' ? 'border-gold/50' : ''}`}
+                          value={s.b} onChange={e => updateSet(i, 'b', e.target.value)}
+                          disabled={s.saved} placeholder="0"
+                        />
+                        <div className="col-span-2">
+                          {!s.saved ? (
+                            <button type="button" className="btn-primary text-xs py-1 w-full" onClick={() => handleSaveSet(i)} disabled={isSaving || !s.a || !s.b}>
+                              {isSaving ? '...' : '✓ Set'}
+                            </button>
+                          ) : (
+                            <span className="text-green-400 text-xs text-center block">✓</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  <p className="text-chalk/30 text-xs text-center font-mono">
+                    El ganador del set debe llegar a {pointsPerSet} tantos
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Notas (opcional)</label>
+                <input className="input" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Observaciones..." />
+              </div>
+
+              {resError && <p className="text-red-400 text-sm">{resError}</p>}
+
+              <div className="flex gap-3 pt-2">
+                <button type="submit" className="btn-primary flex-1" disabled={resSaving || (!isWO && !matchHasWinner)}>
+                  {resSaving ? 'Cerrando...' : matchHasWinner || isWO ? '✓ Cerrar Partido' : 'Partido en curso...'}
+                </button>
+                <button type="button" className="btn-secondary flex-1" onClick={() => setResultModal(null)}>Cerrar</button>
+              </div>
+            </form>
+          </Modal>
+        );
+      })()}
     </div>
   );
 }
