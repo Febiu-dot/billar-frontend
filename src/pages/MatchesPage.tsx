@@ -17,12 +17,10 @@ export default function MatchesPage() {
   const [filterTournament, setFilterTournament] = useState('');
   const [filterCircuit, setFilterCircuit]       = useState('');
 
-  // Modal asignar mesa
   const [assignModal, setAssignModal]   = useState<Match | null>(null);
   const [selectedTable, setSelectedTable] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Modal cargar resultado
   const [resultModal, setResultModal]   = useState<Match | null>(null);
   const [resWinnerId, setResWinnerId]   = useState('');
   const [resSetsA, setResSetsA]         = useState('');
@@ -33,13 +31,11 @@ export default function MatchesPage() {
   const [resWOPlayer, setResWOPlayer]   = useState('');
   const [resSaving, setResSaving]       = useState(false);
 
-  // Refs para que el socket handler use siempre los valores actuales
   const filterCircuitRef    = useRef(filterCircuit);
   const filterTournamentRef = useRef(filterTournament);
   useEffect(() => { filterCircuitRef.current    = filterCircuit; },    [filterCircuit]);
   useEffect(() => { filterTournamentRef.current = filterTournament; }, [filterTournament]);
 
-  // ── Fetch partidos con filtro correcto ────────────────────────────
   const fetchMatches = useCallback((circuitId?: string, tournamentId?: string) => {
     const params = new URLSearchParams();
     if (circuitId && circuitId !== '') {
@@ -52,7 +48,6 @@ export default function MatchesPage() {
 
   const fetchTables = () => api.get('/tables').then(r => setTables(r.data));
 
-  // Carga inicial: sin filtro
   useEffect(() => {
     Promise.all([
       fetchMatches(),
@@ -61,7 +56,6 @@ export default function MatchesPage() {
       api.get('/circuits').then(r => setCircuits(r.data)),
     ]).finally(() => setLoading(false));
 
-    // Socket: usar refs para tener siempre los valores actuales
     const onMatchUpdated = () => fetchMatches(filterCircuitRef.current, filterTournamentRef.current);
     const onTableUpdated = () => fetchTables();
 
@@ -73,7 +67,6 @@ export default function MatchesPage() {
     };
   }, [fetchMatches]);
 
-  // ── Handlers de filtros ───────────────────────────────────────────
   const handleTournamentChange = (tournamentId: string) => {
     setFilterTournament(tournamentId);
     setFilterCircuit('');
@@ -91,7 +84,6 @@ export default function MatchesPage() {
     ? circuits.filter(c => c.tournamentId === Number(filterTournament))
     : circuits;
 
-  // ── Asignar mesa ──────────────────────────────────────────────────
   const handleAssign = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!assignModal) return;
@@ -117,7 +109,6 @@ export default function MatchesPage() {
     fetchMatches(filterCircuit, filterTournament);
   };
 
-  // ── Abrir modal de resultado ──────────────────────────────────────
   const openResultModal = (match: Match) => {
     setResultModal(match);
     setResWinnerId('');
@@ -129,7 +120,6 @@ export default function MatchesPage() {
     setResWOPlayer('');
   };
 
-  // ── Cargar resultado ──────────────────────────────────────────────
   const handleCargarResultado = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resultModal) return;
@@ -139,14 +129,12 @@ export default function MatchesPage() {
       const setsToWin = ruleSet?.setsToWin ?? 2;
 
       if (resIsWO) {
-        // WO
         if (!resWOPlayer) { alert('Seleccioná el jugador ausente (WO)'); setResSaving(false); return; }
         await api.put(`/matches/${resultModal.id}/result`, {
           setsA: 0, setsB: 0, pointsA: 0, pointsB: 0,
           isWO: true, woPlayerId: Number(resWOPlayer),
         });
       } else {
-        // Resultado normal
         const sA = Number(resSetsA); const sB = Number(resSetsB);
         const pA = Number(resPtsA);  const pB = Number(resPtsB);
         if (sA < setsToWin && sB < setsToWin) {
@@ -165,7 +153,6 @@ export default function MatchesPage() {
     } finally { setResSaving(false); }
   };
 
-  // ── Filtrado local por estado ─────────────────────────────────────
   const statusOrder: MatchStatus[] = ['en_juego', 'asignado', 'pendiente', 'finalizado', 'wo'];
   const statuses: (MatchStatus | '')[] = ['', 'pendiente', 'asignado', 'en_juego', 'finalizado', 'wo'];
   const statusLabels: Record<string, string> = {
@@ -190,7 +177,6 @@ export default function MatchesPage() {
 
       <div className="p-6 space-y-4">
 
-        {/* Filtros torneo / circuito */}
         <div className="flex flex-wrap gap-3 items-center">
           <select
             className="input w-56"
@@ -216,7 +202,6 @@ export default function MatchesPage() {
           </select>
         </div>
 
-        {/* Filtros de estado */}
         <div className="flex flex-wrap gap-2">
           {statuses.map(s => {
             const count = s === '' ? filtered.length : matches.filter(m => m.status === s).length;
@@ -378,14 +363,13 @@ export default function MatchesPage() {
             </p>
             {(resultModal as any).ruleSet && (
               <p className="text-chalk/40 text-xs font-mono">
-                Formato: {(resultModal as any).ruleSet.setsToWin} sets para ganar
+                Formato: al mejor de {(resultModal as any).ruleSet.bestOf} sets · {(resultModal as any).ruleSet.pointsPerSet} tantos por set
               </p>
             )}
           </div>
 
           <form onSubmit={handleCargarResultado} className="space-y-4">
 
-            {/* WO toggle */}
             <div className="flex items-center gap-3 bg-felt-dark/50 rounded-lg px-3 py-2">
               <input
                 type="checkbox"
@@ -398,7 +382,6 @@ export default function MatchesPage() {
             </div>
 
             {resIsWO ? (
-              /* WO: seleccionar jugador ausente */
               <div>
                 <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Jugador ausente</label>
                 <select className="input" value={resWOPlayer} onChange={e => setResWOPlayer(e.target.value)} required>
@@ -416,7 +399,6 @@ export default function MatchesPage() {
                 </select>
               </div>
             ) : (
-              /* Resultado normal */
               <>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -424,7 +406,7 @@ export default function MatchesPage() {
                       Sets — {playerName(resultModal.playerA)}
                     </label>
                     <input
-                      type="number" min="0" max="5" className="input"
+                      type="number" min="0" className="input"
                       value={resSetsA} onChange={e => setResSetsA(e.target.value)}
                       required placeholder="0"
                     />
@@ -434,7 +416,7 @@ export default function MatchesPage() {
                       Sets — {playerName(resultModal.playerB)}
                     </label>
                     <input
-                      type="number" min="0" max="5" className="input"
+                      type="number" min="0" className="input"
                       value={resSetsB} onChange={e => setResSetsB(e.target.value)}
                       required placeholder="0"
                     />
