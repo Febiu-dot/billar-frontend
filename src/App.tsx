@@ -63,6 +63,8 @@ function AppRoutes() {
         <Route path="ranking-final"   element={<RankingFinalPage />} />
         <Route path="publicaciones"   element={<AdminPublicacionesPage />} />
         <Route path="config-torneo"   element={<ConfigTorneoPage />} />
+        <Route path="config-torneo"   element={<ConfigTorneoPage />} />
+<Route path="ranking-carga"   element={<RankingCargaPage />} />
       </Route>
 
       {/* Juez */}
@@ -82,3 +84,4 @@ export default function App() {
     </AuthProvider>
   );
 }
+import RankingCargaPage from './pages/RankingCargaPage';
