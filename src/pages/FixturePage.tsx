@@ -63,6 +63,10 @@ export default function FixturePage() {
   const [tError, setTError] = useState('');
 
   const [circuitModal, setCircuitModal] = useState<Tournament | null>(null);
+  const [editCircuitModal, setEditCircuitModal] = useState<Circuit | null>(null);
+  const [ecForm, setEcForm] = useState({ name: '', order: '1', startDate: '', endDate: '' });
+  const [ecSaving, setEcSaving] = useState(false);
+  const [ecError, setEcError] = useState('');
   const [cForm, setCForm] = useState({ name: '', order: '1', startDate: '', endDate: '' });
   const [cSaving, setCSaving] = useState(false);
   const [cError, setCError] = useState('');
@@ -159,8 +163,36 @@ export default function FixturePage() {
     catch (err: any) { alert(err?.response?.data?.error ?? 'Error al eliminar el torneo'); }
   };
 
-  const openAddCircuit = (t: Tournament) => {
-    setCircuitModal(t);
+  const openEditCircuit = (circuit: Circuit) => {
+    setEditCircuitModal(circuit);
+    setEcForm({
+      name:      circuit.name,
+      order:     String(circuit.order ?? 1),
+      startDate: circuit.startDate ? new Date(circuit.startDate).toISOString().split('T')[0] : '',
+      endDate:   circuit.endDate   ? new Date(circuit.endDate).toISOString().split('T')[0]   : '',
+    });
+    setEcError('');
+  };
+
+  const handleEditCircuit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editCircuitModal) return;
+    setEcSaving(true); setEcError('');
+    try {
+      await api.put(`/tournaments/circuits/${editCircuitModal.id}`, {
+        name:      ecForm.name,
+        order:     Number(ecForm.order),
+        startDate: ecForm.startDate || undefined,
+        endDate:   ecForm.endDate   || undefined,
+      });
+      setEditCircuitModal(null);
+      refreshSelected();
+    } catch (err: any) {
+      setEcError(err?.response?.data?.error ?? 'Error al editar el circuito');
+    } finally { setEcSaving(false); }
+  };
+
+  const openAddCircuit = (t: Tournament) => {    setCircuitModal(t);
     const nextOrder = (t.circuits?.length ?? 0) + 1;
     setCForm({ name: `Circuito ${nextOrder}`, order: nextOrder.toString(), startDate: '', endDate: '' });
     setCError('');
@@ -255,7 +287,7 @@ export default function FixturePage() {
     if (!confirm(`⚠️ ¿Limpiar el circuito "${circuit.name}"?\n\nEsto borrará TODOS los partidos y resultados.\nSe mantendrán los jugadores inscriptos y la configuración.\n\nEsta acción no se puede deshacer.`)) return;
     setReseteando(circuit.id);
     try {
-      const res = await api.delete(`/circuits/${circuit.id}/reset`);
+      const res = await api.post(`/circuits/${circuit.id}/reset`);
       alert(`✅ ${res.data.message}`);
       refreshSelected();
     } catch (err: any) {
@@ -421,6 +453,12 @@ export default function FixturePage() {
                               {previewLoading === circuit.id ? 'Cargando...' : generando === circuit.id ? 'Generando...' : '⚡ Generar partidos'}
                             </button>
                             <button className="btn-primary py-1 px-3 text-xs" onClick={() => openAddPhase(circuit)}>+ Fase</button>
+                            <button
+                              className="py-1 px-3 text-xs rounded-lg border border-chalk/20 text-chalk/50 hover:border-chalk/40 transition-all"
+                              onClick={() => openEditCircuit(circuit)}
+                            >
+                              ✏️ Editar
+                            </button>
                             <button className="py-1 px-3 text-xs rounded-lg border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all" onClick={() => handleDeleteCircuit(circuit)}>Eliminar</button>
                           </>
                         )}
@@ -543,6 +581,37 @@ export default function FixturePage() {
             <div className="flex gap-3 pt-2">
               <button type="submit" className="btn-primary flex-1" disabled={cSaving}>{cSaving ? 'Guardando...' : 'Crear Circuito'}</button>
               <button type="button" className="btn-secondary flex-1" onClick={() => setCircuitModal(null)}>Cancelar</button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Edit circuit modal */}
+      {editCircuitModal && (
+        <Modal title="EDITAR CIRCUITO" onClose={() => setEditCircuitModal(null)}>
+          <form onSubmit={handleEditCircuit} className="space-y-4">
+            <div>
+              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Nombre *</label>
+              <input className="input" value={ecForm.name} onChange={e => setEcForm({ ...ecForm, name: e.target.value })} required />
+            </div>
+            <div>
+              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Orden *</label>
+              <input type="number" min="1" className="input" value={ecForm.order} onChange={e => setEcForm({ ...ecForm, order: e.target.value })} required />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Fecha inicio</label>
+                <input type="date" className="input" value={ecForm.startDate} onChange={e => setEcForm({ ...ecForm, startDate: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Fecha fin</label>
+                <input type="date" className="input" value={ecForm.endDate} onChange={e => setEcForm({ ...ecForm, endDate: e.target.value })} />
+              </div>
+            </div>
+            {ecError && <p className="text-red-400 text-sm">{ecError}</p>}
+            <div className="flex gap-3 pt-2">
+              <button type="submit" className="btn-primary flex-1" disabled={ecSaving}>{ecSaving ? 'Guardando...' : 'Guardar'}</button>
+              <button type="button" className="btn-secondary flex-1" onClick={() => setEditCircuitModal(null)}>Cancelar</button>
             </div>
           </form>
         </Modal>
