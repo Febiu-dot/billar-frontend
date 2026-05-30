@@ -278,10 +278,25 @@ export default function CrucesPage() {
               <p className="text-chalk/50 text-xs uppercase tracking-widest">Acciones manuales</p>
               <div className="flex gap-2 flex-wrap">
                 {esNacional ? (
-                  <button className="btn-secondary text-xs py-1 px-3" disabled={disparando}
-                    onClick={() => disparar('trigger-nac-bracket', getPhaseId('clasificatorio'))}>
-                    ⚡ Seedear bracket (cuando terminan las series)
-                  </button>
+  <>
+    <button className="btn-primary text-xs py-1 px-3" disabled={disparando}
+      onClick={async () => {
+        setDisparando(true); setDisparoMsg('');
+        try {
+          const res = await api.post(`/matches/generar-bracket-nacional/${selectedCircuit}`);
+          setDisparoMsg(`✅ ${res.data.message}`);
+          await handleCircuitChange(selectedCircuit);
+        } catch (err: any) {
+          setDisparoMsg(`❌ ${err?.response?.data?.error ?? 'Error'}`);
+        } finally { setDisparando(false); }
+      }}>
+      🏆 Generar bracket desde resultados de series
+    </button>
+    <button className="btn-secondary text-xs py-1 px-3" disabled={disparando}
+      onClick={() => disparar('trigger-nac-bracket', getPhaseId('clasificatorio'))}>
+      ⚡ Seedear bracket manual
+    </button>
+  </>
                 ) : (
                   <>
                     <button className="btn-secondary text-xs py-1 px-2" disabled={disparando}
