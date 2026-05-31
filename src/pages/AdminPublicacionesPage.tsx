@@ -13,18 +13,18 @@ const abrevClub = (club?: string) =>
   club ? (CLUB_ABREV[club.toUpperCase()] ?? club.slice(0, 3).toUpperCase()) : '';
 
 const TEMAS: Record<string, { header: string; accent: string; light: string; badge: string }> = {
-  clasificatorio: { header: '#1a5c2a', accent: '#2d8a3e', light: '#edf7ef', badge: '#1a5c2a' },
-  reduccion:      { header: '#1a5c2a', accent: '#388e3c', light: '#f1f8e9', badge: '#1a5c2a' },
-  segunda:        { header: '#b83c00', accent: '#e64a19', light: '#fff4f0', badge: '#b83c00' },
-  primera:        { header: '#014f86', accent: '#0277bd', light: '#e8f4fd', badge: '#014f86' },
-  master:         { header: '#4a1070', accent: '#7b1fa2', light: '#f5eef8', badge: '#4a1070' },
-  ranking:        { header: '#7c4d00', accent: '#b8860b', light: '#fffbf0', badge: '#7c4d00' },
-  'ranking-final':{ header: '#1a3560', accent: '#1e40af', light: '#eff6ff', badge: '#1a3560' },
-  acumulado:      { header: '#1a3a5c', accent: '#1565c0', light: '#e8f0fe', badge: '#1a3a5c' },
+  clasificatorio:   { header: '#1a5c2a', accent: '#2d8a3e', light: '#edf7ef', badge: '#1a5c2a' },
+  reduccion:        { header: '#1a5c2a', accent: '#388e3c', light: '#f1f8e9', badge: '#1a5c2a' },
+  segunda:          { header: '#b83c00', accent: '#e64a19', light: '#fff4f0', badge: '#b83c00' },
+  primera:          { header: '#014f86', accent: '#0277bd', light: '#e8f4fd', badge: '#014f86' },
+  master:           { header: '#4a1070', accent: '#7b1fa2', light: '#f5eef8', badge: '#4a1070' },
+  ranking:          { header: '#7c4d00', accent: '#b8860b', light: '#fffbf0', badge: '#7c4d00' },
+  'ranking-final':  { header: '#1a3560', accent: '#1e40af', light: '#eff6ff', badge: '#1a3560' },
+  acumulado:        { header: '#1a3a5c', accent: '#1565c0', light: '#e8f0fe', badge: '#1a3a5c' },
+  'series-nacional':{ header: '#1a5c2a', accent: '#2d8a3e', light: '#edf7ef', badge: '#1a5c2a' },
+  'bracket-nacional':{ header: '#135c1a', accent: '#f5d020', light: '#fffde7', badge: '#135c1a' },
 };
 
-// ── Colores por sección del ranking ──────────────────────────────────
-// MÁSTER=morado, PRIMERA=azul, SEGUNDA=naranja, TERCERA=verde
 const SECCION_COLORES: Record<string, { bg: string; badge: string; light: string }> = {
   'MÁSTER':  { bg: '#4a1070', badge: '#7b1fa2', light: '#f5eef8' },
   'PRIMERA': { bg: '#014f86', badge: '#0277bd', light: '#e8f4fd' },
@@ -32,8 +32,6 @@ const SECCION_COLORES: Record<string, { bg: string; badge: string; light: string
   'TERCERA': { bg: '#1a5c2a', badge: '#2d8a3e', light: '#edf7ef' },
 };
 
-// ── Colores por categoría individual (series/cruces) ─────────────────
-// MÁSTER=morado, PRIMERA=azul, SEGUNDA=naranja, TERCERA=verde
 const getCatColor = (categoria: string | null): { text: string; badge: string; light: string } => {
   const c = categoria?.toLowerCase();
   if (c === 'master')  return { text: '#4a1070', badge: '#4a1070', light: '#f5eef8' };
@@ -43,7 +41,6 @@ const getCatColor = (categoria: string | null): { text: string; badge: string; l
   return { text: '#999', badge: '#aaa', light: '#f5f5f5' };
 };
 
-// Convierte nombre de sección a color (para ranking) 
 const getSeccionColor = (seccion: string): { text: string; badge: string; light: string } => {
   const s = SECCION_COLORES[seccion];
   if (!s) return { text: '#999', badge: '#aaa', light: '#f5f5f5' };
@@ -51,14 +48,16 @@ const getSeccionColor = (seccion: string): { text: string; badge: string; light:
 };
 
 const FASES = [
-  { value: 'clasificatorio', label: '🟢 Series Clasificatorio' },
-  { value: 'reduccion',      label: '🟢 Reducción Clasificatorio' },
-  { value: 'segunda',        label: '🟠 Series Segunda' },
-  { value: 'primera',        label: '🔵 Cruces Primera' },
-  { value: 'master',         label: '🟣 Fase Máster' },
-  { value: 'ranking',        label: '🏅 Ranking del Circuito' },
-  { value: 'ranking-final',  label: '🏆 Ranking Final' },
-  { value: 'acumulado',      label: '📊 Ranking Acumulado' },
+  { value: 'clasificatorio',    label: '🟢 Series Clasificatorio' },
+  { value: 'reduccion',         label: '🟢 Reducción Clasificatorio' },
+  { value: 'segunda',           label: '🟠 Series Segunda' },
+  { value: 'primera',           label: '🔵 Cruces Primera' },
+  { value: 'master',            label: '🟣 Fase Máster' },
+  { value: 'ranking',           label: '🏅 Ranking del Circuito' },
+  { value: 'ranking-final',     label: '🏆 Ranking Final' },
+  { value: 'acumulado',         label: '📊 Ranking Acumulado' },
+  { value: 'series-nacional',   label: '🎱 Series Nacional' },
+  { value: 'bracket-nacional',  label: '🏟 Bracket Nacional' },
 ];
 
 const F = 'Arial, Helvetica, sans-serif';
@@ -73,6 +72,7 @@ const cargarHtml2Canvas = (): Promise<any> =>
     document.head.appendChild(script);
   });
 
+// ── Componentes base ──────────────────────────────────────────────────
 function PubHeader({ data, tema }: { data: any; tema: any }) {
   return (
     <div style={{ background: tema.header, padding: '36px 50px 32px', display: 'flex', alignItems: 'center', gap: 36, fontFamily: F }}>
@@ -81,18 +81,10 @@ function PubHeader({ data, tema }: { data: any; tema: any }) {
       </div>
       <div style={{ flex: 1, textAlign: 'center', color: '#fff' }}>
         <div style={{ fontSize: 38, fontWeight: 900, letterSpacing: 3, textTransform: 'uppercase', lineHeight: 1.1 }}>{data.torneo}</div>
-        <div style={{ fontSize: 22, fontWeight: 600, marginTop: 6, letterSpacing: 2, opacity: 0.9 }}>
-          FEBIU · TEMPORADA {data.temporada}
-        </div>
+        <div style={{ fontSize: 22, fontWeight: 600, marginTop: 6, letterSpacing: 2, opacity: 0.9 }}>FEBIU · TEMPORADA {data.temporada}</div>
         <div style={{ fontSize: 32, fontWeight: 900, marginTop: 16, letterSpacing: 4, textTransform: 'uppercase', lineHeight: 1.1 }}>{data.fase}</div>
-        {data.fechaPrincipal && (
-          <div style={{ fontSize: 20, marginTop: 8, opacity: 0.9, textTransform: 'uppercase', letterSpacing: 1 }}>{data.fechaPrincipal}</div>
-        )}
-        {data.formato && (
-          <div style={{ marginTop: 14, background: 'rgba(255,255,255,0.2)', borderRadius: 6, padding: '8px 24px', display: 'inline-block', fontSize: 20, fontWeight: 700, letterSpacing: 2 }}>
-            PARTIDAS A {data.formato.toUpperCase()}
-          </div>
-        )}
+        {data.fechaPrincipal && <div style={{ fontSize: 20, marginTop: 8, opacity: 0.9, textTransform: 'uppercase', letterSpacing: 1 }}>{data.fechaPrincipal}</div>}
+        {data.formato && <div style={{ marginTop: 14, background: 'rgba(255,255,255,0.2)', borderRadius: 6, padding: '8px 24px', display: 'inline-block', fontSize: 20, fontWeight: 700, letterSpacing: 2 }}>PARTIDAS A {data.formato.toUpperCase()}</div>}
       </div>
     </div>
   );
@@ -100,11 +92,7 @@ function PubHeader({ data, tema }: { data: any; tema: any }) {
 
 function PubFooter({ notas, tema }: { notas: string; tema: any }) {
   if (!notas.trim()) return null;
-  return (
-    <div style={{ background: tema.light, borderTop: `4px solid ${tema.accent}`, padding: '20px 40px', fontSize: 20, color: tema.header, fontWeight: 600, lineHeight: 1.6, fontFamily: F }}>
-      {notas}
-    </div>
-  );
+  return <div style={{ background: tema.light, borderTop: `4px solid ${tema.accent}`, padding: '20px 40px', fontSize: 20, color: tema.header, fontWeight: 600, lineHeight: 1.6, fontFamily: F }}>{notas}</div>;
 }
 
 function JRow({ j, tema, border }: { j: any; tema: any; border?: boolean }) {
@@ -112,20 +100,12 @@ function JRow({ j, tema, border }: { j: any; tema: any; border?: boolean }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', gap: 10, borderBottom: border ? `1px solid ${tema.light}` : 'none', minHeight: 48, fontFamily: F }}>
       {!j.esSlot && j.ranking !== null ? (
-        <div style={{ width: 40, height: 32, background: cat.badge, color: '#fff', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 900, flexShrink: 0 }}>
-          {j.ranking}
-        </div>
+        <div style={{ width: 40, height: 32, background: cat.badge, color: '#fff', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 900, flexShrink: 0 }}>{j.ranking}</div>
       ) : (
         <div style={{ width: 40, height: 32, background: '#e0e0e0', color: '#888', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, flexShrink: 0 }}>—</div>
       )}
-      <div style={{ flex: 1, fontSize: 20, fontWeight: j.esSlot ? 400 : 700, color: j.esSlot ? '#aaa' : cat.text, fontStyle: j.esSlot ? 'italic' : 'normal', wordBreak: 'break-word' }}>
-        {j.nombre}
-      </div>
-      {j.club && (
-        <div style={{ background: j.esSlot ? '#aaa' : cat.badge, color: '#fff', padding: '4px 10px', borderRadius: 4, fontSize: 16, fontWeight: 800, flexShrink: 0, letterSpacing: 1 }}>
-          {j.club}
-        </div>
-      )}
+      <div style={{ flex: 1, fontSize: 20, fontWeight: j.esSlot ? 400 : 700, color: j.esSlot ? '#aaa' : cat.text, fontStyle: j.esSlot ? 'italic' : 'normal', wordBreak: 'break-word' }}>{j.nombre}</div>
+      {j.club && <div style={{ background: j.esSlot ? '#aaa' : cat.badge, color: '#fff', padding: '4px 10px', borderRadius: 4, fontSize: 16, fontWeight: 800, flexShrink: 0, letterSpacing: 1 }}>{j.club}</div>}
     </div>
   );
 }
@@ -142,6 +122,7 @@ function InfoPartido({ p, tema, label }: { p: any; tema: any; label: string }) {
   );
 }
 
+// ── Plantilla Series Departamental ────────────────────────────────────
 function PlantillaSeries({ data, tema }: { data: any; tema: any }) {
   const series: any[] = data.series ?? [];
   const pares: any[][] = [];
@@ -230,10 +211,7 @@ function PlantillaRanking({ data, tema }: { data: any; tema: any }) {
   const jugadores: any[] = data.jugadores ?? [];
   const secciones = ['MÁSTER', 'PRIMERA', 'SEGUNDA', 'TERCERA'];
   const porSeccion: Record<string, any[]> = {};
-  for (const j of jugadores) {
-    if (!porSeccion[j.seccion]) porSeccion[j.seccion] = [];
-    porSeccion[j.seccion].push(j);
-  }
+  for (const j of jugadores) { if (!porSeccion[j.seccion]) porSeccion[j.seccion] = []; porSeccion[j.seccion].push(j); }
   return (
     <div style={{ padding: '20px 24px', background: '#f8f8f8', fontFamily: F }}>
       {secciones.filter(s => porSeccion[s]?.length > 0).map(seccion => {
@@ -258,19 +236,12 @@ function PlantillaRanking({ data, tema }: { data: any; tema: any }) {
                     <span style={{ width: 44, fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'right' }}>Pts</span>
                   </div>
                   {col.map((j: any, idx: number) => {
-                    // ── FIX: usar color de SECCIÓN, no de categoría individual ──
-                    // Esto garantiza que PRIMERA=azul, SEGUNDA=naranja, etc.
-                    // independientemente de la categoría DB del jugador
                     const catColor = getSeccionColor(j.seccion);
                     return (
-                      <div key={j.posicion} style={{ display: 'flex', alignItems: 'center', padding: '8px 10px', gap: 8, background: idx % 2 === 0 ? catColor.light : '#fff', borderBottom: `1px solid #eee` }}>
-                        <div style={{ width: 44, height: 30, borderRadius: 4, flexShrink: 0, background: catColor.badge, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900 }}>
-                          {j.posicion}
-                        </div>
+                      <div key={j.posicion} style={{ display: 'flex', alignItems: 'center', padding: '8px 10px', gap: 8, background: idx % 2 === 0 ? catColor.light : '#fff', borderBottom: '1px solid #eee' }}>
+                        <div style={{ width: 44, height: 30, borderRadius: 4, flexShrink: 0, background: catColor.badge, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900 }}>{j.posicion}</div>
                         <div style={{ flex: 1, fontSize: 18, fontWeight: 700, color: catColor.text, wordBreak: 'break-word', lineHeight: 1.2 }}>{j.nombre}</div>
-                        {j.club && (
-                          <div style={{ width: 40, background: catColor.badge, color: '#fff', padding: '3px 4px', borderRadius: 3, fontSize: 13, fontWeight: 800, textAlign: 'center', flexShrink: 0 }}>{j.club}</div>
-                        )}
+                        {j.club && <div style={{ width: 40, background: catColor.badge, color: '#fff', padding: '3px 4px', borderRadius: 3, fontSize: 13, fontWeight: 800, textAlign: 'center', flexShrink: 0 }}>{j.club}</div>}
                         <div style={{ width: 44, fontSize: 17, fontWeight: 900, color: catColor.text, textAlign: 'right', flexShrink: 0 }}>{j.puntos}</div>
                       </div>
                     );
@@ -288,33 +259,322 @@ function PlantillaRanking({ data, tema }: { data: any; tema: any }) {
   );
 }
 
-function PubContenido({ data, tema, notas }: { data: any; tema: any; notas: string }) {
+// ── Plantilla Series Nacional ─────────────────────────────────────────
+function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
+  const series: any[] = data.series ?? [];
+  const VERDE = tema.header;
+  const ACENTO = tema.accent;
+  const LIGHT = tema.light;
+  const F2 = F;
+
+  const mkRow = (jugador: any, isWinner: boolean) => (
+    <div style={{ display: 'flex', alignItems: 'center', padding: '7px 10px', gap: 8, background: isWinner ? '#d4edda' : 'transparent' }}>
+      {jugador.ranking !== null ? (
+        <div style={{ width: 32, height: 26, background: isWinner ? '#166a1e' : '#888', color: '#fff', borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 900, flexShrink: 0 }}>{jugador.ranking}</div>
+      ) : (
+        <div style={{ width: 32, height: 26, background: '#ccc', borderRadius: 3, flexShrink: 0 }} />
+      )}
+      <div style={{ flex: 1, fontSize: 16, fontWeight: isWinner ? 800 : 500, color: isWinner ? '#135c1a' : '#333', wordBreak: 'break-word', lineHeight: 1.2, fontFamily: F2 }}>
+        {jugador.esSlot ? <span style={{ color: '#aaa', fontStyle: 'italic' }}>{jugador.nombre}</span> : jugador.nombre}
+      </div>
+      {jugador.club && !jugador.esSlot && (
+        <div style={{ background: isWinner ? '#166a1e' : '#888', color: '#fff', padding: '2px 6px', borderRadius: 3, fontSize: 13, fontWeight: 800, flexShrink: 0 }}>{jugador.club}</div>
+      )}
+    </div>
+  );
+
+  const PartidoRow = ({ p, label }: { p: any; label: string }) => {
+    if (!p) return null;
+    const winA = p.resultado && p.resultado.split('-')[0] > p.resultado.split('-')[1];
+    const winB = p.resultado && p.resultado.split('-')[1] > p.resultado.split('-')[0];
+    return (
+      <div style={{ borderTop: `1px solid ${LIGHT}`, fontFamily: F2 }}>
+        <div style={{ background: VERDE, color: '#fff', padding: '5px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13 }}>
+          <span style={{ fontWeight: 700, opacity: 0.85 }}>{label}</span>
+          <span style={{ fontSize: 12, opacity: 0.7 }}>{p.hora ? `🕐 ${p.hora}` : ''} {p.sede ? `📍 ${p.sede}` : ''}</span>
+          {p.resultado && <span style={{ fontWeight: 900, background: 'rgba(255,255,255,0.25)', padding: '1px 8px', borderRadius: 3, fontSize: 15 }}>{p.resultado}</span>}
+        </div>
+        {mkRow(p.jugadorA, winA)}<div style={{ height: 1, background: LIGHT }} />{mkRow(p.jugadorB, winB)}
+      </div>
+    );
+  };
+
+  const pares: any[][] = [];
+  for (let i = 0; i < series.length; i += 2) pares.push([series[i], series[i + 1] ?? null]);
+
+  return (
+    <div style={{ padding: '16px 20px', background: '#f5f5f5', fontFamily: F }}>
+      {pares.map((par, pi) => (
+        <div key={pi} style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+          {par.map((s, si) => s ? (
+            <div key={si} style={{ flex: 1, border: `2px solid ${ACENTO}`, borderRadius: 8, background: '#fff', overflow: 'hidden', boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }}>
+              {/* Serie header */}
+              <div style={{ background: ACENTO, color: '#fff', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 20, fontWeight: 900, letterSpacing: 2 }}>SERIE {s.numero}</span>
+                {s.completa && <span style={{ background: 'rgba(255,255,255,0.3)', padding: '2px 10px', borderRadius: 4, fontSize: 13, fontWeight: 700 }}>✓ COMPLETA</span>}
+              </div>
+              {/* Partidos */}
+              <PartidoRow p={s.p1} label="P1 — Partido 1" />
+              <PartidoRow p={s.p2} label="P2 — Partido 2" />
+              <PartidoRow p={s.p3} label="P3 — Por el 1°" />
+              <PartidoRow p={s.p4} label="P4 — Por el 4°" />
+              <PartidoRow p={s.p5} label="P5 — Por el 2° y 3°" />
+              {/* Clasificación final si está completa */}
+              {s.completa && (
+                <div style={{ background: LIGHT, borderTop: `2px solid ${ACENTO}`, padding: '8px 12px' }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: VERDE, marginBottom: 4 }}>CLASIFICACIÓN FINAL</div>
+                  {[['🥇 1°', s.primero], ['🥈 2°', s.segundo], ['🥉 3°', s.tercero], ['4°', s.cuarto]].map(([lbl, jug]: any) =>
+                    jug ? (
+                      <div key={lbl} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 14, marginBottom: 2 }}>
+                        <span style={{ width: 28, fontWeight: 700 }}>{lbl}</span>
+                        <span style={{ fontWeight: 600 }}>{jug.nombre}</span>
+                        {jug.ranking && <span style={{ background: ACENTO, color: '#fff', padding: '1px 6px', borderRadius: 3, fontSize: 12, fontWeight: 800 }}>#{jug.ranking}</span>}
+                      </div>
+                    ) : null
+                  )}
+                </div>
+              )}
+            </div>
+          ) : <div key={si} style={{ flex: 1 }} />)}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Plantilla Bracket Nacional ────────────────────────────────────────
+function PlantillaBracketNacional({ data, sala, fechaBracket }: { data: any; sala: string; fechaBracket: string }) {
+  const oct  = data.octavos ?? Array(8).fill(null);
+  const cua  = data.cuartos ?? Array(4).fill(null);
+  const sem  = data.semis   ?? Array(2).fill(null);
+  const fin  = data.final;
+  const camp = data.campeon;
+
+  const VERDE  = '#135c1a';
+  const VERDE2 = '#1a7528';
+  const GOLD   = '#f5d020';
+  const CREAM  = '#fffde7';
+  const BROWN  = '#5d3a1a';
+  const WHITE  = '#ffffff';
+
+  const getSeed = (m: any, side: 'A' | 'B'): string => {
+    if (!m) return '?';
+    const slot = side === 'A' ? m.slotA : m.slotB;
+    if (slot) { const x = slot.match(/#(\d+)/); if (x) return x[1]; }
+    return '?';
+  };
+
+  const getName = (m: any, side: 'A' | 'B'): string => {
+    if (!m) return '';
+    const p = side === 'A' ? m.playerA : m.playerB;
+    if (p) return p.nombre ?? '';
+    const slot = side === 'A' ? m.slotA : m.slotB;
+    return slot ?? '';
+  };
+
+  const isWin = (m: any, side: 'A' | 'B'): boolean => {
+    if (!m?.winnerId) return false;
+    const pid = side === 'A' ? m.playerAId : m.playerBId;
+    return m.winnerId === pid;
+  };
+
+  const PlayerRow = ({ m, side, showSeed = true }: { m: any; side: 'A' | 'B'; showSeed?: boolean }) => {
+    const win = isWin(m, side);
+    const nm = getName(m, side);
+    const sd = getSeed(m, side);
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 6px', background: win ? 'rgba(255,255,255,0.35)' : 'transparent', borderTop: side === 'B' ? `1px solid rgba(255,255,255,0.2)` : 'none' }}>
+        {showSeed && (
+          <div style={{ width: 22, height: 18, background: GOLD, color: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 900, borderRadius: 2, flexShrink: 0 }}>
+            {sd}
+          </div>
+        )}
+        <div style={{ flex: 1, background: WHITE, padding: '2px 6px', fontSize: 13, fontWeight: win ? 700 : 400, color: win ? '#135c1a' : '#333', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, height: 22, display: 'flex', alignItems: 'center' }}>
+          {nm || <span style={{ color: '#bbb' }}>—</span>}
+        </div>
+        {m?.resultado && (
+          <div style={{ width: 20, fontSize: 12, fontWeight: 900, color: win ? WHITE : 'rgba(255,255,255,0.5)', textAlign: 'center', flexShrink: 0 }}>
+            {m.resultado.split('-')[side === 'A' ? 0 : 1]}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const OctBox = ({ m, seeds }: { m: any; seeds: string }) => (
+    <div style={{ background: VERDE2, border: `1px solid ${GOLD}`, borderRadius: 4, marginBottom: 6, overflow: 'hidden', fontFamily: F }}>
+      <div style={{ background: GOLD, color: '#1a1a1a', padding: '3px 8px', fontSize: 12, fontWeight: 900, letterSpacing: 1, display: 'flex', justifyContent: 'space-between' }}>
+        <span>OCTAVOS ({seeds})</span>
+        {m?.hora && <span style={{ fontWeight: 400, fontSize: 11 }}>🕐 {m.hora}</span>}
+      </div>
+      <PlayerRow m={m} side="A" />
+      <PlayerRow m={m} side="B" />
+    </div>
+  );
+
+  const StageBox = ({ m, label, showSeed = false }: { m: any; label: string; showSeed?: boolean }) => (
+    <div style={{ background: VERDE2, border: `2px solid ${GOLD}`, borderRadius: 5, overflow: 'hidden', fontFamily: F, marginBottom: 4 }}>
+      <div style={{ background: GOLD, color: '#1a1a1a', padding: '4px 10px', fontSize: 13, fontWeight: 900, letterSpacing: 1, display: 'flex', justifyContent: 'space-between' }}>
+        <span>{label}</span>
+        {m?.hora && <span style={{ fontWeight: 400, fontSize: 11 }}>🕐 {m.hora}</span>}
+      </div>
+      <PlayerRow m={m} side="A" showSeed={showSeed} />
+      <PlayerRow m={m} side="B" showSeed={showSeed} />
+    </div>
+  );
+
+  // Connector styles
+  const connL = (top: string, height: string) => ({
+    position: 'absolute' as const, right: 0, top, height,
+    borderRight: `2px solid ${GOLD}`, width: 10,
+  });
+  const connLH = (top: string) => ({
+    position: 'absolute' as const, right: 0, top, height: 0,
+    borderTop: `2px solid ${GOLD}`, width: 18,
+  });
+
+  return (
+    <div style={{ width: 1080, background: VERDE, border: `8px solid ${BROWN}`, boxSizing: 'border-box', fontFamily: F }}>
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', padding: '10px 16px', borderBottom: `4px solid ${BROWN}`, gap: 12 }}>
+        <div style={{ background: CREAM, border: `2px solid ${GOLD}`, borderRadius: 4, padding: '4px 10px', fontSize: 13, fontWeight: 700, color: '#1a1a1a', minWidth: 180 }}>
+          SALA: {sala || <span style={{ color: '#999' }}>—</span>}
+        </div>
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <div style={{ fontSize: 28, fontWeight: 900, color: GOLD, letterSpacing: 4, textTransform: 'uppercase', textShadow: '1px 1px 3px rgba(0,0,0,0.5)', lineHeight: 1.1 }}>{data.torneo}</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: WHITE, letterSpacing: 3, marginTop: 2, opacity: 0.9 }}>{data.fase}</div>
+        </div>
+        <div style={{ background: CREAM, border: `2px solid ${GOLD}`, borderRadius: 4, padding: '4px 10px', fontSize: 13, fontWeight: 700, color: '#1a1a1a', minWidth: 180, textAlign: 'right' }}>
+          FECHA: {fechaBracket || <span style={{ color: '#999' }}>—</span>}
+        </div>
+      </div>
+
+      {/* Main bracket — 7 columns */}
+      <div style={{ display: 'flex', padding: '10px 6px', gap: 4, alignItems: 'stretch' }}>
+
+        {/* COL 1: Left octavos */}
+        <div style={{ width: 210, flexShrink: 0 }}>
+          <OctBox m={oct[0]} seeds="1 vs 16" />
+          <OctBox m={oct[1]} seeds="8 vs 9" />
+          <OctBox m={oct[2]} seeds="5 vs 12" />
+          <OctBox m={oct[3]} seeds="4 vs 13" />
+        </div>
+
+        {/* COL 2: Left connector + cuartos */}
+        <div style={{ width: 8, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-around' }}>
+          <div style={{ flex: 1, borderRight: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}`, marginBottom: -1 }} />
+          <div style={{ flex: 1, borderRight: `2px solid ${GOLD}`, borderTop: `2px solid ${GOLD}`, marginTop: -1 }} />
+          <div style={{ flex: 1, borderRight: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}`, marginBottom: -1 }} />
+          <div style={{ flex: 1, borderRight: `2px solid ${GOLD}`, borderTop: `2px solid ${GOLD}`, marginTop: -1 }} />
+        </div>
+
+        <div style={{ width: 180, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-around' }}>
+          <StageBox m={cua[0]} label="CUARTOS" />
+          <StageBox m={cua[1]} label="CUARTOS" />
+        </div>
+
+        {/* COL 3: Left connector cuartos→semi */}
+        <div style={{ width: 8, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-around' }}>
+          <div style={{ flex: 2, borderRight: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}`, marginBottom: -1 }} />
+          <div style={{ flex: 2, borderRight: `2px solid ${GOLD}`, borderTop: `2px solid ${GOLD}`, marginTop: -1 }} />
+          <div style={{ flex: 4 }} />
+        </div>
+
+        {/* COL 4: Left semi */}
+        <div style={{ width: 165, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', paddingTop: '20%' }}>
+          <StageBox m={sem[0]} label="SEMIFINAL" />
+        </div>
+
+        {/* COL 5: Center */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '0 4px' }}>
+          <img src="/logo-febiu.png" alt="FEBIU" crossOrigin="anonymous"
+            style={{ width: 70, height: 70, borderRadius: '50%', border: `3px solid ${GOLD}`, objectFit: 'contain', background: WHITE }} />
+          <div style={{ color: GOLD, fontSize: 15, fontWeight: 900, letterSpacing: 3 }}>FINAL</div>
+          <StageBox m={fin} label="FINAL" />
+          <div style={{ color: GOLD, fontSize: 17, fontWeight: 900, letterSpacing: 3, marginTop: 4 }}>🏆 CAMPEÓN</div>
+          <div style={{ background: camp ? GOLD : 'rgba(255,255,255,0.1)', border: `3px solid ${GOLD}`, borderRadius: 5, padding: '8px 12px', fontSize: 15, fontWeight: 900, textAlign: 'center', width: '90%', color: camp ? '#1a1a1a' : 'rgba(255,255,255,0.3)', minHeight: 38, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {camp ? camp.nombre : '—'}
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, textAlign: 'center', marginTop: 4 }}>
+            FEBIU · {data.temporada}
+          </div>
+        </div>
+
+        {/* COL 6: Right semi */}
+        <div style={{ width: 165, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: '20%' }}>
+          <StageBox m={sem[1]} label="SEMIFINAL" />
+        </div>
+
+        {/* COL 7: Right connector semi→cuartos */}
+        <div style={{ width: 8, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-around' }}>
+          <div style={{ flex: 4 }} />
+          <div style={{ flex: 2, borderLeft: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}`, marginBottom: -1 }} />
+          <div style={{ flex: 2, borderLeft: `2px solid ${GOLD}`, borderTop: `2px solid ${GOLD}`, marginTop: -1 }} />
+        </div>
+
+        {/* COL 8: Right cuartos */}
+        <div style={{ width: 180, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-around' }}>
+          <StageBox m={cua[3]} label="CUARTOS" />
+          <StageBox m={cua[2]} label="CUARTOS" />
+        </div>
+
+        {/* COL 9: Right connector cuartos→oct */}
+        <div style={{ width: 8, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-around' }}>
+          <div style={{ flex: 1, borderLeft: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}`, marginBottom: -1 }} />
+          <div style={{ flex: 1, borderLeft: `2px solid ${GOLD}`, borderTop: `2px solid ${GOLD}`, marginTop: -1 }} />
+          <div style={{ flex: 1, borderLeft: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}`, marginBottom: -1 }} />
+          <div style={{ flex: 1, borderLeft: `2px solid ${GOLD}`, borderTop: `2px solid ${GOLD}`, marginTop: -1 }} />
+        </div>
+
+        {/* COL 10: Right octavos */}
+        <div style={{ width: 210, flexShrink: 0 }}>
+          <OctBox m={oct[7]} seeds="2 vs 15" />
+          <OctBox m={oct[6]} seeds="7 vs 10" />
+          <OctBox m={oct[5]} seeds="6 vs 11" />
+          <OctBox m={oct[4]} seeds="3 vs 14" />
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+// ── Dispatcher principal ──────────────────────────────────────────────
+function PubContenido({ data, tema, notas, sala, fechaBracket }: { data: any; tema: any; notas: string; sala: string; fechaBracket: string }) {
+  if (data.tipo === 'bracket-nacional') {
+    return <PlantillaBracketNacional data={data} sala={sala} fechaBracket={fechaBracket} />;
+  }
   return (
     <>
       <PubHeader data={data} tema={tema} />
-      {data.tipo === 'series'    && <PlantillaSeries    data={data} tema={tema} />}
-      {data.tipo === 'reduccion' && <PlantillaReduccion data={data} tema={tema} />}
-      {data.tipo === 'cruces'    && <PlantillaCruces    data={data} tema={tema} />}
-      {data.tipo === 'ranking'   && <PlantillaRanking   data={data} tema={tema} />}
+      {data.tipo === 'series'          && <PlantillaSeries          data={data} tema={tema} />}
+      {data.tipo === 'reduccion'       && <PlantillaReduccion       data={data} tema={tema} />}
+      {data.tipo === 'cruces'          && <PlantillaCruces          data={data} tema={tema} />}
+      {data.tipo === 'ranking'         && <PlantillaRanking         data={data} tema={tema} />}
+      {data.tipo === 'series-nacional' && <PlantillaSeriesNacional  data={data} tema={tema} />}
       <PubFooter notas={notas} tema={tema} />
     </>
   );
 }
 
+// ── Página principal ──────────────────────────────────────────────────
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
   const esAdmin = user?.role === 'admin';
 
-  const [torneos, setTorneos] = useState<any[]>([]);
-  const [circuitId, setCircuitId] = useState('');
-  const [tipoFase, setTipoFase] = useState('clasificatorio');
-  const [pubData, setPubData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [torneos, setTorneos]       = useState<any[]>([]);
+  const [circuitId, setCircuitId]   = useState('');
+  const [tipoFase, setTipoFase]     = useState('clasificatorio');
+  const [pubData, setPubData]       = useState<any>(null);
+  const [loading, setLoading]       = useState(false);
   const [exportando, setExportando] = useState(false);
   const [vaciando, setVaciando]     = useState(false);
-  const [notas, setNotas] = useState('');
-  const [error, setError] = useState('');
-  const exportRef = useRef<HTMLDivElement>(null);
+  const [notas, setNotas]           = useState('');
+  const [sala, setSala]             = useState('');
+  const [fechaBracket, setFechaBracket] = useState('');
+  const [error, setError]           = useState('');
+  const exportRef  = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -331,22 +591,33 @@ export default function AdminPublicacionesPage() {
 
   useEffect(() => {
     if (wrapperRef.current && exportRef.current) {
-      const h = exportRef.current.scrollHeight * 0.5;
-      wrapperRef.current.style.height = `${h}px`;
+      const isBracket = pubData?.tipo === 'bracket-nacional';
+      const scale = isBracket ? 0.42 : 0.5;
+      const w = isBracket ? 1080 : 1080;
+      wrapperRef.current.style.width  = `${Math.round(w * scale)}px`;
+      wrapperRef.current.style.height = `${exportRef.current.scrollHeight * scale}px`;
     }
-  }, [pubData, notas]);
+  }, [pubData, notas, sala, fechaBracket]);
+
+  const vaciarTodo = async () => {
+    if (!confirm('⚠️ ¿Vaciar todos los reportes y ranking?\n\nEsta acción no se puede deshacer.')) return;
+    setVaciando(true);
+    try {
+      const res = await api.delete('/publicaciones/reset');
+      alert(`✅ ${res.data.message}`);
+      setPubData(null);
+    } catch (err: any) {
+      alert(err?.response?.data?.error ?? 'Error al vaciar');
+    } finally { setVaciando(false); }
+  };
 
   const cargar = async () => {
     if (!circuitId) return;
     setLoading(true); setError(''); setPubData(null);
     try {
-      // ranking y ranking-final: usar endpoint publicaciones (filtra posiciones nulas)
       if (tipoFase === 'ranking' || tipoFase === 'ranking-final') {
         const res = await api.get(`/publicaciones/${circuitId}/${tipoFase}`);
-        setPubData(res.data);
-        setNotas('');
-        setLoading(false);
-        return;
+        setPubData(res.data); setNotas(''); setLoading(false); return;
       }
 
       if (tipoFase === 'acumulado') {
@@ -355,17 +626,12 @@ export default function AdminPublicacionesPage() {
         );
         const circuito = todosCircuitos.find((c: any) => c.id === Number(circuitId));
         if (!circuito) { setError('Circuito no encontrado.'); setLoading(false); return; }
-
         const acumRes = await api.get(`/acumulado/${circuito.torneoId}`);
         if (!acumRes.data || acumRes.data.length === 0) {
-          setError('No hay ranking acumulado disponible aún. Se genera automáticamente al finalizar cada fase Máster.');
-          setLoading(false);
-          return;
+          setError('No hay ranking acumulado disponible aún.'); setLoading(false); return;
         }
-
         const lastCircuitOrder = acumRes.data[0]?.lastCircuitOrder ?? 1;
         const circuitosIncluidos = acumRes.data[0]?.circuitosIncluidos ?? '';
-
         const jugadores = acumRes.data.map((e: any) => ({
           posicion: e.position ?? 0,
           nombre: `${e.player.lastName}, ${e.player.firstName}`,
@@ -374,21 +640,8 @@ export default function AdminPublicacionesPage() {
           categoria: e.player?.category?.name ?? null,
           seccion: (e.position ?? 999) <= 8 ? 'MÁSTER' : (e.position ?? 999) <= 32 ? 'PRIMERA' : (e.position ?? 999) <= 64 ? 'SEGUNDA' : 'TERCERA',
         }));
-
-        setPubData({
-          tipo: 'ranking',
-          tipoFase: 'acumulado',
-          torneo: circuito.torneoNombre,
-          circuito: circuitosIncluidos,
-          temporada: String(circuito.torneoYear),
-          fase: `RANKING ACUMULADO — LUEGO DEL CIRCUITO ${lastCircuitOrder}`,
-          formato: '',
-          fechaPrincipal: `Incluye: ${circuitosIncluidos}`,
-          jugadores,
-        });
-        setNotas('');
-        setLoading(false);
-        return;
+        setPubData({ tipo: 'ranking', tipoFase: 'acumulado', torneo: circuito.torneoNombre, circuito: circuitosIncluidos, temporada: String(circuito.torneoYear), fase: `RANKING ACUMULADO — LUEGO DEL CIRCUITO ${lastCircuitOrder}`, formato: '', fechaPrincipal: `Incluye: ${circuitosIncluidos}`, jugadores });
+        setNotas(''); setLoading(false); return;
       }
 
       const res = await api.get(`/publicaciones/${circuitId}/${tipoFase}`);
@@ -396,18 +649,6 @@ export default function AdminPublicacionesPage() {
     } catch (e: any) {
       setError(e?.response?.data?.error ?? 'Error al cargar los datos');
     } finally { setLoading(false); }
-  };
-
-  const vaciarTodo = async () => {
-    if (!confirm('⚠️ ¿Vaciar todos los reportes y ranking acumulado?\n\nEsto elimina los reportes generados automáticamente y el ranking acumulado de todos los torneos.\n\nEsta acción no se puede deshacer.')) return;
-    setVaciando(true);
-    try {
-      const res = await api.delete('/publicaciones/reset');
-      alert(`✅ ${res.data.message}\n\nReportes borrados: ${res.data.reportes_borrados}\nAcumulado borrado: ${res.data.acumulado_borrado}`);
-      setPubData(null);
-    } catch (err: any) {
-      alert(err?.response?.data?.error ?? 'Error al vaciar');
-    } finally { setVaciando(false); }
   };
 
   const exportar = async () => {
@@ -428,15 +669,14 @@ export default function AdminPublicacionesPage() {
   };
 
   const tema = TEMAS[tipoFase] ?? TEMAS.clasificatorio;
-  const circuitos = torneos.flatMap((t: any) =>
-    (t.circuits ?? []).map((c: any) => ({ ...c, torneoNombre: t.name }))
-  );
+  const circuitos = torneos.flatMap((t: any) => (t.circuits ?? []).map((c: any) => ({ ...c, torneoNombre: t.name })));
+  const esBracket = tipoFase === 'bracket-nacional';
 
   return (
     <div>
       {pubData && esAdmin && (
-        <div ref={exportRef} style={{ position: 'absolute', left: '-9999px', top: 0, width: '1080px', fontFamily: F, background: '#ffffff', lineHeight: 1.3 }}>
-          <PubContenido data={pubData} tema={tema} notas={notas} />
+        <div ref={exportRef} style={{ position: 'absolute', left: '-9999px', top: 0, fontFamily: F, background: '#ffffff', lineHeight: 1.3 }}>
+          <PubContenido data={pubData} tema={tema} notas={notas} sala={sala} fechaBracket={fechaBracket} />
         </div>
       )}
 
@@ -446,11 +686,8 @@ export default function AdminPublicacionesPage() {
           <p className="text-chalk/50 text-sm mt-1">{esAdmin ? 'Generación y exportación de gráficos para difusión' : 'Gráficos del torneo'}</p>
         </div>
         {esAdmin && (
-          <button
-            className="py-1.5 px-4 text-xs rounded-lg border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all disabled:opacity-40"
-            onClick={vaciarTodo}
-            disabled={vaciando}
-          >
+          <button className="py-1.5 px-4 text-xs rounded-lg border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all disabled:opacity-40"
+            onClick={vaciarTodo} disabled={vaciando}>
             {vaciando ? 'Vaciando...' : '🗑 Vaciar todo'}
           </button>
         )}
@@ -479,17 +716,33 @@ export default function AdminPublicacionesPage() {
             </div>
           </div>
 
+          {/* Campos extra para bracket */}
+          {esAdmin && esBracket && (
+            <div className="grid grid-cols-2 gap-4 pt-1 border-t border-felt-light/10">
+              <div>
+                <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Sala / Sede (aparece en el bracket)</label>
+                <input className="input" placeholder="Ej: Club Capolavoro" value={sala} onChange={e => setSala(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Fecha (aparece en el bracket)</label>
+                <input className="input" placeholder="Ej: 14 de junio de 2026" value={fechaBracket} onChange={e => setFechaBracket(e.target.value)} />
+              </div>
+            </div>
+          )}
+
           {esAdmin && pubData && (
             <>
-              <div>
-                <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Nota al pie (opcional)</label>
-                <textarea className="input w-full" rows={2} placeholder="Ej: Los ganadores pasan a la siguiente fase..." value={notas} onChange={e => setNotas(e.target.value)} />
-              </div>
+              {!esBracket && (
+                <div>
+                  <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Nota al pie (opcional)</label>
+                  <textarea className="input w-full" rows={2} placeholder="Ej: Los ganadores pasan a la siguiente fase..." value={notas} onChange={e => setNotas(e.target.value)} />
+                </div>
+              )}
               <div className="flex items-center gap-4">
                 <button className="btn-primary px-8" disabled={exportando} onClick={exportar}>
                   {exportando ? 'Exportando...' : '⬇ Exportar PNG'}
                 </button>
-                <span className="text-chalk/30 text-xs">3240px · Alta resolución · WhatsApp y redes</span>
+                <span className="text-chalk/30 text-xs">Alta resolución · WhatsApp y redes</span>
               </div>
             </>
           )}
@@ -501,13 +754,15 @@ export default function AdminPublicacionesPage() {
         {pubData && !loading && (
           <div>
             <p className="text-chalk/40 text-xs uppercase tracking-widest mb-3">
-              {pubData.tipo === 'ranking' ? `${pubData.jugadores?.length ?? 0} jugadores`
-                : pubData.tipo === 'series' ? `${pubData.series?.length ?? 0} series`
-                : `${pubData.cruces?.length ?? 0} cruces`}
+              {pubData.tipo === 'ranking'         ? `${pubData.jugadores?.length ?? 0} jugadores`
+               : pubData.tipo === 'series'        ? `${pubData.series?.length ?? 0} series`
+               : pubData.tipo === 'series-nacional'? `${pubData.series?.length ?? 0} series`
+               : pubData.tipo === 'bracket-nacional'? `Bracket 16 jugadores`
+               : `${pubData.cruces?.length ?? 0} cruces`}
             </p>
-            <div ref={wrapperRef} style={{ width: '540px', overflow: 'hidden', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+            <div ref={wrapperRef} style={{ overflow: 'hidden', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 4px 20px rgba(0,0,0,0.3)', display: 'inline-block' }}>
               <div style={{ width: '1080px', transform: 'scale(0.5)', transformOrigin: 'top left', fontFamily: F, background: '#ffffff', lineHeight: 1.3 }}>
-                <PubContenido data={pubData} tema={tema} notas={notas} />
+                <PubContenido data={pubData} tema={tema} notas={notas} sala={sala} fechaBracket={fechaBracket} />
               </div>
             </div>
           </div>
