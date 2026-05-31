@@ -271,6 +271,31 @@ export default function CrucesPage() {
           <EmptyState message="No hay cruces en este circuito. Generá los partidos desde Fixture primero." />
         )}
 
+        {/* Botón generar bracket para Nacional aunque no haya cruces */}
+        {selectedCircuit && !loadingMatches && esNacional && cruces.length === 0 && (
+          <div className="card space-y-3">
+            <p className="text-chalk/50 text-xs uppercase tracking-widest">Bracket Nacional</p>
+            <div className="flex gap-2 flex-wrap">
+              <button className="btn-primary text-xs py-1.5 px-4" disabled={disparando}
+                onClick={async () => {
+                  if (!selectedCircuit) return;
+                  if (!confirm('⚡ ¿Generar bracket con el top 16 de las series?\n\nBorra el bracket actual y lo recrea con el seeding correcto.\nLos resultados de las series se mantienen.')) return;
+                  setDisparando(true); setDisparoMsg('');
+                  try {
+                    const r = await api.post(`/matches/regenerar-bracket/${selectedCircuit}`);
+                    setDisparoMsg(`✅ ${r.data.message}`);
+                    await handleCircuitChange(selectedCircuit);
+                  } catch (err: any) {
+                    setDisparoMsg(`❌ ${err?.response?.data?.error ?? 'Error'}`);
+                  } finally { setDisparando(false); }
+                }}>
+                🏆 Generar bracket desde top 16
+              </button>
+            </div>
+            {disparoMsg && <p className={`text-xs font-mono ${disparoMsg.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>{disparoMsg}</p>}
+          </div>
+        )}
+
         {selectedCircuit && !loadingMatches && cruces.length > 0 && (
           <>
             {/* Botones disparar */}
@@ -278,10 +303,27 @@ export default function CrucesPage() {
               <p className="text-chalk/50 text-xs uppercase tracking-widest">Acciones manuales</p>
               <div className="flex gap-2 flex-wrap">
                 {esNacional ? (
-                  <button className="btn-secondary text-xs py-1 px-3" disabled={disparando}
-                    onClick={() => disparar('trigger-nac-bracket', getPhaseId('clasificatorio'))}>
-                    ⚡ Seedear bracket (cuando terminan las series)
-                  </button>
+                  <>
+                    <button className="btn-primary text-xs py-1 px-3" disabled={disparando}
+                      onClick={async () => {
+                        if (!selectedCircuit) return;
+                        if (!confirm('⚡ ¿Generar bracket con el top 16 de las series?\n\nBorra el bracket actual y lo recrea con el seeding correcto.\nLos resultados de las series se mantienen.')) return;
+                        setDisparando(true); setDisparoMsg('');
+                        try {
+                          const r = await api.post(`/matches/regenerar-bracket/${selectedCircuit}`);
+                          setDisparoMsg(`✅ ${r.data.message}`);
+                          await handleCircuitChange(selectedCircuit);
+                        } catch (err: any) {
+                          setDisparoMsg(`❌ ${err?.response?.data?.error ?? 'Error'}`);
+                        } finally { setDisparando(false); }
+                      }}>
+                      🏆 Generar bracket desde top 16
+                    </button>
+                    <button className="btn-secondary text-xs py-1 px-3" disabled={disparando}
+                      onClick={() => disparar('trigger-nac-bracket', getPhaseId('clasificatorio'))}>
+                      ⚡ Re-seedear bracket
+                    </button>
+                  </>
                 ) : (
                   <>
                     <button className="btn-secondary text-xs py-1 px-2" disabled={disparando}
