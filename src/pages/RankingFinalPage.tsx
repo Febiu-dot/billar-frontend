@@ -41,6 +41,7 @@ export default function RankingFinalPage() {
   const [selectedCircuit, setSelectedCircuit]       = useState('');
   const [tournamentName, setTournamentName]         = useState('');
   const [circuitName, setCircuitName]               = useState('');
+  const [esNacional, setEsNacional]                 = useState(false);
 
   const [ranking, setRanking]       = useState<RankingEntry[]>([]);
   const [loading, setLoading]       = useState(false);
@@ -67,12 +68,19 @@ export default function RankingFinalPage() {
     setTournamentName(t?.name ?? '');
   };
 
-  const handleCircuitChange = (circuitId: string) => {
+  const handleCircuitChange = async (circuitId: string) => {
     setSelectedCircuit(circuitId);
     setGuardadoMsg('');
     const c = circuits.find(c => c.id === Number(circuitId));
     setCircuitName(c?.name ?? '');
     if (!circuitId) { setRanking([]); return; }
+
+    // Detectar si es nacional
+    try {
+      const cfgRes = await api.get(`/circuits/${circuitId}/config-torneo`);
+      setEsNacional(cfgRes.data?.tipo === 'nacional');
+    } catch { setEsNacional(false); }
+
     setLoading(true);
     api.get(`/rankings/final?circuitId=${circuitId}`)
       .then(r => { setRanking(r.data); setFiltro('general'); })
@@ -111,12 +119,15 @@ export default function RankingFinalPage() {
     tercera: ranking.filter(e => e.categoria === 'tercera').length,
   };
 
+  // Para Nacional: corte en puesto 16
+  const corteBracket = esNacional ? 16 : null;
+
   return (
     <div className="min-h-screen bg-carbon-100">
       <div className="max-w-5xl mx-auto px-4 py-8">
 
         <div className="text-center mb-6">
-          <h1 className="font-display text-5xl text-gold mb-1">RANKING FINAL</h1>
+          <h1 className="font-display text-5xl text-gold mb-1">RANKING DEL CIRCUITO</h1>
           <p className="text-chalk/50 text-sm">
             {tournamentName && circuitName
               ? `${tournamentName} — ${circuitName}`
@@ -162,6 +173,15 @@ export default function RankingFinalPage() {
 
         {!loading && selectedCircuit && ranking.length > 0 && (
           <>
+            {/* Badge Nacional */}
+            {esNacional && (
+              <div className="flex justify-center mb-4">
+                <span className="bg-blue-900/30 border border-blue-700/40 text-blue-400 text-xs px-3 py-1 rounded-lg font-mono">
+                  🏆 Nacional — Top 16 clasifican al bracket
+                </span>
+              </div>
+            )}
+
             {/* Botón guardar — solo admin */}
             {user?.role === 'admin' && (
               <div className="flex flex-col items-center gap-2 mb-6">
@@ -181,23 +201,25 @@ export default function RankingFinalPage() {
               </div>
             )}
 
-            {/* Filtros por categoría */}
-            <div className="flex gap-2 flex-wrap justify-center mb-4">
-              {(['general', 'master', 'primera', 'segunda', 'tercera'] as const).map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setFiltro(cat)}
-                  className={`px-4 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                    filtro === cat
-                      ? cat === 'general' ? 'bg-gold/20 text-gold border-gold/40' : CAT_COLORS[cat]
-                      : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'
-                  }`}
-                >
-                  {cat === 'general' ? 'General' : CAT_LABEL[cat]}
-                  <span className="ml-1.5 opacity-60">({counts[cat]})</span>
-                </button>
-              ))}
-            </div>
+            {/* Filtros por categoría — solo para no nacionales */}
+            {!esNacional && (
+              <div className="flex gap-2 flex-wrap justify-center mb-4">
+                {(['general', 'master', 'primera', 'segunda', 'tercera'] as const).map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setFiltro(cat)}
+                    className={`px-4 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                      filtro === cat
+                        ? cat === 'general' ? 'bg-gold/20 text-gold border-gold/40' : CAT_COLORS[cat]
+                        : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'
+                    }`}
+                  >
+                    {cat === 'general' ? 'General' : CAT_LABEL[cat]}
+                    <span className="ml-1.5 opacity-60">({counts[cat]})</span>
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Buscador */}
             <div className="mb-4">
@@ -226,38 +248,57 @@ export default function RankingFinalPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtrado.map(entry => (
-                    <tr
-                      key={entry.playerId}
-                      className={`border-b border-felt-light/5 transition-colors ${
-                        entry.posicion <= 8  ? 'bg-yellow-900/5' :
-                        entry.posicion <= 32 ? 'bg-blue-900/5'   :
-                        entry.posicion <= 64 ? 'bg-green-900/5'  : ''
-                      }`}
-                    >
-                      <td className="text-center px-3 py-2.5">
-                        <span className={`font-mono font-bold text-sm ${
-                          entry.posicion <= 8  ? 'text-yellow-400' :
-                          entry.posicion <= 32 ? 'text-blue-400'   :
-                          entry.posicion <= 64 ? 'text-green-400'  : 'text-chalk/40'
-                        }`}>{entry.posicion}</span>
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <span className="text-chalk font-semibold">{entry.lastName}, {entry.firstName}</span>
-                      </td>
-                      <td className="px-4 py-2.5 hidden sm:table-cell text-chalk/50 text-xs">{entry.club || '—'}</td>
-                      <td className="px-3 py-2.5 hidden md:table-cell text-center">
-                        <span className={`text-xs px-2 py-0.5 rounded ${CAT_COLORS[entry.categoria] ?? ''}`}>
-                          {CAT_LABEL[entry.categoria] ?? entry.categoria}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-center">
-                        <span className="text-gold font-bold font-mono">{entry.puntos}</span>
-                      </td>
-                      <td className="px-3 py-2.5 text-center hidden sm:table-cell text-chalk/70 font-mono">{entry.setsGanados}</td>
-                      <td className="px-3 py-2.5 text-center hidden md:table-cell text-chalk/70 font-mono">{entry.tantos}</td>
-                      <td className="px-3 py-2.5 text-center hidden lg:table-cell text-chalk/50 font-mono text-xs">{entry.promedio.toFixed(2)}</td>
-                    </tr>
+                  {filtrado.map((entry) => (
+                    <>
+                      {/* Línea de corte para Nacional en puesto 17 */}
+                      {corteBracket && filtro === 'general' && entry.posicion === corteBracket + 1 && (
+                        <tr key={`corte-${entry.posicion}`}>
+                          <td colSpan={8} className="px-4 py-2">
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1 h-px bg-gold/40"></div>
+                              <span className="text-gold/70 text-xs font-mono uppercase tracking-widest font-bold whitespace-nowrap">
+                                ▲ Top {corteBracket} clasificados al bracket
+                              </span>
+                              <div className="flex-1 h-px bg-gold/40"></div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      <tr
+                        key={entry.playerId}
+                        className={`border-b border-felt-light/5 transition-colors ${
+                          corteBracket && entry.posicion <= corteBracket
+                            ? 'bg-blue-900/10'
+                            : entry.posicion <= 8  ? 'bg-yellow-900/5' :
+                              entry.posicion <= 32 ? 'bg-blue-900/5'   :
+                              entry.posicion <= 64 ? 'bg-green-900/5'  : ''
+                        }`}
+                      >
+                        <td className="text-center px-3 py-2.5">
+                          <span className={`font-mono font-bold text-sm ${
+                            corteBracket && entry.posicion <= corteBracket ? 'text-blue-400' :
+                            entry.posicion <= 8  ? 'text-yellow-400' :
+                            entry.posicion <= 32 ? 'text-blue-400'   :
+                            entry.posicion <= 64 ? 'text-green-400'  : 'text-chalk/40'
+                          }`}>{entry.posicion}</span>
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <span className="text-chalk font-semibold">{entry.lastName}, {entry.firstName}</span>
+                        </td>
+                        <td className="px-4 py-2.5 hidden sm:table-cell text-chalk/50 text-xs">{entry.club || '—'}</td>
+                        <td className="px-3 py-2.5 hidden md:table-cell text-center">
+                          <span className={`text-xs px-2 py-0.5 rounded ${CAT_COLORS[entry.categoria] ?? ''}`}>
+                            {CAT_LABEL[entry.categoria] ?? entry.categoria}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5 text-center">
+                          <span className="text-gold font-bold font-mono">{entry.puntos}</span>
+                        </td>
+                        <td className="px-3 py-2.5 text-center hidden sm:table-cell text-chalk/70 font-mono">{entry.setsGanados}</td>
+                        <td className="px-3 py-2.5 text-center hidden md:table-cell text-chalk/70 font-mono">{entry.tantos}</td>
+                        <td className="px-3 py-2.5 text-center hidden lg:table-cell text-chalk/50 font-mono text-xs">{entry.promedio.toFixed(2)}</td>
+                      </tr>
+                    </>
                   ))}
                 </tbody>
               </table>
