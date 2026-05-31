@@ -43,12 +43,14 @@ export default function RankingFinalPage() {
   const [circuitName, setCircuitName]               = useState('');
   const [esNacional, setEsNacional]                 = useState(false);
 
-  const [ranking, setRanking]       = useState<RankingEntry[]>([]);
-  const [loading, setLoading]       = useState(false);
-  const [filtro, setFiltro]         = useState<string>('general');
-  const [busqueda, setBusqueda]     = useState('');
-  const [guardando, setGuardando]   = useState(false);
-  const [guardadoMsg, setGuardadoMsg] = useState('');
+  const [ranking, setRanking]             = useState<RankingEntry[]>([]);
+  const [loading, setLoading]             = useState(false);
+  const [filtro, setFiltro]               = useState<string>('general');
+  const [busqueda, setBusqueda]           = useState('');
+  const [guardando, setGuardando]         = useState(false);
+  const [guardadoMsg, setGuardadoMsg]     = useState('');
+  const [generandoBracket, setGenerandoBracket] = useState(false);
+  const [bracketMsg, setBracketMsg]       = useState('');
 
   useEffect(() => {
     api.get('/tournaments').then(r => setTournaments(r.data));
@@ -63,19 +65,18 @@ export default function RankingFinalPage() {
     setSelectedTournament(tournamentId);
     setSelectedCircuit('');
     setRanking([]);
-    setGuardadoMsg('');
+    setGuardadoMsg(''); setBracketMsg('');
     const t = tournaments.find(t => t.id === Number(tournamentId));
     setTournamentName(t?.name ?? '');
   };
 
   const handleCircuitChange = async (circuitId: string) => {
     setSelectedCircuit(circuitId);
-    setGuardadoMsg('');
+    setGuardadoMsg(''); setBracketMsg('');
     const c = circuits.find(c => c.id === Number(circuitId));
     setCircuitName(c?.name ?? '');
     if (!circuitId) { setRanking([]); return; }
 
-    // Detectar si es nacional
     try {
       const cfgRes = await api.get(`/circuits/${circuitId}/config-torneo`);
       setEsNacional(cfgRes.data?.tipo === 'nacional');
@@ -91,16 +92,29 @@ export default function RankingFinalPage() {
   const handleGuardar = async () => {
     if (!selectedCircuit) return;
     if (!confirm(`¿Guardar este ranking del ${circuitName} como base para el siguiente circuito?`)) return;
-    setGuardando(true);
-    setGuardadoMsg('');
+    setGuardando(true); setGuardadoMsg('');
     try {
       const res = await api.post(`/rankings/guardar-final/${selectedCircuit}`);
       setGuardadoMsg(`✅ ${res.data.message}`);
     } catch (e: any) {
       setGuardadoMsg(`❌ ${e?.response?.data?.error ?? 'Error al guardar'}`);
-    } finally {
-      setGuardando(false);
-    }
+    } finally { setGuardando(false); }
+  };
+
+  const handleGenerarBracket = async () => {
+    if (!selectedCircuit) return;
+    if (!confirm(`¿Generar el bracket de cruces con los top 16 de este ranking?\n\nSe usarán los 16 mejor rankeados como semillas del bracket.\nEsto reemplaza cualquier bracket anterior.`)) return;
+    setGenerandoBracket(true); setBracketMsg('');
+    try {
+      const res = await api.post(`/matches/regenerar-bracket/${selectedCircuit}`);
+      setBracketMsg(`✅ ${res.data.message}`);
+      if (res.data.seeding) {
+        const seeds = res.data.seeding.map((s: any) => `#${s.seed} ${s.nombre}`).join(', ');
+        console.log('Seeding bracket:', seeds);
+      }
+    } catch (e: any) {
+      setBracketMsg(`❌ ${e?.response?.data?.error ?? 'Error al generar bracket'}`);
+    } finally { setGenerandoBracket(false); }
   };
 
   const filtrado = ranking
@@ -119,7 +133,6 @@ export default function RankingFinalPage() {
     tercera: ranking.filter(e => e.categoria === 'tercera').length,
   };
 
-  // Para Nacional: corte en puesto 16
   const corteBracket = esNacional ? 16 : null;
 
   return (
@@ -129,35 +142,24 @@ export default function RankingFinalPage() {
         <div className="text-center mb-6">
           <h1 className="font-display text-5xl text-gold mb-1">RANKING DEL CIRCUITO</h1>
           <p className="text-chalk/50 text-sm">
-            {tournamentName && circuitName
-              ? `${tournamentName} — ${circuitName}`
-              : 'Seleccioná un torneo y circuito'}
+            {tournamentName && circuitName ? `${tournamentName} — ${circuitName}` : 'Seleccioná un torneo y circuito'}
           </p>
         </div>
 
         {/* Selectores */}
         <div className="flex flex-wrap gap-3 justify-center mb-6">
-          <select
-            className="input w-56"
-            value={selectedTournament}
-            onChange={e => handleTournamentChange(e.target.value)}
-          >
+          <select className="input w-56" value={selectedTournament}
+            onChange={e => handleTournamentChange(e.target.value)}>
             <option value="">Seleccioná un torneo</option>
             {tournaments.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
-
-          <select
-            className="input w-56"
-            value={selectedCircuit}
-            onChange={e => handleCircuitChange(e.target.value)}
-            disabled={!selectedTournament}
-          >
+          <select className="input w-56" value={selectedCircuit}
+            onChange={e => handleCircuitChange(e.target.value)} disabled={!selectedTournament}>
             <option value="">Seleccioná un circuito</option>
             {circuitsFiltrados.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
 
-        {/* Estado inicial */}
         {!selectedCircuit && !loading && (
           <div className="text-center py-16 text-chalk/30">
             <p className="text-5xl mb-4">🏆</p>
@@ -182,22 +184,40 @@ export default function RankingFinalPage() {
               </div>
             )}
 
-            {/* Botón guardar — solo admin */}
+            {/* Acciones admin */}
             {user?.role === 'admin' && (
-              <div className="flex flex-col items-center gap-2 mb-6">
-                <button
-                  className="btn-primary px-6"
-                  disabled={guardando}
-                  onClick={handleGuardar}
-                >
-                  {guardando ? 'Guardando...' : '💾 Usar como base para el siguiente circuito'}
-                </button>
-                {guardadoMsg && (
-                  <span className={`text-sm ${guardadoMsg.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>
-                    {guardadoMsg}
-                  </span>
+              <div className="flex flex-col items-center gap-3 mb-6">
+
+                {/* Botón generar bracket — solo para Nacional */}
+                {esNacional && (
+                  <div className="flex flex-col items-center gap-1 w-full max-w-sm">
+                    <button className="btn-primary px-6 w-full" disabled={generandoBracket} onClick={handleGenerarBracket}>
+                      {generandoBracket ? 'Generando...' : '🏆 Generar bracket de cruces (top 16)'}
+                    </button>
+                    {bracketMsg && (
+                      <span className={`text-sm ${bracketMsg.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>
+                        {bracketMsg}
+                      </span>
+                    )}
+                    <p className="text-chalk/30 text-xs text-center">
+                      Crea los 15 partidos del bracket con los top 16 del ranking
+                    </p>
+                  </div>
                 )}
-                <p className="text-chalk/30 text-xs">Presioná este botón antes de generar los partidos del siguiente circuito</p>
+
+                {/* Botón siguiente circuito */}
+                <div className="flex flex-col items-center gap-1 w-full max-w-sm">
+                  <button className="btn-secondary px-6 w-full" disabled={guardando} onClick={handleGuardar}>
+                    {guardando ? 'Guardando...' : '💾 Usar como base para el siguiente circuito'}
+                  </button>
+                  {guardadoMsg && (
+                    <span className={`text-sm ${guardadoMsg.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>
+                      {guardadoMsg}
+                    </span>
+                  )}
+                  <p className="text-chalk/30 text-xs">Presioná este botón antes de generar los partidos del siguiente circuito</p>
+                </div>
+
               </div>
             )}
 
@@ -205,15 +225,12 @@ export default function RankingFinalPage() {
             {!esNacional && (
               <div className="flex gap-2 flex-wrap justify-center mb-4">
                 {(['general', 'master', 'primera', 'segunda', 'tercera'] as const).map(cat => (
-                  <button
-                    key={cat}
-                    onClick={() => setFiltro(cat)}
+                  <button key={cat} onClick={() => setFiltro(cat)}
                     className={`px-4 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                       filtro === cat
                         ? cat === 'general' ? 'bg-gold/20 text-gold border-gold/40' : CAT_COLORS[cat]
                         : 'border-felt-light/20 text-chalk/40 hover:border-chalk/30'
-                    }`}
-                  >
+                    }`}>
                     {cat === 'general' ? 'General' : CAT_LABEL[cat]}
                     <span className="ml-1.5 opacity-60">({counts[cat]})</span>
                   </button>
@@ -223,13 +240,9 @@ export default function RankingFinalPage() {
 
             {/* Buscador */}
             <div className="mb-4">
-              <input
-                type="text"
-                placeholder="Buscar jugador o club..."
+              <input type="text" placeholder="Buscar jugador o club..."
                 className="input w-full max-w-sm mx-auto block"
-                value={busqueda}
-                onChange={e => setBusqueda(e.target.value)}
-              />
+                value={busqueda} onChange={e => setBusqueda(e.target.value)} />
             </div>
 
             {/* Tabla */}
@@ -250,7 +263,6 @@ export default function RankingFinalPage() {
                 <tbody>
                   {filtrado.map((entry) => (
                     <>
-                      {/* Línea de corte para Nacional en puesto 17 */}
                       {corteBracket && filtro === 'general' && entry.posicion === corteBracket + 1 && (
                         <tr key={`corte-${entry.posicion}`}>
                           <td colSpan={8} className="px-4 py-2">
@@ -264,16 +276,13 @@ export default function RankingFinalPage() {
                           </td>
                         </tr>
                       )}
-                      <tr
-                        key={entry.playerId}
+                      <tr key={entry.playerId}
                         className={`border-b border-felt-light/5 transition-colors ${
-                          corteBracket && entry.posicion <= corteBracket
-                            ? 'bg-blue-900/10'
-                            : entry.posicion <= 8  ? 'bg-yellow-900/5' :
-                              entry.posicion <= 32 ? 'bg-blue-900/5'   :
-                              entry.posicion <= 64 ? 'bg-green-900/5'  : ''
-                        }`}
-                      >
+                          corteBracket && entry.posicion <= corteBracket ? 'bg-blue-900/10' :
+                          entry.posicion <= 8  ? 'bg-yellow-900/5' :
+                          entry.posicion <= 32 ? 'bg-blue-900/5'   :
+                          entry.posicion <= 64 ? 'bg-green-900/5'  : ''
+                        }`}>
                         <td className="text-center px-3 py-2.5">
                           <span className={`font-mono font-bold text-sm ${
                             corteBracket && entry.posicion <= corteBracket ? 'text-blue-400' :
