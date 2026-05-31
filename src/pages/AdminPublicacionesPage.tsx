@@ -487,8 +487,8 @@ function PlantillaBracketNacional({ data, sala, fechaBracket }: { data: any; sal
         {/* LEFT OCTAVOS 155px */}
         <div style={{ width: 155, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
           <OctBox m={oct[0]} labelSeeds="(1-16)" seedLeft={true} />
-          <OctBox m={oct[1]} labelSeeds="(8-9)"  seedLeft={true} />
-          <OctBox m={oct[2]} labelSeeds="(5-12)" seedLeft={true} />
+          <OctBox m={oct[1]} labelSeeds="(2-15)" seedLeft={true} />
+          <OctBox m={oct[2]} labelSeeds="(3-14)" seedLeft={true} />
           <OctBox m={oct[3]} labelSeeds="(4-13)" seedLeft={true} />
         </div>
 
@@ -564,8 +564,8 @@ function PlantillaBracketNacional({ data, sala, fechaBracket }: { data: any; sal
 
         {/* RIGHT CUARTOS 140px */}
         <div style={{ width: 140, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-around', gap: 4 }}>
-          <StageBox m={cua[3]} label="CUARTOS" />
           <StageBox m={cua[2]} label="CUARTOS" />
+          <StageBox m={cua[3]} label="CUARTOS" />
         </div>
 
         {/* Connector cua→oct right */}
@@ -578,10 +578,10 @@ function PlantillaBracketNacional({ data, sala, fechaBracket }: { data: any; sal
 
         {/* RIGHT OCTAVOS 155px */}
         <div style={{ width: 155, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <OctBox m={oct[7]} labelSeeds="(2-15)" seedLeft={false} />
-          <OctBox m={oct[6]} labelSeeds="(7-10)" seedLeft={false} />
+          <OctBox m={oct[4]} labelSeeds="(5-12)" seedLeft={false} />
           <OctBox m={oct[5]} labelSeeds="(6-11)" seedLeft={false} />
-          <OctBox m={oct[4]} labelSeeds="(3-14)" seedLeft={false} />
+          <OctBox m={oct[6]} labelSeeds="(7-10)" seedLeft={false} />
+          <OctBox m={oct[7]} labelSeeds="(8-9)"  seedLeft={false} />
         </div>
 
       </div>
