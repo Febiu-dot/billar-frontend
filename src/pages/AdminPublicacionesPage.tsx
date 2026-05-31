@@ -350,12 +350,12 @@ function PlantillaBracketNacional({ data, sala, fechaBracket }: { data: any; sal
   const fin  = data.final;
   const camp = data.campeon;
 
-  const VERDE  = '#135c1a';
-  const VERDE2 = '#1a7528';
+  const VERDE  = '#145e1c';
+  const VERDE2 = '#1c7a28';
   const GOLD   = '#f5d020';
-  const CREAM  = '#fffde7';
-  const BROWN  = '#5d3a1a';
   const WHITE  = '#ffffff';
+  const BROWN  = '#5d3a1a';
+  const CREAM  = '#fffde7';
 
   const getSeed = (m: any, side: 'A' | 'B'): string => {
     if (!m) return '?';
@@ -367,9 +367,10 @@ function PlantillaBracketNacional({ data, sala, fechaBracket }: { data: any; sal
   const getName = (m: any, side: 'A' | 'B'): string => {
     if (!m) return '';
     const p = side === 'A' ? m.playerA : m.playerB;
-    if (p) return p.nombre ?? '';
+    if (p?.nombre) return p.nombre;
     const slot = side === 'A' ? m.slotA : m.slotB;
-    return slot ?? '';
+    if (slot) { const x = slot.match(/#(\d+)/); return x ? `#${x[1]}` : slot; }
+    return '';
   };
 
   const isWin = (m: any, side: 'A' | 'B'): boolean => {
@@ -378,167 +379,216 @@ function PlantillaBracketNacional({ data, sala, fechaBracket }: { data: any; sal
     return m.winnerId === pid;
   };
 
-  const PlayerRow = ({ m, side, showSeed = true }: { m: any; side: 'A' | 'B'; showSeed?: boolean }) => {
-    const win = isWin(m, side);
-    const nm = getName(m, side);
-    const sd = getSeed(m, side);
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 6px', background: win ? 'rgba(255,255,255,0.35)' : 'transparent', borderTop: side === 'B' ? `1px solid rgba(255,255,255,0.2)` : 'none' }}>
-        {showSeed && (
-          <div style={{ width: 22, height: 18, background: GOLD, color: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 900, borderRadius: 2, flexShrink: 0 }}>
-            {sd}
+  const OctBox = ({ m, labelSeeds, seedLeft }: { m: any; labelSeeds: string; seedLeft: boolean }) => {
+    const wA = isWin(m, 'A'), wB = isWin(m, 'B');
+    const SeedBadge = ({ side }: { side: 'A' | 'B' }) => (
+      <div style={{ width: 20, height: 20, background: GOLD, color: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 900, borderRadius: 2, flexShrink: 0 }}>
+        {getSeed(m, side)}
+      </div>
+    );
+    const Row = ({ side }: { side: 'A' | 'B' }) => {
+      const win = side === 'A' ? wA : wB;
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 5px', background: win ? 'rgba(255,255,255,0.25)' : 'transparent', borderTop: side === 'B' ? '1px solid rgba(255,255,255,0.15)' : 'none' }}>
+          {seedLeft && <SeedBadge side={side} />}
+          <div style={{ flex: 1, background: WHITE, height: 20, padding: '0 5px', fontSize: 11, fontWeight: win ? 700 : 400, color: win ? '#135c1a' : '#333', display: 'flex', alignItems: 'center', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+            {getName(m, side) || <span style={{ color: '#ccc' }}>—</span>}
           </div>
-        )}
-        <div style={{ flex: 1, background: WHITE, padding: '2px 6px', fontSize: 13, fontWeight: win ? 700 : 400, color: win ? '#135c1a' : '#333', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, height: 22, display: 'flex', alignItems: 'center' }}>
-          {nm || <span style={{ color: '#bbb' }}>—</span>}
+          {!seedLeft && <SeedBadge side={side} />}
         </div>
-        {m?.resultado && (
-          <div style={{ width: 20, fontSize: 12, fontWeight: 900, color: win ? WHITE : 'rgba(255,255,255,0.5)', textAlign: 'center', flexShrink: 0 }}>
-            {m.resultado.split('-')[side === 'A' ? 0 : 1]}
-          </div>
-        )}
+      );
+    };
+    return (
+      <div style={{ background: VERDE2, border: `1px solid rgba(245,208,32,0.5)`, borderRadius: 4, marginBottom: 5, overflow: 'hidden', fontFamily: F }}>
+        <div style={{ background: GOLD, color: '#1a1a1a', padding: '3px 6px', fontSize: 11, fontWeight: 900, letterSpacing: 0.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>OCTAVOS {labelSeeds}</span>
+          {m?.hora ? <span style={{ fontWeight: 400, fontSize: 10 }}>🕐{m.hora}</span> : <span style={{ fontWeight: 400, fontSize: 10, opacity: 0.5 }}>Hora: ___</span>}
+        </div>
+        <Row side="A" /><Row side="B" />
       </div>
     );
   };
 
-  const OctBox = ({ m, seeds }: { m: any; seeds: string }) => (
-    <div style={{ background: VERDE2, border: `1px solid ${GOLD}`, borderRadius: 4, marginBottom: 6, overflow: 'hidden', fontFamily: F }}>
-      <div style={{ background: GOLD, color: '#1a1a1a', padding: '3px 8px', fontSize: 12, fontWeight: 900, letterSpacing: 1, display: 'flex', justifyContent: 'space-between' }}>
-        <span>OCTAVOS ({seeds})</span>
-        {m?.hora && <span style={{ fontWeight: 400, fontSize: 11 }}>🕐 {m.hora}</span>}
+  const StageBox = ({ m, label }: { m: any; label: string }) => {
+    const wA = isWin(m, 'A'), wB = isWin(m, 'B');
+    const Row = ({ side }: { side: 'A' | 'B' }) => {
+      const win = side === 'A' ? wA : wB;
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', padding: '3px 5px', background: win ? 'rgba(255,255,255,0.25)' : 'transparent', borderTop: side === 'B' ? '1px solid rgba(255,255,255,0.15)' : 'none' }}>
+          <div style={{ flex: 1, background: WHITE, height: 20, padding: '0 5px', fontSize: 11, fontWeight: win ? 700 : 400, color: win ? '#135c1a' : '#333', display: 'flex', alignItems: 'center', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+            {getName(m, side) || <span style={{ color: '#ccc' }}>—</span>}
+          </div>
+          {m?.resultado && <span style={{ fontSize: 11, fontWeight: 900, color: win ? GOLD : 'rgba(255,255,255,0.4)', marginLeft: 3, flexShrink: 0 }}>
+            {m.resultado.split('-')[side === 'A' ? 0 : 1]}
+          </span>}
+        </div>
+      );
+    };
+    return (
+      <div style={{ background: VERDE2, border: `2px solid ${GOLD}`, borderRadius: 4, overflow: 'hidden', fontFamily: F }}>
+        <div style={{ background: GOLD, color: '#1a1a1a', padding: '3px 7px', fontSize: 11, fontWeight: 900, letterSpacing: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{label}</span>
+          {m?.hora && <span style={{ fontWeight: 400, fontSize: 10 }}>🕐{m.hora}</span>}
+        </div>
+        <Row side="A" /><Row side="B" />
       </div>
-      <PlayerRow m={m} side="A" />
-      <PlayerRow m={m} side="B" />
+    );
+  };
+
+  // Connector line helper
+  const VConn = ({ top, height, borderSide }: { top: string; height: string; borderSide: 'left' | 'right' }) => (
+    <div style={{ position: 'absolute', [borderSide]: 0, top, height, [`border${borderSide === 'left' ? 'Left' : 'Right'}`]: `2px solid ${GOLD}`, width: 1 }} />
+  );
+  const HConn = ({ top, borderSide }: { top: string; borderSide: 'left' | 'right' }) => (
+    <div style={{ position: 'absolute', [borderSide]: 0, top, height: 0, [`border${borderSide === 'left' ? 'Left' : 'Right'}`]: 'none', borderTop: `2px solid ${GOLD}`, width: 10 }} />
+  );
+
+  // Each side column has 4 oct boxes. Heights vary but roughly equal.
+  // We use flex column with evenly spaced items + relative connectors.
+
+  const OctCol = ({ matches, seeds, seedLeft }: { matches: any[]; seeds: string[]; seedLeft: boolean }) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0, flex: 1 }}>
+      {matches.map((m, i) => <OctBox key={i} m={m} labelSeeds={seeds[i]} seedLeft={seedLeft} />)}
     </div>
   );
 
-  const StageBox = ({ m, label, showSeed = false }: { m: any; label: string; showSeed?: boolean }) => (
-    <div style={{ background: VERDE2, border: `2px solid ${GOLD}`, borderRadius: 5, overflow: 'hidden', fontFamily: F, marginBottom: 4 }}>
-      <div style={{ background: GOLD, color: '#1a1a1a', padding: '4px 10px', fontSize: 13, fontWeight: 900, letterSpacing: 1, display: 'flex', justifyContent: 'space-between' }}>
-        <span>{label}</span>
-        {m?.hora && <span style={{ fontWeight: 400, fontSize: 11 }}>🕐 {m.hora}</span>}
-      </div>
-      <PlayerRow m={m} side="A" showSeed={showSeed} />
-      <PlayerRow m={m} side="B" showSeed={showSeed} />
+  const CuaCol = ({ matches }: { matches: any[] }) => (
+    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-around', flex: 1 }}>
+      {matches.map((m, i) => <StageBox key={i} m={m} label="CUARTOS" />)}
     </div>
   );
 
-  // Connector styles
-  const connL = (top: string, height: string) => ({
-    position: 'absolute' as const, right: 0, top, height,
-    borderRight: `2px solid ${GOLD}`, width: 10,
-  });
-  const connLH = (top: string) => ({
-    position: 'absolute' as const, right: 0, top, height: 0,
-    borderTop: `2px solid ${GOLD}`, width: 18,
-  });
+  const SemiCol = ({ m }: { m: any }) => (
+    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1 }}>
+      <StageBox m={m} label="SEMIFINAL" />
+    </div>
+  );
 
   return (
-    <div style={{ width: 1080, background: VERDE, border: `8px solid ${BROWN}`, boxSizing: 'border-box', fontFamily: F }}>
+    <div style={{ width: 1080, background: VERDE, border: `10px solid ${BROWN}`, boxSizing: 'border-box', fontFamily: F }}>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', padding: '10px 16px', borderBottom: `4px solid ${BROWN}`, gap: 12 }}>
-        <div style={{ background: CREAM, border: `2px solid ${GOLD}`, borderRadius: 4, padding: '4px 10px', fontSize: 13, fontWeight: 700, color: '#1a1a1a', minWidth: 180 }}>
-          SALA: {sala || <span style={{ color: '#999' }}>—</span>}
+      {/* ── HEADER ── */}
+      <div style={{ display: 'flex', alignItems: 'center', padding: '8px 14px', borderBottom: `4px solid ${BROWN}`, gap: 10 }}>
+        <div style={{ background: CREAM, border: `2px solid ${GOLD}`, borderRadius: 3, padding: '4px 8px', fontSize: 12, fontWeight: 700, color: '#333', minWidth: 160 }}>
+          SALA: <span style={{ color: '#555' }}>{sala || '___________'}</span>
         </div>
         <div style={{ flex: 1, textAlign: 'center' }}>
-          <div style={{ fontSize: 28, fontWeight: 900, color: GOLD, letterSpacing: 4, textTransform: 'uppercase', textShadow: '1px 1px 3px rgba(0,0,0,0.5)', lineHeight: 1.1 }}>{data.torneo}</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: WHITE, letterSpacing: 3, marginTop: 2, opacity: 0.9 }}>{data.fase}</div>
+          <div style={{ fontSize: 26, fontWeight: 900, color: GOLD, letterSpacing: 5, textTransform: 'uppercase', textShadow: '2px 2px 0px rgba(0,0,0,0.4)', lineHeight: 1.1 }}>{data.torneo}</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: WHITE, letterSpacing: 3, marginTop: 2, opacity: 0.85 }}>{data.fase}</div>
         </div>
-        <div style={{ background: CREAM, border: `2px solid ${GOLD}`, borderRadius: 4, padding: '4px 10px', fontSize: 13, fontWeight: 700, color: '#1a1a1a', minWidth: 180, textAlign: 'right' }}>
-          FECHA: {fechaBracket || <span style={{ color: '#999' }}>—</span>}
+        <div style={{ background: CREAM, border: `2px solid ${GOLD}`, borderRadius: 3, padding: '4px 8px', fontSize: 12, fontWeight: 700, color: '#333', minWidth: 160, textAlign: 'right' }}>
+          FECHA: <span style={{ color: '#555' }}>{fechaBracket || '___________'}</span>
         </div>
       </div>
 
-      {/* Main bracket — 7 columns */}
-      <div style={{ display: 'flex', padding: '10px 6px', gap: 4, alignItems: 'stretch' }}>
+      {/* ── BRACKET ── */}
+      <div style={{ display: 'flex', padding: '8px 6px 6px', alignItems: 'stretch', gap: 0 }}>
 
-        {/* COL 1: Left octavos */}
-        <div style={{ width: 210, flexShrink: 0 }}>
-          <OctBox m={oct[0]} seeds="1 vs 16" />
-          <OctBox m={oct[1]} seeds="8 vs 9" />
-          <OctBox m={oct[2]} seeds="5 vs 12" />
-          <OctBox m={oct[3]} seeds="4 vs 13" />
+        {/* LEFT OCTAVOS 155px */}
+        <div style={{ width: 155, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <OctBox m={oct[0]} labelSeeds="(1-16)" seedLeft={true} />
+          <OctBox m={oct[1]} labelSeeds="(8-9)"  seedLeft={true} />
+          <OctBox m={oct[2]} labelSeeds="(5-12)" seedLeft={true} />
+          <OctBox m={oct[3]} labelSeeds="(4-13)" seedLeft={true} />
         </div>
 
-        {/* COL 2: Left connector + cuartos */}
-        <div style={{ width: 8, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-around' }}>
-          <div style={{ flex: 1, borderRight: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}`, marginBottom: -1 }} />
-          <div style={{ flex: 1, borderRight: `2px solid ${GOLD}`, borderTop: `2px solid ${GOLD}`, marginTop: -1 }} />
-          <div style={{ flex: 1, borderRight: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}`, marginBottom: -1 }} />
-          <div style={{ flex: 1, borderRight: `2px solid ${GOLD}`, borderTop: `2px solid ${GOLD}`, marginTop: -1 }} />
+        {/* Connector oct→cua left */}
+        <div style={{ width: 10, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-around' }}>
+          <div style={{ flex: 1, borderRight: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}` }} />
+          <div style={{ flex: 1, borderRight: `2px solid ${GOLD}`, borderTop: `2px solid ${GOLD}` }} />
+          <div style={{ flex: 1, borderRight: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}` }} />
+          <div style={{ flex: 1, borderRight: `2px solid ${GOLD}`, borderTop: `2px solid ${GOLD}` }} />
         </div>
 
-        <div style={{ width: 180, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-around' }}>
+        {/* LEFT CUARTOS 140px */}
+        <div style={{ width: 140, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-around', gap: 4 }}>
           <StageBox m={cua[0]} label="CUARTOS" />
           <StageBox m={cua[1]} label="CUARTOS" />
         </div>
 
-        {/* COL 3: Left connector cuartos→semi */}
-        <div style={{ width: 8, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-around' }}>
-          <div style={{ flex: 2, borderRight: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}`, marginBottom: -1 }} />
-          <div style={{ flex: 2, borderRight: `2px solid ${GOLD}`, borderTop: `2px solid ${GOLD}`, marginTop: -1 }} />
+        {/* Connector cua→semi left */}
+        <div style={{ width: 10, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 2, borderRight: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}` }} />
+          <div style={{ flex: 2, borderRight: `2px solid ${GOLD}`, borderTop: `2px solid ${GOLD}` }} />
           <div style={{ flex: 4 }} />
         </div>
 
-        {/* COL 4: Left semi */}
-        <div style={{ width: 165, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', paddingTop: '20%' }}>
+        {/* LEFT SEMI 125px */}
+        <div style={{ width: 125, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', paddingTop: '18%' }}>
           <StageBox m={sem[0]} label="SEMIFINAL" />
         </div>
 
-        {/* COL 5: Center */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '0 4px' }}>
-          <img src="/logo-febiu.png" alt="FEBIU" crossOrigin="anonymous"
-            style={{ width: 70, height: 70, borderRadius: '50%', border: `3px solid ${GOLD}`, objectFit: 'contain', background: WHITE }} />
-          <div style={{ color: GOLD, fontSize: 15, fontWeight: 900, letterSpacing: 3 }}>FINAL</div>
-          <StageBox m={fin} label="FINAL" />
-          <div style={{ color: GOLD, fontSize: 17, fontWeight: 900, letterSpacing: 3, marginTop: 4 }}>🏆 CAMPEÓN</div>
-          <div style={{ background: camp ? GOLD : 'rgba(255,255,255,0.1)', border: `3px solid ${GOLD}`, borderRadius: 5, padding: '8px 12px', fontSize: 15, fontWeight: 900, textAlign: 'center', width: '90%', color: camp ? '#1a1a1a' : 'rgba(255,255,255,0.3)', minHeight: 38, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {camp ? camp.nombre : '—'}
-          </div>
-          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, textAlign: 'center', marginTop: 4 }}>
-            FEBIU · {data.temporada}
-          </div>
+        {/* Connector semi→final left */}
+        <div style={{ width: 10, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 3, borderRight: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}` }} />
+          <div style={{ flex: 5 }} />
         </div>
 
-        {/* COL 6: Right semi */}
-        <div style={{ width: 165, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: '20%' }}>
+        {/* CENTER */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '0 4px' }}>
+          <img src="/logo-febiu.png" alt="FEBIU" crossOrigin="anonymous"
+            style={{ width: 60, height: 60, borderRadius: '50%', border: `3px solid ${GOLD}`, objectFit: 'contain', background: WHITE }} />
+          <div style={{ color: GOLD, fontSize: 13, fontWeight: 900, letterSpacing: 3, textAlign: 'center' }}>FINAL</div>
+          <StageBox m={fin} label="FINAL" />
+          <div style={{ color: GOLD, fontSize: 14, fontWeight: 900, letterSpacing: 3, marginTop: 4 }}>🏆 CAMPEÓN</div>
+          <div style={{
+            background: camp ? GOLD : 'rgba(255,255,255,0.08)',
+            border: `3px solid ${GOLD}`, borderRadius: 4,
+            padding: '6px 8px', fontSize: 12, fontWeight: 900,
+            textAlign: 'center', width: '100%',
+            color: camp ? '#1a1a1a' : 'rgba(255,255,255,0.25)',
+            minHeight: 30, display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            {camp ? camp.nombre : '—'}
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, marginTop: 2 }}>FEBIU · {data.temporada}</div>
+        </div>
+
+        {/* Connector final→semi right */}
+        <div style={{ width: 10, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 5 }} />
+          <div style={{ flex: 3, borderLeft: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}` }} />
+        </div>
+
+        {/* RIGHT SEMI 125px */}
+        <div style={{ width: 125, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: '18%' }}>
           <StageBox m={sem[1]} label="SEMIFINAL" />
         </div>
 
-        {/* COL 7: Right connector semi→cuartos */}
-        <div style={{ width: 8, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-around' }}>
+        {/* Connector semi→cua right */}
+        <div style={{ width: 10, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
           <div style={{ flex: 4 }} />
-          <div style={{ flex: 2, borderLeft: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}`, marginBottom: -1 }} />
-          <div style={{ flex: 2, borderLeft: `2px solid ${GOLD}`, borderTop: `2px solid ${GOLD}`, marginTop: -1 }} />
+          <div style={{ flex: 2, borderLeft: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}` }} />
+          <div style={{ flex: 2, borderLeft: `2px solid ${GOLD}`, borderTop: `2px solid ${GOLD}` }} />
         </div>
 
-        {/* COL 8: Right cuartos */}
-        <div style={{ width: 180, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-around' }}>
+        {/* RIGHT CUARTOS 140px */}
+        <div style={{ width: 140, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-around', gap: 4 }}>
           <StageBox m={cua[3]} label="CUARTOS" />
           <StageBox m={cua[2]} label="CUARTOS" />
         </div>
 
-        {/* COL 9: Right connector cuartos→oct */}
-        <div style={{ width: 8, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-around' }}>
-          <div style={{ flex: 1, borderLeft: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}`, marginBottom: -1 }} />
-          <div style={{ flex: 1, borderLeft: `2px solid ${GOLD}`, borderTop: `2px solid ${GOLD}`, marginTop: -1 }} />
-          <div style={{ flex: 1, borderLeft: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}`, marginBottom: -1 }} />
-          <div style={{ flex: 1, borderLeft: `2px solid ${GOLD}`, borderTop: `2px solid ${GOLD}`, marginTop: -1 }} />
+        {/* Connector cua→oct right */}
+        <div style={{ width: 10, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-around' }}>
+          <div style={{ flex: 1, borderLeft: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}` }} />
+          <div style={{ flex: 1, borderLeft: `2px solid ${GOLD}`, borderTop: `2px solid ${GOLD}` }} />
+          <div style={{ flex: 1, borderLeft: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}` }} />
+          <div style={{ flex: 1, borderLeft: `2px solid ${GOLD}`, borderTop: `2px solid ${GOLD}` }} />
         </div>
 
-        {/* COL 10: Right octavos */}
-        <div style={{ width: 210, flexShrink: 0 }}>
-          <OctBox m={oct[7]} seeds="2 vs 15" />
-          <OctBox m={oct[6]} seeds="7 vs 10" />
-          <OctBox m={oct[5]} seeds="6 vs 11" />
-          <OctBox m={oct[4]} seeds="3 vs 14" />
+        {/* RIGHT OCTAVOS 155px */}
+        <div style={{ width: 155, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <OctBox m={oct[7]} labelSeeds="(2-15)" seedLeft={false} />
+          <OctBox m={oct[6]} labelSeeds="(7-10)" seedLeft={false} />
+          <OctBox m={oct[5]} labelSeeds="(6-11)" seedLeft={false} />
+          <OctBox m={oct[4]} labelSeeds="(3-14)" seedLeft={false} />
         </div>
 
       </div>
     </div>
   );
 }
+
 
 // ── Dispatcher principal ──────────────────────────────────────────────
 function PubContenido({ data, tema, notas, sala, fechaBracket }: { data: any; tema: any; notas: string; sala: string; fechaBracket: string }) {
