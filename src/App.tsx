@@ -15,6 +15,7 @@ import UsersPage from './pages/UsersPage';
 import FaseConfigPage from './pages/FaseConfigPage';
 import RankingPage from './pages/RankingPage';
 import RankingFinalPage from './pages/RankingFinalPage';
+import RankingAcumuladoPage from './pages/RankingAcumuladoPage';
 import AdminPublicacionesPage from './pages/AdminPublicacionesPage';
 import ConfigTorneoPage from './pages/ConfigTorneoPage';
 import Layout from './components/layout/Layout';
@@ -37,6 +38,7 @@ function AppRoutes() {
       <Route path="/fixture"       element={<FixturePage />} />
       <Route path="/ranking"       element={<RankingPage />} />
       <Route path="/ranking-final" element={<RankingFinalPage />} />
+      <Route path="ranking-acumulado" element={<RankingAcumuladoPage />} />
       <Route path="/publicaciones" element={<AdminPublicacionesPage />} />
 
       <Route path="/" element={
