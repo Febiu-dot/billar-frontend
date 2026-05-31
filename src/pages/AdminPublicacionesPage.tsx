@@ -354,8 +354,10 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
 }
 
 // ── Plantilla Bracket Nacional ────────────────────────────────────────
-function PlantillaBracketNacional({ data, sala, fechaBracket, horasOctavos }:
-  { data: any; sala: string; fechaBracket: string; horasOctavos: string[] }) {
+type HorasBracket = { oct: string[]; cua: string[]; sem: string[]; fin: string };
+
+function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
+  { data: any; sala: string; fechaBracket: string; horas: HorasBracket }) {
   const oct  = data.octavos ?? Array(8).fill(null);
   const cua  = data.cuartos ?? Array(4).fill(null);
   const sem  = data.semis   ?? Array(2).fill(null);
@@ -396,6 +398,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horasOctavos }:
   // ── Caja de OCTAVOS (sin mostrar semillas en el header, hora editable) ──
   const OctBox = ({ m, hora, seedLeft }: { m: any; hora: string; seedLeft: boolean }) => {
     const wA = isWin(m, 'A'), wB = isWin(m, 'B');
+    const horaShow = (hora && hora.trim()) ? hora : (m?.hora || '');
     const SeedBadge = ({ side }: { side: 'A' | 'B' }) => {
       const s = getSeed(m, side);
       if (!s) return <div style={{ width: 22, flexShrink: 0 }} />;
@@ -419,7 +422,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horasOctavos }:
       <div style={{ background: BG2, borderRadius: 8, marginBottom: 6, overflow: 'hidden', fontFamily: F, boxShadow: '0 2px 6px rgba(0,0,0,0.22)' }}>
         <div style={{ background: `linear-gradient(90deg, ${GOLD}, ${GOLD}dd)`, color: INK, padding: '4px 8px', fontSize: 11, fontWeight: 900, letterSpacing: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>OCTAVOS</span>
-          <span style={{ fontWeight: 700, fontSize: 10 }}>🕐 {hora && hora.trim() ? hora : 'Hora: ___'}</span>
+          <span style={{ fontWeight: 700, fontSize: 10 }}>🕐 {horaShow || 'Hora: ___'}</span>
         </div>
         <Row side="A" /><Row side="B" />
       </div>
@@ -427,8 +430,9 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horasOctavos }:
   };
 
   // ── Caja de etapas (cuartos / semis / final) ──
-  const StageBox = ({ m, label }: { m: any; label: string }) => {
+  const StageBox = ({ m, label, hora }: { m: any; label: string; hora: string }) => {
     const wA = isWin(m, 'A'), wB = isWin(m, 'B');
+    const horaShow = (hora && hora.trim()) ? hora : (m?.hora || '');
     const Row = ({ side }: { side: 'A' | 'B' }) => {
       const win = side === 'A' ? wA : wB;
       return (
@@ -446,7 +450,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horasOctavos }:
       <div style={{ background: BG2, borderRadius: 8, overflow: 'hidden', fontFamily: F, boxShadow: '0 2px 8px rgba(0,0,0,0.28)' }}>
         <div style={{ background: `linear-gradient(90deg, ${GOLD}, ${GOLD}dd)`, color: INK, padding: '4px 8px', fontSize: 11, fontWeight: 900, letterSpacing: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>{label}</span>
-          {m?.hora && <span style={{ fontWeight: 700, fontSize: 10 }}>🕐{m.hora}</span>}
+          <span style={{ fontWeight: 700, fontSize: 10 }}>🕐 {horaShow || 'Hora: ___'}</span>
         </div>
         <Row side="A" /><Row side="B" />
       </div>
@@ -482,10 +486,10 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horasOctavos }:
 
         {/* LEFT OCTAVOS */}
         <div style={{ width: 158, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <OctBox m={oct[0]} hora={horasOctavos[0]} seedLeft={true} />
-          <OctBox m={oct[1]} hora={horasOctavos[1]} seedLeft={true} />
-          <OctBox m={oct[2]} hora={horasOctavos[2]} seedLeft={true} />
-          <OctBox m={oct[3]} hora={horasOctavos[3]} seedLeft={true} />
+          <OctBox m={oct[0]} hora={horas.oct[0]} seedLeft={true} />
+          <OctBox m={oct[1]} hora={horas.oct[1]} seedLeft={true} />
+          <OctBox m={oct[2]} hora={horas.oct[2]} seedLeft={true} />
+          <OctBox m={oct[3]} hora={horas.oct[3]} seedLeft={true} />
         </div>
 
         {/* Connector oct→cua left */}
@@ -498,8 +502,8 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horasOctavos }:
 
         {/* LEFT CUARTOS */}
         <div style={{ width: 142, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-around', gap: 4 }}>
-          <StageBox m={cua[0]} label="CUARTOS" />
-          <StageBox m={cua[1]} label="CUARTOS" />
+          <StageBox m={cua[0]} label="CUARTOS" hora={horas.cua[0]} />
+          <StageBox m={cua[1]} label="CUARTOS" hora={horas.cua[1]} />
         </div>
 
         {/* Connector cua→semi left */}
@@ -511,7 +515,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horasOctavos }:
 
         {/* LEFT SEMI */}
         <div style={{ width: 128, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', paddingTop: '18%' }}>
-          <StageBox m={sem[0]} label="SEMIFINAL" />
+          <StageBox m={sem[0]} label="SEMIFINAL" hora={horas.sem[0]} />
         </div>
 
         {/* Connector semi→final left */}
@@ -525,7 +529,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horasOctavos }:
           <img src="/logo-febiu.png" alt="FEBIU" crossOrigin="anonymous"
             style={{ width: 100, height: 100, borderRadius: '50%', border: `4px solid ${GOLD}`, objectFit: 'contain', background: WHITE, boxShadow: '0 4px 14px rgba(0,0,0,0.4)' }} />
           <div style={{ color: GOLD, fontSize: 15, fontWeight: 900, letterSpacing: 4, textAlign: 'center', marginTop: 4 }}>FINAL</div>
-          <StageBox m={fin} label="FINAL" />
+          <StageBox m={fin} label="FINAL" hora={horas.fin} />
           <div style={{ color: GOLD, fontSize: 15, fontWeight: 900, letterSpacing: 3, marginTop: 6 }}>🏆 CAMPEÓN</div>
           <div style={{
             background: camp ? `linear-gradient(90deg, ${GOLD}, ${GOLD}cc)` : 'rgba(255,255,255,0.08)',
@@ -549,7 +553,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horasOctavos }:
 
         {/* RIGHT SEMI */}
         <div style={{ width: 128, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: '18%' }}>
-          <StageBox m={sem[1]} label="SEMIFINAL" />
+          <StageBox m={sem[1]} label="SEMIFINAL" hora={horas.sem[1]} />
         </div>
 
         {/* Connector semi→cua right */}
@@ -561,8 +565,8 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horasOctavos }:
 
         {/* RIGHT CUARTOS */}
         <div style={{ width: 142, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-around', gap: 4 }}>
-          <StageBox m={cua[2]} label="CUARTOS" />
-          <StageBox m={cua[3]} label="CUARTOS" />
+          <StageBox m={cua[2]} label="CUARTOS" hora={horas.cua[2]} />
+          <StageBox m={cua[3]} label="CUARTOS" hora={horas.cua[3]} />
         </div>
 
         {/* Connector cua→oct right */}
@@ -575,10 +579,10 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horasOctavos }:
 
         {/* RIGHT OCTAVOS */}
         <div style={{ width: 158, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <OctBox m={oct[4]} hora={horasOctavos[4]} seedLeft={false} />
-          <OctBox m={oct[5]} hora={horasOctavos[5]} seedLeft={false} />
-          <OctBox m={oct[6]} hora={horasOctavos[6]} seedLeft={false} />
-          <OctBox m={oct[7]} hora={horasOctavos[7]} seedLeft={false} />
+          <OctBox m={oct[4]} hora={horas.oct[4]} seedLeft={false} />
+          <OctBox m={oct[5]} hora={horas.oct[5]} seedLeft={false} />
+          <OctBox m={oct[6]} hora={horas.oct[6]} seedLeft={false} />
+          <OctBox m={oct[7]} hora={horas.oct[7]} seedLeft={false} />
         </div>
 
       </div>
@@ -588,10 +592,10 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horasOctavos }:
 
 
 // ── Dispatcher principal ──────────────────────────────────────────────
-function PubContenido({ data, tema, notas, sala, fechaBracket, horasOctavos }:
-  { data: any; tema: any; notas: string; sala: string; fechaBracket: string; horasOctavos: string[] }) {
+function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
+  { data: any; tema: any; notas: string; sala: string; fechaBracket: string; horas: HorasBracket }) {
   if (data.tipo === 'bracket-nacional') {
-    return <PlantillaBracketNacional data={data} sala={sala} fechaBracket={fechaBracket} horasOctavos={horasOctavos} />;
+    return <PlantillaBracketNacional data={data} sala={sala} fechaBracket={fechaBracket} horas={horas} />;
   }
   return (
     <>
@@ -621,15 +625,21 @@ export default function AdminPublicacionesPage() {
   const [notas, setNotas]           = useState('');
   const [sala, setSala]             = useState('');
   const [fechaBracket, setFechaBracket] = useState('');
-  const [horasOctavos, setHorasOctavos] = useState<string[]>(['', '', '', '', '', '', '', '']);
+  const [horas, setHoras] = useState<HorasBracket>({
+    oct: ['', '', '', '', '', '', '', ''],
+    cua: ['', '', '', ''],
+    sem: ['', ''],
+    fin: '',
+  });
   const [error, setError]           = useState('');
   const exportRef  = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  const setHoraOct = (i: number, v: string) =>
-    setHorasOctavos(prev => prev.map((h, idx) => (idx === i ? v : h)));
+  const setHoraFase = (fase: 'oct' | 'cua' | 'sem', i: number, v: string) =>
+    setHoras(prev => ({ ...prev, [fase]: prev[fase].map((h, idx) => (idx === i ? v : h)) }));
+  const setHoraFinal = (v: string) => setHoras(prev => ({ ...prev, fin: v }));
   const aplicarHoraGlobal = (v: string) =>
-    setHorasOctavos(Array(8).fill(v));
+    setHoras({ oct: Array(8).fill(v), cua: Array(4).fill(v), sem: Array(2).fill(v), fin: v });
 
   useEffect(() => {
     api.get('/publicaciones/circuitos').then(r => {
@@ -651,7 +661,7 @@ export default function AdminPublicacionesPage() {
       wrapperRef.current.style.width  = `${Math.round(w * scale)}px`;
       wrapperRef.current.style.height = `${exportRef.current.scrollHeight * scale}px`;
     }
-  }, [pubData, notas, sala, fechaBracket, horasOctavos]);
+  }, [pubData, notas, sala, fechaBracket, horas]);
 
   const vaciarTodo = async () => {
     if (!confirm('⚠️ ¿Vaciar todos los reportes y ranking?\n\nEsta acción no se puede deshacer.')) return;
@@ -730,7 +740,7 @@ export default function AdminPublicacionesPage() {
     <div>
       {pubData && esAdmin && (
         <div ref={exportRef} style={{ position: 'absolute', left: '-9999px', top: 0, fontFamily: F, background: '#ffffff', lineHeight: 1.3 }}>
-          <PubContenido data={pubData} tema={tema} notas={notas} sala={sala} fechaBracket={fechaBracket} horasOctavos={horasOctavos} />
+          <PubContenido data={pubData} tema={tema} notas={notas} sala={sala} fechaBracket={fechaBracket} horas={horas} />
         </div>
       )}
 
@@ -784,25 +794,72 @@ export default function AdminPublicacionesPage() {
                 </div>
               </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-chalk/60 text-xs uppercase tracking-widest">Horarios de octavos</label>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-chalk/60 text-xs uppercase tracking-widest">Horarios por partido (campo vacío usa la hora del sistema)</label>
                   <input
-                    className="input !w-40 !py-1 text-xs"
+                    className="input !w-44 !py-1 text-xs"
                     placeholder="Aplicar a todos…"
                     onChange={e => aplicarHoraGlobal(e.target.value)}
                   />
                 </div>
-                <div className="grid grid-cols-4 gap-2">
-                  {horasOctavos.map((h, i) => (
-                    <input
-                      key={i}
-                      className="input !py-1 text-sm"
-                      placeholder={`Oct ${i + 1}`}
-                      value={h}
-                      onChange={e => setHoraOct(i, e.target.value)}
-                    />
-                  ))}
+
+                <div>
+                  <span className="text-chalk/40 text-[11px] uppercase tracking-widest">Octavos</span>
+                  <div className="grid grid-cols-4 gap-2 mt-1">
+                    {horas.oct.map((h, i) => (
+                      <input
+                        key={i}
+                        className="input !py-1 text-sm"
+                        placeholder={`Oct ${i + 1}`}
+                        value={h}
+                        onChange={e => setHoraFase('oct', i, e.target.value)}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-chalk/40 text-[11px] uppercase tracking-widest">Cuartos</span>
+                  <div className="grid grid-cols-4 gap-2 mt-1">
+                    {horas.cua.map((h, i) => (
+                      <input
+                        key={i}
+                        className="input !py-1 text-sm"
+                        placeholder={`Cuartos ${i + 1}`}
+                        value={h}
+                        onChange={e => setHoraFase('cua', i, e.target.value)}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-4 gap-2 items-end">
+                  <div className="col-span-2">
+                    <span className="text-chalk/40 text-[11px] uppercase tracking-widest">Semifinales</span>
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      {horas.sem.map((h, i) => (
+                        <input
+                          key={i}
+                          className="input !py-1 text-sm"
+                          placeholder={`Semi ${i + 1}`}
+                          value={h}
+                          onChange={e => setHoraFase('sem', i, e.target.value)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-chalk/40 text-[11px] uppercase tracking-widest">Final</span>
+                    <div className="mt-1">
+                      <input
+                        className="input !py-1 text-sm w-full"
+                        placeholder="Hora final"
+                        value={horas.fin}
+                        onChange={e => setHoraFinal(e.target.value)}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -840,7 +897,7 @@ export default function AdminPublicacionesPage() {
             </p>
             <div ref={wrapperRef} style={{ overflow: 'hidden', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 4px 20px rgba(0,0,0,0.3)', display: 'inline-block' }}>
               <div style={{ width: '1080px', transform: 'scale(0.5)', transformOrigin: 'top left', fontFamily: F, background: '#ffffff', lineHeight: 1.3 }}>
-                <PubContenido data={pubData} tema={tema} notas={notas} sala={sala} fechaBracket={fechaBracket} horasOctavos={horasOctavos} />
+                <PubContenido data={pubData} tema={tema} notas={notas} sala={sala} fechaBracket={fechaBracket} horas={horas} />
               </div>
             </div>
           </div>
