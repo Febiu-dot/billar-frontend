@@ -930,17 +930,21 @@ export default function AdminPublicacionesPage() {
     try {
       const h2c = await cargarHtml2Canvas();
       const isBracket = pubData?.tipo === 'bracket-nacional';
-      const canvas = await h2c(exportRef.current, {
+      const el = exportRef.current;
+      const rect = el.getBoundingClientRect();
+      const canvas = await h2c(el, {
         scale: 3,
         useCORS: true,
         allowTaint: true,
         backgroundColor: isBracket ? null : '#ffffff',
-        width: exportRef.current.scrollWidth,
-        height: exportRef.current.scrollHeight,
-        windowWidth: exportRef.current.scrollWidth,
-        windowHeight: exportRef.current.scrollHeight,
+        width: el.scrollWidth,
+        height: el.scrollHeight,
+        windowWidth: el.scrollWidth,
+        windowHeight: el.scrollHeight,
         x: 0,
         y: 0,
+        scrollX: -rect.left,
+        scrollY: -rect.top,
         logging: false,
       });
       const link = document.createElement('a');
@@ -958,7 +962,7 @@ export default function AdminPublicacionesPage() {
   return (
     <div>
       {pubData && esAdmin && (
-        <div ref={exportRef} style={{ position: 'fixed', top: 0, left: 0, opacity: 0, pointerEvents: 'none', zIndex: -1, fontFamily: F, lineHeight: 1.3 }}>
+        <div ref={exportRef} style={{ position: 'absolute', top: '-9999px', left: 0, fontFamily: F, lineHeight: 1.3 }}>
           <PubContenido data={pubData} tema={tema} notas={notas} sala={sala} fechaBracket={fechaBracket} horas={horas} />
         </div>
       )}
