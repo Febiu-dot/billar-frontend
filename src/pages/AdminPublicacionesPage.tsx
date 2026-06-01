@@ -929,9 +929,19 @@ export default function AdminPublicacionesPage() {
     setExportando(true);
     try {
       const h2c = await cargarHtml2Canvas();
+      const isBracket = pubData?.tipo === 'bracket-nacional';
       const canvas = await h2c(exportRef.current, {
-        scale: 3, useCORS: true, allowTaint: true, backgroundColor: '#ffffff',
-        width: exportRef.current.scrollWidth, height: exportRef.current.scrollHeight,
+        scale: 3,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: isBracket ? null : '#ffffff',
+        width: exportRef.current.scrollWidth,
+        height: exportRef.current.scrollHeight,
+        windowWidth: exportRef.current.scrollWidth,
+        windowHeight: exportRef.current.scrollHeight,
+        x: 0,
+        y: 0,
+        logging: false,
       });
       const link = document.createElement('a');
       link.download = `${pubData?.fase ?? 'publicacion'} - ${pubData?.circuito ?? ''}.png`.replace(/[/\\?%*:|"<>]/g, '-');
@@ -948,7 +958,7 @@ export default function AdminPublicacionesPage() {
   return (
     <div>
       {pubData && esAdmin && (
-        <div ref={exportRef} style={{ position: 'absolute', left: '-9999px', top: 0, fontFamily: F, background: '#ffffff', lineHeight: 1.3 }}>
+        <div ref={exportRef} style={{ position: 'fixed', top: 0, left: 0, opacity: 0, pointerEvents: 'none', zIndex: -1, fontFamily: F, lineHeight: 1.3 }}>
           <PubContenido data={pubData} tema={tema} notas={notas} sala={sala} fechaBracket={fechaBracket} horas={horas} />
         </div>
       )}
