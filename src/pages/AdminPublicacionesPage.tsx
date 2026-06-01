@@ -617,7 +617,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
   );
 
   return (
-    <div className="bk-stage" ref={stageRef} style={{ ...cssVars, width: 1280, fontFamily: "'Rajdhani', sans-serif" } as React.CSSProperties}>
+    <div className="bk-stage" ref={stageRef} style={{ ...cssVars, width: 1440, fontFamily: "'Rajdhani', sans-serif" } as React.CSSProperties}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Condensed:wght@600;700;800&family=Oswald:wght@500;600;700&display=swap');
         .bk-stage{position:relative;padding:24px 28px 24px;background:radial-gradient(120% 90% at 50% 8%,rgba(95,212,255,.10),rgba(95,212,255,0) 55%),radial-gradient(150% 120% at 50% 42%,${C.navy2} 0%,${C.navy} 38%,${C.navyDeep} 70%,#03101f 100%);overflow:hidden;color:#fff;-webkit-font-smoothing:antialiased;}
@@ -627,14 +627,14 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
         .bk-header-bar{position:relative;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 18px 14px;}
         .bk-title-wrap{flex:1;text-align:center;}
         .bk-kicker{font-family:'Saira Condensed',sans-serif;letter-spacing:.62em;font-size:11px;font-weight:600;color:${C.cyanSoft};text-indent:.62em;margin-bottom:4px;text-transform:uppercase;opacity:.85;}
-        .bk-h1{font-family:'Saira Condensed',sans-serif;font-weight:800;font-size:46px;line-height:.9;letter-spacing:.04em;text-transform:uppercase;background:linear-gradient(180deg,#fff 0%,#ffe9a8 42%,${C.gold} 70%,${C.goldDeep} 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 12px rgba(244,196,48,.28));}
+        .bk-h1{font-family:'Saira Condensed',sans-serif;font-weight:800;font-size:46px;line-height:.9;letter-spacing:.04em;text-transform:uppercase;color:${C.gold};}
         .bk-subtitle{font-family:'Rajdhani',sans-serif;font-weight:600;letter-spacing:.35em;font-size:12px;color:rgba(255,255,255,.78);margin-top:8px;text-indent:.35em;text-transform:uppercase;}
         .bk-gold-rule{height:2px;width:100%;margin-top:12px;background:linear-gradient(90deg,transparent,${C.goldDeep} 12%,${C.goldBright} 50%,${C.goldDeep} 88%,transparent);box-shadow:0 0 12px rgba(244,196,48,.5);border-radius:2px;}
-        .bk-meta-chip{width:200px;background:linear-gradient(160deg,rgba(255,255,255,0.10),rgba(255,255,255,0.03));border:1px solid rgba(255,255,255,0.16);border-radius:12px;padding:10px 14px;backdrop-filter:blur(8px);box-shadow:0 8px 24px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.12);}
+        .bk-meta-chip{width:200px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.16);border-radius:12px;padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.35);}
         .bk-meta-chip .lab{font-family:'Saira Condensed',sans-serif;letter-spacing:.34em;font-weight:700;font-size:11px;color:${C.goldBright};text-transform:uppercase;}
         .bk-meta-chip .val{margin-top:6px;height:20px;border-bottom:2px dashed rgba(255,255,255,.32);font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;color:#fff;}
         .bk-meta-chip.right{text-align:right;}
-        .bk-bracket{position:relative;z-index:4;display:grid;grid-template-columns:1.15fr 0.45fr 1fr 0.45fr 1fr 1.35fr 1fr 0.45fr 1fr 0.45fr 1.15fr;align-items:stretch;column-gap:0;row-gap:0;min-height:480px;}
+        .bk-bracket{position:relative;z-index:4;display:grid;grid-template-columns:1.4fr 0.4fr 1fr 0.4fr 0.9fr 1.2fr 0.9fr 0.4fr 1fr 0.4fr 1.4fr;align-items:stretch;column-gap:0;row-gap:0;min-height:480px;}
         .bk-col{display:flex;flex-direction:column;justify-content:center;gap:18px;padding:0 8px;}
         .bk-col.bk-rail{padding:0;}
         .bk-round-head{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:5px 10px 5px 9px;border-radius:8px;background:linear-gradient(160deg,${C.goldBright},${C.gold} 55%,${C.goldDeep});box-shadow:0 4px 12px rgba(201,150,42,.45),inset 0 1px 0 rgba(255,255,255,.55);margin-bottom:-8px;position:relative;z-index:3;}
@@ -649,7 +649,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
         .bk-seat .dot{width:6px;height:18px;border-radius:2px;flex:none;background:linear-gradient(180deg,${C.navy2},${C.petrol});box-shadow:inset 0 1px 0 rgba(255,255,255,.25);}
         .bk-seat.bk-placeholder{background:linear-gradient(180deg,rgba(20,52,90,0.55),rgba(13,38,70,0.5));border:1px dashed rgba(143,227,255,0.35);box-shadow:none;}
         .bk-seat.bk-placeholder .dot{background:linear-gradient(180deg,${C.gold},${C.goldDeep});}
-        .bk-seat .nm{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:.01em;color:${C.ink};line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;}
+        .bk-seat .nm{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:.01em;color:${C.ink};line-height:1.1;flex:1;min-width:0;white-space:normal;word-break:break-word;}
         .bk-seat.bk-placeholder .nm{color:rgba(220,238,255,0.82);font-weight:600;font-size:12px;font-style:italic;letter-spacing:.02em;}
         .bk-seat.bk-winner .nm{font-weight:800;color:${C.navyDeep};}
         .bk-group{display:flex;flex-direction:column;}
@@ -660,18 +660,18 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
         .bk-logo-halo img{width:110px;height:110px;border-radius:50%;position:relative;z-index:2;box-shadow:0 8px 28px rgba(0,0,0,.5);}
         .bk-logo-halo .ring{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(244,196,48,.55);z-index:3;box-shadow:inset 0 0 14px rgba(244,196,48,.25);}
         .bk-final-block{width:100%;display:flex;flex-direction:column;align-items:center;}
-        .bk-final-label{font-family:'Saira Condensed',sans-serif;font-weight:800;letter-spacing:.4em;font-size:22px;text-indent:.4em;background:linear-gradient(180deg,#fff,${C.goldBright} 70%,${C.goldDeep});-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 8px rgba(244,196,48,.35));margin-bottom:8px;}
+        .bk-final-label{font-family:'Saira Condensed',sans-serif;font-weight:800;letter-spacing:.4em;font-size:22px;text-indent:.4em;color:${C.goldBright};margin-bottom:8px;}
         .bk-final-card{width:100%;position:relative;background:linear-gradient(165deg,rgba(20,58,98,0.98),rgba(8,28,54,0.98));border:1.5px solid rgba(244,196,48,0.55);border-radius:14px;padding:10px;box-shadow:0 0 0 1px rgba(95,212,255,.12),0 16px 36px rgba(0,0,0,.55),0 0 28px rgba(244,196,48,.18);}
         .bk-final-head{display:flex;align-items:center;justify-content:center;gap:8px;padding:6px 0 10px;}
         .bk-final-head .ft{font-family:'Saira Condensed',sans-serif;font-weight:800;letter-spacing:.12em;font-size:14px;color:${C.goldBright};text-transform:uppercase;}
         .bk-final-head .fh{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:4px;border-left:1px solid rgba(255,255,255,.2);padding-left:8px;}
         .bk-final-card .bk-seat{padding:10px;min-height:40px;}
-        .bk-final-card .bk-seat .nm{font-size:14px;max-width:none;}
+        .bk-final-card .bk-seat .nm{font-size:14px;}
         .bk-final-card .bk-seat.bk-placeholder .nm{font-size:12.5px;}
         .bk-champ{width:100%;display:flex;flex-direction:column;align-items:center;margin-top:4px;}
         .bk-trophy{font-size:28px;filter:drop-shadow(0 3px 10px rgba(244,196,48,.6));margin-bottom:2px;animation:floaty 3.6s ease-in-out infinite;}
         @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
-        .bk-champ-label{font-family:'Saira Condensed',sans-serif;font-weight:800;letter-spacing:.34em;font-size:18px;text-indent:.34em;background:linear-gradient(180deg,#fff,${C.goldBright} 65%,${C.goldDeep});-webkit-background-clip:text;background-clip:text;color:transparent;margin:3px 0 8px;}
+        .bk-champ-label{font-family:'Saira Condensed',sans-serif;font-weight:800;letter-spacing:.34em;font-size:18px;text-indent:.34em;color:${C.goldBright};margin:3px 0 8px;}
         .bk-champ-card{width:100%;height:52px;position:relative;border-radius:12px;background:linear-gradient(135deg,rgba(244,196,48,.16),rgba(95,212,255,.08)),linear-gradient(165deg,rgba(20,58,98,0.95),rgba(8,28,54,0.95));border:1.5px solid transparent;background-clip:padding-box;box-shadow:0 12px 32px rgba(0,0,0,.5),0 0 24px rgba(244,196,48,.2),inset 0 1px 0 rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;overflow:hidden;}
         .bk-champ-card::before{content:"";position:absolute;inset:0;border-radius:12px;padding:1.5px;background:linear-gradient(135deg,${C.goldBright},${C.cyan},${C.goldDeep});-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;}
         .bk-champ-card .shine{position:absolute;top:0;left:-60%;width:50%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.22),transparent);transform:skewX(-18deg);animation:shine 5s ease-in-out infinite;}
@@ -865,8 +865,8 @@ export default function AdminPublicacionesPage() {
   useEffect(() => {
     if (wrapperRef.current && exportRef.current) {
       const isBracket = pubData?.tipo === 'bracket-nacional';
-      const contentW = isBracket ? 1280 : 1080;
-      const scale = isBracket ? 0.52 : 0.5;
+      const contentW = isBracket ? 1440 : 1080;
+      const scale = isBracket ? 0.46 : 0.5;
       wrapperRef.current.style.width  = `${Math.round(contentW * scale)}px`;
       wrapperRef.current.style.height = `${Math.round(exportRef.current.scrollHeight * scale)}px`;
     }
@@ -1119,7 +1119,7 @@ export default function AdminPublicacionesPage() {
                : `${pubData.cruces?.length ?? 0} cruces`}
             </p>
             <div ref={wrapperRef} style={{ overflow: 'hidden', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 4px 20px rgba(0,0,0,0.3)', display: 'inline-block' }}>
-              <div style={{ width: esBracket ? '1280px' : '1080px', transform: esBracket ? 'scale(0.52)' : 'scale(0.5)', transformOrigin: 'top left', fontFamily: F, background: '#ffffff', lineHeight: 1.3 }}>
+              <div style={{ width: esBracket ? '1440px' : '1080px', transform: esBracket ? 'scale(0.46)' : 'scale(0.5)', transformOrigin: 'top left', fontFamily: F, background: '#ffffff', lineHeight: 1.3 }}>
                 <PubContenido data={pubData} tema={tema} notas={notas} sala={sala} fechaBracket={fechaBracket} horas={horas} />
               </div>
             </div>
