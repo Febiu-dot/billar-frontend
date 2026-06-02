@@ -7,7 +7,6 @@ interface Circuit    { id: number; name: string; tournamentId: number; order: nu
 interface Player     { id: number; firstName: string; lastName: string; dni?: string; club?: string; }
 interface RankingRow { posicion: number; dni: string; apellido: string; nombre: string; club: string; }
 
-// ── Parser CSV manual (sin dependencias) ─────────────────────────────
 function parseCSV(text: string): string[][] {
   const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
   return lines
@@ -40,7 +39,7 @@ export default function RankingCargaPage() {
   const [fileName, setFileName] = useState('');
   const [parseError, setParseError] = useState('');
   const [uploading, setUploading]   = useState(false);
-  const [resultado, setResultado]   = useState<{ cargados: number; errores: string[] } | null>(null);
+  const [resultado, setResultado]   = useState<{ cargados: number; errores: string[]; inscriptos?: number } | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -69,19 +68,16 @@ export default function RankingCargaPage() {
     finally { setLoadingPlayers(false); }
   };
 
-  // ── Descargar template CSV ────────────────────────────────────────
   const handleDownloadTemplate = () => {
     if (players.length === 0) { alert('Primero seleccioná un circuito con jugadores inscriptos'); return; }
-
     const header = 'Posicion,DNI,Apellido,Nombre,Club';
-    const rows = players.map((p, i) =>
+    const rowsCsv = players.map((p, i) =>
       `${i + 1},${p.dni ?? ''},${p.lastName},${p.firstName},${p.club ?? ''}`
     );
-    const csv = [header, ...rows].join('\n');
+    const csv = [header, ...rowsCsv].join('\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url  = URL.createObjectURL(blob);
     const link = document.createElement('a');
-
     const tournament = tournaments.find(t => t.id === Number(selectedTournament));
     const circuit    = circuits.find(c => c.id === Number(selectedCircuit));
     link.href     = url;
@@ -91,35 +87,30 @@ export default function RankingCargaPage() {
     URL.revokeObjectURL(url);
   };
 
-  // ── Subir y parsear CSV ───────────────────────────────────────────
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setParseError(''); setRows([]); setResultado(null);
     setFileName(file.name);
-
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
         const text = ev.target?.result as string;
         const raw  = parseCSV(text);
         if (raw.length < 2) { setParseError('El archivo está vacío'); return; }
-
         const headers = raw[0].map(h => h.toLowerCase().replace(/[^a-z]/g, ''));
         const colPos  = headers.findIndex(h => h.startsWith('pos'));
         const colDni  = headers.findIndex(h => h.includes('dni'));
         const colApe  = headers.findIndex(h => h.startsWith('ape'));
         const colNom  = headers.findIndex(h => h.startsWith('nom'));
         const colClub = headers.findIndex(h => h.includes('club'));
-
         if (colDni === -1) { setParseError('No se encontró la columna DNI'); return; }
-
         const parsed: RankingRow[] = [];
         for (let i = 1; i < raw.length; i++) {
           const row = raw[i];
           const dni = String(row[colDni] ?? '').trim();
           if (!dni) continue;
-          const posRaw  = colPos >= 0 ? Number(row[colPos]) : i;
+          const posRaw = colPos >= 0 ? Number(row[colPos]) : i;
           parsed.push({
             posicion: isNaN(posRaw) ? i : posRaw,
             dni,
@@ -128,7 +119,6 @@ export default function RankingCargaPage() {
             club:     colClub >= 0 ? String(row[colClub] ?? '') : '',
           });
         }
-
         if (parsed.length === 0) { setParseError('No se encontraron filas válidas'); return; }
         setRows(parsed);
       } catch { setParseError('Error al leer el archivo. Verificá que sea un CSV válido.'); }
@@ -137,16 +127,41 @@ export default function RankingCargaPage() {
     e.target.value = '';
   };
 
-  // ── Confirmar carga ───────────────────────────────────────────────
+  // ── Confirmar carga — inscribe automáticamente + carga ranking ────
   const handleConfirmar = async () => {
     if (!selectedCircuit || rows.length === 0) return;
     setUploading(true); setResultado(null);
     try {
+      // 1. Inscribir automáticamente jugadores no inscriptos
+      const inscriptos = new Set(players.map(p => p.dni));
+      let nuevosInscriptos = 0;
+      for (const row of rows) {
+        if (!row.dni || inscriptos.has(row.dni)) continue;
+        try {
+          const busq = await api.get(`/players?search=${row.dni}`);
+          const jugador = (busq.data as Player[]).find(p => p.dni === row.dni);
+          if (jugador) {
+            await api.post(`/circuits/${selectedCircuit}/players`, { playerId: jugador.id });
+            nuevosInscriptos++;
+          }
+        } catch { /* ya inscripto o no encontrado */ }
+      }
+
+      // 2. Cargar el ranking
       const res = await api.post(`/circuits/${selectedCircuit}/ranking-upload`, {
         rankings: rows.map(r => ({ dni: r.dni, position: r.posicion }))
       });
-      setResultado({ cargados: res.data.cargados, errores: res.data.errores ?? [] });
-      if ((res.data.errores ?? []).length === 0) setRows([]);
+      setResultado({ cargados: res.data.cargados, errores: res.data.errores ?? [], inscriptos: nuevosInscriptos });
+      if ((res.data.errores ?? []).length === 0) {
+        setRows([]);
+        // Refrescar jugadores inscriptos
+        const upd = await api.get(`/circuits/${selectedCircuit}`);
+        const ps = (upd.data.players ?? [])
+          .map((cp: any) => cp.player)
+          .filter((p: any) => p.dni !== 'FEBIU000')
+          .sort((a: any, b: any) => a.lastName.localeCompare(b.lastName));
+        setPlayers(ps);
+      }
     } catch (err: any) {
       setResultado({ cargados: 0, errores: [err?.response?.data?.error ?? 'Error al cargar'] });
     } finally { setUploading(false); }
@@ -161,12 +176,10 @@ export default function RankingCargaPage() {
     <div>
       <div className="px-6 pt-6 pb-4 border-b border-felt-light/20">
         <h1 className="font-display text-4xl text-gold">CARGA DE RANKING</h1>
-        <p className="text-chalk/50 text-sm mt-1">Importar ranking inicial desde archivo CSV (se abre con Excel)</p>
+        <p className="text-chalk/50 text-sm mt-1">Importar ranking inicial desde archivo CSV — inscribe jugadores automáticamente</p>
       </div>
 
       <div className="p-6 space-y-6">
-
-        {/* Selectors */}
         <div className="card space-y-4">
           <h2 className="font-display text-lg text-chalk">Seleccionar circuito</h2>
           <div className="flex flex-wrap gap-3">
@@ -188,7 +201,6 @@ export default function RankingCargaPage() {
           )}
         </div>
 
-        {/* Paso 1 */}
         <div className="card space-y-3">
           <div className="flex items-start justify-between flex-wrap gap-3">
             <div>
@@ -208,10 +220,10 @@ export default function RankingCargaPage() {
             <p>• Columna <span className="text-gold font-mono">DNI</span> — clave del jugador (no modificar)</p>
             <p>• Columnas Apellido, Nombre, Club — solo informativas</p>
             <p className="text-blue-400/60 pt-1">💡 En Excel: Guardar como → CSV UTF-8 (delimitado por comas)</p>
+            <p className="text-green-400/60">✨ Los jugadores del CSV se inscriben automáticamente al confirmar</p>
           </div>
         </div>
 
-        {/* Paso 2 */}
         <div className="card space-y-3">
           <h2 className="font-display text-lg text-chalk">Paso 2 — Subir CSV completado</h2>
           <div className="flex items-center gap-3 flex-wrap">
@@ -227,7 +239,6 @@ export default function RankingCargaPage() {
           )}
         </div>
 
-        {/* Paso 3: Preview */}
         {rows.length > 0 && (
           <div className="card space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
@@ -235,6 +246,9 @@ export default function RankingCargaPage() {
                 <h2 className="font-display text-lg text-chalk">Paso 3 — Confirmar carga</h2>
                 <p className="text-chalk/40 text-sm mt-1">
                   {rows.length} jugadores listos para <span className="text-gold">{tournament?.name} — {circuit?.name}</span>
+                </p>
+                <p className="text-green-400/70 text-xs mt-1">
+                  ✨ Los jugadores no inscriptos se inscriben automáticamente
                 </p>
               </div>
               <button className="btn-primary px-8" onClick={handleConfirmar} disabled={uploading}>
@@ -270,13 +284,15 @@ export default function RankingCargaPage() {
           </div>
         )}
 
-        {/* Resultado */}
         {resultado && (
           <div className={`card space-y-3 border ${resultado.errores.length === 0 ? 'border-green-700/40' : 'border-yellow-700/40'}`}>
             <h2 className="font-display text-lg text-chalk">Resultado</h2>
-            <div className={`rounded-lg px-4 py-3 text-sm ${resultado.errores.length === 0 ? 'bg-green-900/20 text-green-400' : 'bg-yellow-900/20 text-yellow-400'}`}>
-              ✅ <span className="font-semibold">{resultado.cargados} jugadores</span> cargados correctamente
-              {resultado.errores.length > 0 && <span className="ml-2">· {resultado.errores.length} errores</span>}
+            <div className={`rounded-lg px-4 py-3 text-sm space-y-1 ${resultado.errores.length === 0 ? 'bg-green-900/20 text-green-400' : 'bg-yellow-900/20 text-yellow-400'}`}>
+              <p>✅ <span className="font-semibold">{resultado.cargados} jugadores</span> con ranking cargado</p>
+              {(resultado.inscriptos ?? 0) > 0 && (
+                <p>✨ <span className="font-semibold">{resultado.inscriptos} jugadores</span> inscriptos automáticamente</p>
+              )}
+              {resultado.errores.length > 0 && <p>⚠️ {resultado.errores.length} errores</p>}
             </div>
             {resultado.errores.length > 0 && (
               <div className="space-y-1">
@@ -288,7 +304,6 @@ export default function RankingCargaPage() {
             )}
           </div>
         )}
-
       </div>
     </div>
   );
