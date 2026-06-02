@@ -15,6 +15,8 @@ function SeccionNacional() {
   const [tab, setTab]                 = useState<'fixture'|'clasificados'>('fixture');
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState('');
+  const [errorSeries, setErrorSeries] = useState('');
+  const [errorRanking, setErrorRanking] = useState('');
 
   useEffect(() => {
     api.get('/publicaciones/circuitos').then(r => {
@@ -28,18 +30,34 @@ function SeccionNacional() {
 
   const cargar = async (cid: string) => {
     if (!cid) return;
-    setLoading(true); setError(''); setSeries(null); setRanking(null);
+    setLoading(true);
+    setError('');
+    setErrorSeries('');
+    setErrorRanking('');
+    setSeries(null);
+    setRanking(null);
     try {
       const [serRes, rkRes] = await Promise.allSettled([
         api.get(`/publicaciones/${cid}/series-nacional`),
         api.get(`/publicaciones/${cid}/ranking`),
       ]);
-      if (serRes.status === 'fulfilled') setSeries(serRes.value.data.series ?? []);
-      if (rkRes.status  === 'fulfilled') setRanking(rkRes.value.data.jugadores ?? []);
-      if (serRes.status === 'rejected' && rkRes.status === 'rejected')
-        setError('No hay datos disponibles para este circuito aún.');
-    } catch { setError('Error al cargar datos.'); }
-    finally { setLoading(false); }
+      if (serRes.status === 'fulfilled') {
+        setSeries(serRes.value.data.series ?? []);
+      } else {
+        setErrorSeries((serRes.reason as any)?.response?.data?.error ?? 'No hay series para este circuito.');
+        setSeries([]);
+      }
+      if (rkRes.status === 'fulfilled') {
+        setRanking(rkRes.value.data.jugadores ?? []);
+      } else {
+        setErrorRanking((rkRes.reason as any)?.response?.data?.error ?? 'No hay ranking para este circuito.');
+        setRanking([]);
+      }
+    } catch (e: any) {
+      setError('Error de conexión.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const circuitos = torneos.flatMap((t: any) =>
@@ -78,7 +96,7 @@ function SeccionNacional() {
       {loading && <LoadingSpinner />}
       {error && <div className="card text-red-400 text-sm text-center py-6">{error}</div>}
 
-      {!loading && (series || ranking) && (
+      {!loading && circuitId && (series !== null || ranking !== null) && (
         <>
           {/* Tabs */}
           <div className="flex gap-2 mb-4">
@@ -97,8 +115,10 @@ function SeccionNacional() {
           </div>
 
           {/* FIXTURE DE SERIES */}
-          {tab === 'fixture' && series && (
-            series.length === 0
+          {tab === 'fixture' && (
+            errorSeries
+              ? <div className="card text-silver-dark text-sm text-center py-8">{errorSeries}</div>
+              : !series || series.length === 0
               ? <div className="card text-silver-dark text-sm text-center py-8">No hay series generadas aún.</div>
               : <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {series.map((s: any) => (
@@ -143,8 +163,10 @@ function SeccionNacional() {
           )}
 
           {/* CLASIFICADOS */}
-          {tab === 'clasificados' && ranking && (
-            ranking.length === 0
+          {tab === 'clasificados' && (
+            errorRanking
+              ? <div className="card text-silver-dark text-sm text-center py-8">{errorRanking}</div>
+              : !ranking || ranking.length === 0
               ? <div className="card text-silver-dark text-sm text-center py-8">No hay ranking disponible aún.</div>
               : <div className="card overflow-hidden p-0">
                 <div className="px-4 py-3 border-b border-silver-muted/10 flex items-center justify-between">
