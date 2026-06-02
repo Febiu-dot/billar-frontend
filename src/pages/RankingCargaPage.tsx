@@ -133,18 +133,25 @@ export default function RankingCargaPage() {
     setUploading(true); setResultado(null);
     try {
       // 1. Inscribir automáticamente jugadores no inscriptos
+      // Traer todos los jugadores de una sola vez y buscar en memoria
       const inscriptos = new Set(players.map(p => p.dni));
       let nuevosInscriptos = 0;
-      for (const row of rows) {
-        if (!row.dni || inscriptos.has(row.dni)) continue;
-        try {
-          const busq = await api.get(`/players?search=${row.dni}`);
-          const jugador = (busq.data as Player[]).find(p => p.dni === row.dni);
+      const dnisAInscribir = rows.filter(r => r.dni && !inscriptos.has(r.dni)).map(r => r.dni);
+      if (dnisAInscribir.length > 0) {
+        const todosRes = await api.get('/players');
+        const todosMap = new Map<string, Player>();
+        for (const p of todosRes.data as Player[]) {
+          if (p.dni) todosMap.set(p.dni, p);
+        }
+        for (const dni of dnisAInscribir) {
+          const jugador = todosMap.get(dni);
           if (jugador) {
-            await api.post(`/circuits/${selectedCircuit}/players`, { playerId: jugador.id });
-            nuevosInscriptos++;
+            try {
+              await api.post(`/circuits/${selectedCircuit}/players`, { playerId: jugador.id });
+              nuevosInscriptos++;
+            } catch { /* ya inscripto */ }
           }
-        } catch { /* ya inscripto o no encontrado */ }
+        }
       }
 
       // 2. Cargar el ranking
