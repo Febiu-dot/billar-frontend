@@ -4,6 +4,235 @@ import { socket } from '../services/socket';
 import { Match, Table } from '../types';
 import { MatchStatusBadge, playerName, LoadingSpinner } from '../components/ui';
 
+// ── Sección Nacional ──────────────────────────────────────────────────
+
+function SeccionNacional() {
+  const [torneos, setTorneos]         = useState<any[]>([]);
+  const [circuitId, setCircuitId]     = useState('');
+  const [torneoNombre, setTorneoNombre] = useState('');
+  const [series, setSeries]           = useState<any[] | null>(null);
+  const [ranking, setRanking]         = useState<any[] | null>(null);
+  const [tab, setTab]                 = useState<'fixture'|'clasificados'>('fixture');
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState('');
+
+  useEffect(() => {
+    api.get('/publicaciones/circuitos').then(r => {
+      // Solo torneos nacionales
+      const nac = (r.data as any[]).filter(t =>
+        /nacional/i.test(t.name)
+      );
+      setTorneos(nac);
+    }).catch(() => {});
+  }, []);
+
+  const cargar = async (cid: string) => {
+    if (!cid) return;
+    setLoading(true); setError(''); setSeries(null); setRanking(null);
+    try {
+      const [serRes, rkRes] = await Promise.allSettled([
+        api.get(`/publicaciones/${cid}/series-nacional`),
+        api.get(`/publicaciones/${cid}/ranking`),
+      ]);
+      if (serRes.status === 'fulfilled') setSeries(serRes.value.data.series ?? []);
+      if (rkRes.status  === 'fulfilled') setRanking(rkRes.value.data.jugadores ?? []);
+      if (serRes.status === 'rejected' && rkRes.status === 'rejected')
+        setError('No hay datos disponibles para este circuito aún.');
+    } catch { setError('Error al cargar datos.'); }
+    finally { setLoading(false); }
+  };
+
+  const circuitos = torneos.flatMap((t: any) =>
+    (t.circuits ?? []).map((c: any) => ({ id: c.id, label: `${t.name} — ${c.name}`, torneoNombre: t.name }))
+  );
+
+  const handleCircuit = (cid: string) => {
+    setCircuitId(cid);
+    const found = circuitos.find(c => String(c.id) === cid);
+    setTorneoNombre(found?.torneoNombre ?? '');
+    cargar(cid);
+  };
+
+  const CLASIFICA = 16;
+
+  return (
+    <section>
+      <h2 className="font-display text-lg font-bold text-silver-light uppercase tracking-wide mb-3 orange-line pl-3">
+        Torneo Nacional
+      </h2>
+
+      {/* Selector */}
+      <div className="card mb-4">
+        <select
+          className="input w-full"
+          value={circuitId}
+          onChange={e => handleCircuit(e.target.value)}
+        >
+          <option value="">Seleccionar torneo y circuito...</option>
+          {circuitos.map(c => (
+            <option key={c.id} value={String(c.id)}>{c.label}</option>
+          ))}
+        </select>
+      </div>
+
+      {loading && <LoadingSpinner />}
+      {error && <div className="card text-red-400 text-sm text-center py-6">{error}</div>}
+
+      {!loading && (series || ranking) && (
+        <>
+          {/* Tabs */}
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => setTab('fixture')}
+              className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${tab === 'fixture' ? 'bg-orange text-carbon-100' : 'bg-carbon-50 text-silver-dark hover:text-silver-light'}`}
+            >
+              🎱 Fixture de Series
+            </button>
+            <button
+              onClick={() => setTab('clasificados')}
+              className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${tab === 'clasificados' ? 'bg-orange text-carbon-100' : 'bg-carbon-50 text-silver-dark hover:text-silver-light'}`}
+            >
+              🏆 Clasificados
+            </button>
+          </div>
+
+          {/* FIXTURE DE SERIES */}
+          {tab === 'fixture' && series && (
+            series.length === 0
+              ? <div className="card text-silver-dark text-sm text-center py-8">No hay series generadas aún.</div>
+              : <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {series.map((s: any) => (
+                  <div key={s.serieId} className="card space-y-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-display text-orange font-bold uppercase tracking-wide text-sm">
+                        Serie {s.numero}
+                      </span>
+                      {s.completa && (
+                        <span className="text-xs text-green-400 font-semibold">✓ Completa</span>
+                      )}
+                    </div>
+
+                    {/* P1 */}
+                    {s.p1 && <PartidoRow p={s.p1} label="P1" />}
+                    {/* P2 */}
+                    {s.p2 && <PartidoRow p={s.p2} label="P2" />}
+                    {/* P3 si existe */}
+                    {s.p3 && <PartidoRow p={s.p3} label="P3 · Final" />}
+                    {/* P4 si existe */}
+                    {s.p4 && <PartidoRow p={s.p4} label="P4 · 3°/4°" />}
+                    {/* P5 si existe */}
+                    {s.p5 && <PartidoRow p={s.p5} label="P5 · 2°/3°" />}
+
+                    {/* Clasificación final */}
+                    {s.completa && (
+                      <div className="border-t border-silver-muted/10 pt-2 space-y-1">
+                        {[['🥇', s.primero], ['🥈', s.segundo], ['🥉', s.tercero], ['4°', s.cuarto]].map(([lbl, jug]: any) =>
+                          jug ? (
+                            <div key={lbl} className="flex items-center gap-2 text-xs">
+                              <span className="w-6">{lbl}</span>
+                              <span className="text-silver-light font-semibold">{jug.nombre}</span>
+                              {jug.club && <span className="text-silver-dark">{jug.club}</span>}
+                            </div>
+                          ) : null
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+          )}
+
+          {/* CLASIFICADOS */}
+          {tab === 'clasificados' && ranking && (
+            ranking.length === 0
+              ? <div className="card text-silver-dark text-sm text-center py-8">No hay ranking disponible aún.</div>
+              : <div className="card overflow-hidden p-0">
+                <div className="px-4 py-3 border-b border-silver-muted/10 flex items-center justify-between">
+                  <span className="font-display text-silver-light font-bold uppercase tracking-wide text-sm">
+                    Ranking — {torneoNombre}
+                  </span>
+                  <span className="text-xs text-green-400 font-semibold bg-green-900/20 px-2 py-0.5 rounded-full">
+                    Top {CLASIFICA} clasifican a cruces
+                  </span>
+                </div>
+                <div className="divide-y divide-silver-muted/10">
+                  {ranking.map((j: any) => {
+                    const clasifica = j.posicion <= CLASIFICA;
+                    return (
+                      <div
+                        key={j.posicion}
+                        className={`flex items-center gap-3 px-4 py-2.5 ${clasifica ? 'bg-orange/5' : ''}`}
+                      >
+                        <div className={`w-8 h-7 rounded flex items-center justify-center text-sm font-bold shrink-0 ${
+                          clasifica ? 'bg-orange text-carbon-100' : 'bg-silver-muted/20 text-silver-dark'
+                        }`}>
+                          {j.posicion}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-semibold truncate ${clasifica ? 'text-silver-light' : 'text-silver-dark'}`}>
+                            {j.nombre}
+                          </p>
+                        </div>
+                        {j.club && (
+                          <span className="text-xs text-silver-dark shrink-0">{j.club}</span>
+                        )}
+                        <span className={`text-sm font-mono font-bold shrink-0 ${clasifica ? 'text-orange' : 'text-silver-dark'}`}>
+                          {j.puntos} pts
+                        </span>
+                        {clasifica && (
+                          <span className="text-green-400 text-xs shrink-0">✓</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="px-4 py-2 border-t border-silver-muted/10 text-xs text-silver-dark text-center">
+                  ✓ = Clasifica a la Etapa de Cruces
+                </div>
+              </div>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
+function PartidoRow({ p, label }: { p: any; label: string }) {
+  if (!p) return null;
+  const hayResultado = !!p.resultado;
+  const [sA, sB] = hayResultado ? p.resultado.split('-').map(Number) : [null, null];
+  const winA = hayResultado && sA! > sB!;
+  const winB = hayResultado && sB! > sA!;
+
+  return (
+    <div className="bg-carbon-100 rounded-lg px-3 py-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-silver-dark text-xs font-mono w-16 shrink-0">{label}</span>
+        <div className="flex-1 flex items-center gap-1 min-w-0">
+          <span className={`text-xs font-semibold truncate ${winA ? 'text-orange' : 'text-silver-light'}`}>
+            {p.jugadorA?.nombre ?? '—'}
+          </span>
+          {hayResultado ? (
+            <span className="font-mono text-silver font-bold text-xs shrink-0 px-1">
+              {p.resultado}
+            </span>
+          ) : (
+            <span className="text-silver-muted text-xs px-1">vs</span>
+          )}
+          <span className={`text-xs font-semibold truncate ${winB ? 'text-orange' : 'text-silver-light'}`}>
+            {p.jugadorB?.nombre ?? '—'}
+          </span>
+        </div>
+        {p.hora && (
+          <span className="text-silver-dark text-xs shrink-0 font-mono">🕐 {p.hora}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Vista Pública Principal ───────────────────────────────────────────
+
 export default function PublicPage() {
   const [tables, setTables]               = useState<Table[]>([]);
   const [activeMatches, setActiveMatches] = useState<Match[]>([]);
@@ -43,11 +272,7 @@ export default function PublicPage() {
 
   const handleMesaClick = (table: Table) => {
     if (table.status !== 'ocupada') return;
-
-    // Partido activo en esta mesa
     const matchEnMesa = activeMatches.find(m => m.tableId === table.id) ?? null;
-
-    // Partidos de la misma serie finalizados en esta mesa
     let serieMatches: Match[] = [];
     if (matchEnMesa?.serieId) {
       serieMatches = allMatches.filter(m =>
@@ -56,11 +281,8 @@ export default function PublicPage() {
         (m.status === 'finalizado' || m.status === 'wo')
       ).sort((a, b) => a.round - b.round);
     }
-
     setMesaModal({ table, match: matchEnMesa, serieMatches });
   };
-
-  const pn = (p: any) => p ? `${p.firstName} ${p.lastName}` : '—';
 
   if (loading) return (
     <div className="min-h-screen bg-carbon-100 flex items-center justify-center">
@@ -89,11 +311,11 @@ export default function PublicPage() {
             </div>
             <p className="text-silver-dark text-xs font-mono">{lastUpdate.toLocaleTimeString('es-UY')}</p>
             <div className="flex flex-col items-end gap-1">
-  <a href="/ranking" className="text-gold text-xs hover:text-gold/80 font-medium">🏆 Ver Ranking</a>
-  <a href="/ranking-final" className="text-gold text-xs hover:text-gold/80 font-medium">🥇 Ranking Final</a>
-  <a href="/publicaciones" className="text-gold text-xs hover:text-gold/80 font-medium">📢 Publicaciones</a>
-  <a href="/login" className="text-orange/70 text-xs hover:text-orange">Ingresar →</a>
-</div>
+              <a href="/ranking" className="text-gold text-xs hover:text-gold/80 font-medium">🏆 Ver Ranking</a>
+              <a href="/ranking-final" className="text-gold text-xs hover:text-gold/80 font-medium">🥇 Ranking Final</a>
+              <a href="/publicaciones" className="text-gold text-xs hover:text-gold/80 font-medium">📢 Publicaciones</a>
+              <a href="/login" className="text-orange/70 text-xs hover:text-orange">Ingresar →</a>
+            </div>
           </div>
         </div>
       </header>
@@ -259,6 +481,9 @@ export default function PublicPage() {
           </section>
         </div>
 
+        {/* Sección Nacional */}
+        <SeccionNacional />
+
         <footer className="border-t border-silver-muted/10 pt-4 text-center text-silver-muted text-xs">
           Federación de Billar del Uruguay · Sistema de Torneos · {new Date().getFullYear()}
         </footer>
@@ -302,7 +527,6 @@ export default function PublicPage() {
                       <p className="text-silver-dark text-xs">{mesaModal.match.playerB?.lastName}</p>
                     </div>
                   </div>
-
                   {mesaModal.match.sets && mesaModal.match.sets.length > 0 && (
                     <div className="mt-3 border-t border-silver-muted/10 pt-3 space-y-1">
                       <p className="text-silver-dark text-xs uppercase tracking-widest mb-2">Sets</p>
