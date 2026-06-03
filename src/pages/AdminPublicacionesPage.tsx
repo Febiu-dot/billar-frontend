@@ -614,6 +614,8 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
               )}
             </div>
           ) : <div key={si} style={{ flex: 1 }} />)}
+        </div>
+      ))}
     </div>
   );
 }
