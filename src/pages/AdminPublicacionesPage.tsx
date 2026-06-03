@@ -220,53 +220,148 @@ function PlantillaCruces({ data, tema }: { data: any; tema: any }) {
 
 function PlantillaRankingNacional({ data }: { data: any }) {
   const jugadores: any[] = [...(data.jugadores ?? [])].sort((a, b) => a.posicion - b.posicion);
-  const C = getColoresCategoria(data.categoriaFederal);
-  const BG = C.bg;            // azul/naranja/verde según categoría
-  const GOLD = C.gold;
-  const LIGHT = data.categoriaFederal === 'segunda' ? '#fff4f0'
-              : data.categoriaFederal === 'tercera' ? '#edf7ef'
-              : '#e8f4fd';     // azul claro (primera, default)
+  const CV2 = getCatV2(data.categoriaFederal);
   const CLASIFICAN = 16;
-
   const mitad = Math.ceil(jugadores.length / 2);
   const col1 = jugadores.slice(0, mitad);
   const col2 = jugadores.slice(mitad);
 
-  const Fila = ({ j }: { j: any }) => {
+  // Fuentes premium via @import
+  const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Condensed:wght@600;700;800;900&display=swap');`;
+
+  const Fila = ({ j, index }: { j: any; index: number }) => {
     const clasifica = j.posicion <= CLASIFICAN;
+    const esTop3 = j.posicion <= 3;
+    const rowBg = clasifica
+      ? (index % 2 === 0 ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)')
+      : (index % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.12)');
+    const medalColor = j.posicion === 1 ? CV2.goldBright : j.posicion === 2 ? '#c0c8d8' : j.posicion === 3 ? '#d4905a' : null;
     return (
-      <div style={{ display: 'flex', alignItems: 'center', padding: '8px 10px', gap: 8, background: clasifica ? LIGHT : '#fff', borderBottom: '1px solid #eee' }}>
-        <div style={{ width: 44, height: 30, borderRadius: 4, flexShrink: 0, background: clasifica ? GOLD : BG, color: clasifica ? '#1a1a1a' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900, boxShadow: clasifica ? '0 1px 3px rgba(0,0,0,0.25)' : 'none' }}>{j.posicion}</div>
-        <div style={{ flex: 1, fontSize: 18, fontWeight: 700, color: BG, wordBreak: 'break-word', lineHeight: 1.2 }}>{j.nombre}</div>
-        {j.club && <div style={{ width: 40, background: BG, color: '#fff', padding: '3px 4px', borderRadius: 3, fontSize: 13, fontWeight: 800, textAlign: 'center', flexShrink: 0 }}>{j.club}</div>}
-        <div style={{ width: 44, fontSize: 17, fontWeight: 900, color: BG, textAlign: 'right', flexShrink: 0 }}>{j.puntos}</div>
+      <div style={{
+        display: 'flex', alignItems: 'center', padding: '7px 12px', gap: 10,
+        background: rowBg,
+        borderBottom: `1px solid rgba(255,255,255,${clasifica ? '0.07' : '0.03'})`,
+        borderLeft: clasifica ? `3px solid ${CV2.goldBright}` : `3px solid transparent`,
+      }}>
+        {/* Posición */}
+        <div style={{
+          width: 38, height: 28, borderRadius: 5, flexShrink: 0,
+          background: esTop3 && medalColor
+            ? `linear-gradient(135deg, ${medalColor}, ${medalColor}aa)`
+            : clasifica
+              ? `linear-gradient(135deg, ${CV2.gold}, ${CV2.goldDeep})`
+              : 'rgba(255,255,255,0.08)',
+          color: esTop3 ? CV2.navyDeep : clasifica ? CV2.navyDeep : 'rgba(255,255,255,0.55)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 14, fontWeight: 900,
+          fontFamily: "'Saira Condensed', sans-serif",
+          boxShadow: clasifica ? `0 2px 8px ${CV2.goldDeep}66` : 'none',
+          letterSpacing: '0.02em',
+        }}>{j.posicion}</div>
+
+        {/* Nombre */}
+        <div style={{
+          flex: 1, fontSize: 17, fontWeight: clasifica ? 700 : 600,
+          color: clasifica ? '#ffffff' : 'rgba(255,255,255,0.6)',
+          wordBreak: 'break-word', lineHeight: 1.2,
+          fontFamily: "'Rajdhani', sans-serif",
+          letterSpacing: '0.01em',
+        }}>{j.nombre}</div>
+
+        {/* Club badge */}
+        {j.club && (
+          <div style={{
+            background: clasifica ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)',
+            color: clasifica ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.35)',
+            padding: '2px 7px', borderRadius: 4, fontSize: 11, fontWeight: 800,
+            fontFamily: "'Saira Condensed', sans-serif",
+            letterSpacing: '0.08em', flexShrink: 0,
+            border: `1px solid ${clasifica ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`,
+          }}>{j.club}</div>
+        )}
+
+        {/* Puntos */}
+        <div style={{
+          width: 46, fontSize: 17, fontWeight: 900,
+          color: clasifica ? CV2.goldBright : 'rgba(255,255,255,0.35)',
+          textAlign: 'right', flexShrink: 0,
+          fontFamily: "'Saira Condensed', sans-serif",
+          letterSpacing: '0.02em',
+        }}>{j.puntos}</div>
       </div>
     );
   };
 
+  // Columna header
+  const ColHeader = () => (
+    <div style={{
+      display: 'flex', alignItems: 'center', padding: '6px 12px', gap: 10,
+      background: `linear-gradient(90deg, ${CV2.navy2}, ${CV2.petrol})`,
+      borderBottom: `2px solid ${CV2.goldDeep}`,
+    }}>
+      <span style={{ width: 38, fontSize: 11, fontWeight: 700, color: CV2.goldBright, textAlign: 'center', fontFamily: "'Saira Condensed', sans-serif", letterSpacing: '0.1em' }}>#</span>
+      <span style={{ flex: 1, fontSize: 11, fontWeight: 700, color: CV2.goldBright, fontFamily: "'Saira Condensed', sans-serif", letterSpacing: '0.1em' }}>JUGADOR</span>
+      <span style={{ fontSize: 11, fontWeight: 700, color: CV2.cyanSoft, fontFamily: "'Saira Condensed', sans-serif", letterSpacing: '0.08em', marginRight: 4 }}>CLUB</span>
+      <span style={{ width: 46, fontSize: 11, fontWeight: 700, color: CV2.goldBright, textAlign: 'right', fontFamily: "'Saira Condensed', sans-serif", letterSpacing: '0.1em' }}>PTS</span>
+    </div>
+  );
+
   return (
-    <div style={{ padding: '20px 24px', background: '#f8f8f8', fontFamily: F }}>
-      <div>
-        <div style={{ background: BG, color: '#fff', padding: '10px 20px', fontSize: 18, fontWeight: 800, letterSpacing: 2, borderRadius: '8px 8px 0 0', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ background: GOLD, color: '#1a1a1a', borderRadius: 4, padding: '2px 8px', fontSize: 13, fontWeight: 900 }}>1–{CLASIFICAN}</span>
-          <span>CLASIFICAN A LA ETAPA DE CRUCES</span>
-        </div>
-        <div style={{ display: 'flex', gap: 0, background: '#fff', border: `2px solid ${BG}`, borderTop: 'none', borderRadius: '0 0 8px 8px', overflow: 'hidden' }}>
-          {[col1, col2].map((col, ci) => (
-            <div key={ci} style={{ flex: 1, borderLeft: ci === 1 ? `2px solid ${BG}` : 'none' }}>
-              <div style={{ display: 'flex', background: BG, padding: '6px 10px', gap: 8, opacity: 0.92 }}>
-                <span style={{ width: 44, fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'center' }}>#</span>
-                <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#fff' }}>Jugador</span>
-                <span style={{ width: 40, fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'center' }}>Club</span>
-                <span style={{ width: 44, fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'right' }}>Pts</span>
-              </div>
-              {col.map((j: any) => <Fila key={j.posicion} j={j} />)}
-              {ci === 1 && col.length < col1.length && Array.from({ length: col1.length - col.length }).map((_, i) => (
-                <div key={`e-${i}`} style={{ height: 47, background: '#fff', borderBottom: '1px solid #eee' }} />
-              ))}
-            </div>
-          ))}
-        </div>
+    <div style={{
+      padding: '22px 26px 28px',
+      background: `radial-gradient(ellipse 120% 80% at 50% 0%, ${CV2.navy2}cc, transparent 65%),
+                   radial-gradient(ellipse 100% 60% at 50% 100%, ${CV2.navyDeep}ee, transparent 70%),
+                   linear-gradient(180deg, ${CV2.navy} 0%, ${CV2.navyDeep} 60%, #020d1a 100%)`,
+      fontFamily: "'Rajdhani', sans-serif",
+    }}>
+      <style>{FONT_IMPORT}</style>
+
+      {/* Clasificados banner */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14,
+        padding: '10px 16px',
+        background: `linear-gradient(90deg, ${CV2.goldDeep}33, ${CV2.goldBright}22, ${CV2.goldDeep}11)`,
+        border: `1px solid ${CV2.goldDeep}66`,
+        borderRadius: 8,
+        boxShadow: `0 0 24px ${CV2.goldDeep}33`,
+      }}>
+        <div style={{
+          background: `linear-gradient(135deg, ${CV2.goldBright}, ${CV2.gold})`,
+          color: CV2.navyDeep, borderRadius: 5, padding: '3px 10px',
+          fontSize: 13, fontWeight: 900,
+          fontFamily: "'Saira Condensed', sans-serif",
+          letterSpacing: '0.06em',
+          boxShadow: `0 2px 8px ${CV2.goldDeep}88`,
+        }}>1–{CLASIFICAN}</div>
+        <span style={{
+          fontSize: 15, fontWeight: 700, color: CV2.goldBright,
+          fontFamily: "'Saira Condensed', sans-serif",
+          letterSpacing: '0.18em', textTransform: 'uppercase',
+        }}>CLASIFICAN A LA ETAPA DE CRUCES</span>
+        <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${CV2.goldDeep}88, transparent)` }} />
+      </div>
+
+      {/* Tabla de dos columnas */}
+      <div style={{ display: 'flex', gap: 10, border: `1px solid rgba(255,255,255,0.08)`, borderRadius: 10, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+        {[col1, col2].map((col, ci) => (
+          <div key={ci} style={{ flex: 1, borderLeft: ci === 1 ? `1px solid rgba(255,255,255,0.08)` : 'none' }}>
+            <ColHeader />
+            {col.map((j: any, idx: number) => <Fila key={j.posicion} j={j} index={idx} />)}
+            {ci === 1 && col.length < col1.length && Array.from({ length: col1.length - col.length }).map((_, i) => (
+              <div key={`e-${i}`} style={{ height: 43, background: 'rgba(0,0,0,0.12)', borderBottom: '1px solid rgba(255,255,255,0.03)' }} />
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {/* Divisor inferior clasificados / resto */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}>
+        <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, transparent, ${CV2.cyanSoft}55, transparent)` }} />
+        <span style={{
+          fontSize: 11, color: CV2.cyanSoft, fontFamily: "'Saira Condensed', sans-serif",
+          letterSpacing: '0.22em', opacity: 0.7,
+        }}>FEBIU · TORNEO NACIONAL</span>
+        <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, transparent, ${CV2.cyanSoft}55, transparent)` }} />
       </div>
     </div>
   );
@@ -330,23 +425,56 @@ function PlantillaRanking({ data, tema }: { data: any; tema: any }) {
 // ── Plantilla Series Nacional ─────────────────────────────────────────
 function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
   const series: any[] = data.series ?? [];
-  const VERDE = tema.header;
-  const ACENTO = tema.accent;
-  const LIGHT = tema.light;
-  const F2 = F;
+  // Detectar paleta V2 si hay categoriaFederal en data, si no usar colores del tema
+  const CV2 = data.categoriaFederal ? getCatV2(data.categoriaFederal) : null;
+  const NAVY   = CV2 ? CV2.navy     : tema.header;
+  const NAVY2  = CV2 ? CV2.navy2    : tema.accent;
+  const GOLD   = CV2 ? CV2.goldBright : '#f5d020';
+  const GOLDD  = CV2 ? CV2.goldDeep   : '#c9962a';
+  const CYAN   = CV2 ? CV2.cyan       : '#5fd4ff';
+  const NAVYD  = CV2 ? CV2.navyDeep   : '#06182f';
+  const INK    = CV2 ? CV2.ink        : '#0a1a2e';
+  const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Condensed:wght@600;700;800;900&display=swap');`;
 
   const mkRow = (jugador: any, isWinner: boolean) => (
-    <div style={{ display: 'flex', alignItems: 'center', padding: '7px 10px', gap: 8, background: isWinner ? '#d4edda' : 'transparent' }}>
+    <div style={{
+      display: 'flex', alignItems: 'center', padding: '8px 12px', gap: 9,
+      background: isWinner ? `linear-gradient(90deg, ${GOLD}18, ${GOLD}08)` : 'transparent',
+      borderLeft: isWinner ? `3px solid ${GOLD}` : `3px solid transparent`,
+    }}>
       {jugador.ranking !== null ? (
-        <div style={{ width: 32, height: 26, background: isWinner ? '#166a1e' : '#888', color: '#fff', borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 900, flexShrink: 0 }}>{jugador.ranking}</div>
+        <div style={{
+          width: 30, height: 24, borderRadius: 4, flexShrink: 0,
+          background: isWinner
+            ? `linear-gradient(135deg, ${GOLD}, ${GOLDD})`
+            : 'rgba(255,255,255,0.10)',
+          color: isWinner ? INK : 'rgba(255,255,255,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 12, fontWeight: 900,
+          fontFamily: "'Saira Condensed', sans-serif",
+          boxShadow: isWinner ? `0 1px 6px ${GOLDD}88` : 'none',
+        }}>{jugador.ranking}</div>
       ) : (
-        <div style={{ width: 32, height: 26, background: '#ccc', borderRadius: 3, flexShrink: 0 }} />
+        <div style={{ width: 30, height: 24, borderRadius: 4, flexShrink: 0, background: 'rgba(255,255,255,0.05)' }} />
       )}
-      <div style={{ flex: 1, fontSize: 16, fontWeight: isWinner ? 800 : 500, color: isWinner ? '#135c1a' : '#333', wordBreak: 'break-word', lineHeight: 1.2, fontFamily: F2 }}>
-        {jugador.esSlot ? <span style={{ color: '#aaa', fontStyle: 'italic' }}>{jugador.nombre}</span> : jugador.nombre}
+      <div style={{
+        flex: 1, fontSize: 15, fontWeight: isWinner ? 700 : 500,
+        color: isWinner ? '#ffffff' : 'rgba(255,255,255,0.65)',
+        wordBreak: 'break-word', lineHeight: 1.2,
+        fontFamily: "'Rajdhani', sans-serif",
+      }}>
+        {jugador.esSlot
+          ? <span style={{ color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>{jugador.nombre}</span>
+          : jugador.nombre}
       </div>
       {jugador.club && !jugador.esSlot && (
-        <div style={{ background: isWinner ? '#166a1e' : '#888', color: '#fff', padding: '2px 6px', borderRadius: 3, fontSize: 13, fontWeight: 800, flexShrink: 0 }}>{jugador.club}</div>
+        <div style={{
+          background: isWinner ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.06)',
+          color: isWinner ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.35)',
+          padding: '2px 6px', borderRadius: 3, fontSize: 10, fontWeight: 800, flexShrink: 0,
+          fontFamily: "'Saira Condensed', sans-serif", letterSpacing: '0.07em',
+          border: `1px solid ${isWinner ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.07)'}`,
+        }}>{jugador.club}</div>
       )}
     </div>
   );
@@ -356,13 +484,35 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
     const winA = p.resultado && p.resultado.split('-')[0] > p.resultado.split('-')[1];
     const winB = p.resultado && p.resultado.split('-')[1] > p.resultado.split('-')[0];
     return (
-      <div style={{ borderTop: `1px solid ${LIGHT}`, fontFamily: F2 }}>
-        <div style={{ background: VERDE, color: '#fff', padding: '5px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13 }}>
-          <span style={{ fontWeight: 700, opacity: 0.85 }}>{label}</span>
-          <span style={{ fontSize: 12, opacity: 0.7 }}>{p.hora ? `🕐 ${p.hora}` : ''} {p.sede ? `📍 ${p.sede}` : ''}</span>
-          {p.resultado && <span style={{ fontWeight: 900, background: 'rgba(255,255,255,0.25)', padding: '1px 8px', borderRadius: 3, fontSize: 15 }}>{p.resultado}</span>}
+      <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        {/* Cabecera del partido */}
+        <div style={{
+          background: `linear-gradient(90deg, ${NAVY2}ee, ${NAVY}cc)`,
+          color: '#fff', padding: '5px 12px',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          borderLeft: `2px solid ${CYAN}55`,
+        }}>
+          <span style={{
+            fontWeight: 800, fontSize: 11,
+            fontFamily: "'Saira Condensed', sans-serif",
+            letterSpacing: '0.14em', color: CYAN, opacity: 0.9,
+          }}>{label}</span>
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontFamily: "'Rajdhani', sans-serif" }}>
+            {p.hora ? `${p.hora}` : ''}{p.sede ? `  ·  ${p.sede}` : ''}
+          </span>
+          {p.resultado && (
+            <span style={{
+              fontWeight: 900, fontSize: 15,
+              fontFamily: "'Saira Condensed', sans-serif",
+              background: `linear-gradient(135deg, ${GOLD}, ${GOLDD})`,
+              color: INK, padding: '1px 9px', borderRadius: 4,
+              boxShadow: `0 1px 6px ${GOLDD}66`,
+            }}>{p.resultado}</span>
+          )}
         </div>
-        {mkRow(p.jugadorA, winA)}<div style={{ height: 1, background: LIGHT }} />{mkRow(p.jugadorB, winB)}
+        {mkRow(p.jugadorA, winA)}
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.04)', marginLeft: 12 }} />
+        {mkRow(p.jugadorB, winB)}
       </div>
     );
   };
@@ -371,32 +521,92 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
   for (let i = 0; i < series.length; i += 2) pares.push([series[i], series[i + 1] ?? null]);
 
   return (
-    <div style={{ padding: '16px 20px', background: '#f5f5f5', fontFamily: F }}>
+    <div style={{
+      padding: '18px 22px 24px',
+      background: `radial-gradient(ellipse 130% 70% at 50% 0%, ${NAVY2}99, transparent 55%),
+                   linear-gradient(180deg, ${NAVY} 0%, ${NAVYD} 55%, #020d1a 100%)`,
+      fontFamily: "'Rajdhani', sans-serif",
+    }}>
+      <style>{FONT_IMPORT}</style>
       {pares.map((par, pi) => (
         <div key={pi} style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
           {par.map((s, si) => s ? (
-            <div key={si} style={{ flex: 1, border: `2px solid ${ACENTO}`, borderRadius: 8, background: '#fff', overflow: 'hidden', boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }}>
-              {/* Serie header */}
-              <div style={{ background: ACENTO, color: '#fff', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 20, fontWeight: 900, letterSpacing: 2 }}>SERIE {s.numero}</span>
-                {s.completa && <span style={{ background: 'rgba(255,255,255,0.3)', padding: '2px 10px', borderRadius: 4, fontSize: 13, fontWeight: 700 }}>✓ COMPLETA</span>}
+            <div key={si} style={{
+              flex: 1,
+              background: `linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)`,
+              border: `1px solid rgba(255,255,255,0.10)`,
+              borderRadius: 10, overflow: 'hidden',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.45)',
+            }}>
+              {/* Header de la serie */}
+              <div style={{
+                background: `linear-gradient(90deg, ${NAVY2}, ${NAVY2}cc)`,
+                borderBottom: `2px solid ${GOLD}88`,
+                padding: '10px 14px',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}>
+                <span style={{
+                  fontSize: 20, fontWeight: 900, letterSpacing: '0.1em',
+                  fontFamily: "'Saira Condensed', sans-serif",
+                  background: `linear-gradient(90deg, ${GOLD}, ${GOLDD})`,
+                  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                }}>SERIE {s.numero}</span>
+                {s.completa && (
+                  <span style={{
+                    background: `linear-gradient(135deg, ${GOLD}33, ${GOLD}22)`,
+                    border: `1px solid ${GOLD}55`,
+                    color: GOLD, padding: '2px 10px', borderRadius: 20,
+                    fontSize: 10, fontWeight: 800,
+                    fontFamily: "'Saira Condensed', sans-serif",
+                    letterSpacing: '0.12em',
+                  }}>✓ COMPLETA</span>
+                )}
               </div>
+
               {/* Partidos */}
               <PartidoRow p={s.p1} label="P1 — Partido 1" />
               <PartidoRow p={s.p2} label="P2 — Partido 2" />
               <PartidoRow p={s.p3} label="P3 — Por el 1°" />
               <PartidoRow p={s.p4} label="P4 — Por el 4°" />
               <PartidoRow p={s.p5} label="P5 — Por el 2° y 3°" />
-              {/* Clasificación final si está completa */}
+
+              {/* Clasificación final */}
               {s.completa && (
-                <div style={{ background: LIGHT, borderTop: `2px solid ${ACENTO}`, padding: '8px 12px' }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: VERDE, marginBottom: 4 }}>CLASIFICACIÓN FINAL</div>
-                  {[['🥇 1°', s.primero], ['🥈 2°', s.segundo], ['🥉 3°', s.tercero], ['4°', s.cuarto]].map(([lbl, jug]: any) =>
+                <div style={{
+                  borderTop: `2px solid ${GOLD}44`,
+                  padding: '9px 12px',
+                  background: `linear-gradient(90deg, ${GOLD}10, transparent)`,
+                }}>
+                  <div style={{
+                    fontSize: 10, fontWeight: 800, color: GOLD, marginBottom: 6,
+                    fontFamily: "'Saira Condensed', sans-serif",
+                    letterSpacing: '0.2em', opacity: 0.85,
+                  }}>CLASIFICACIÓN FINAL</div>
+                  {[
+                    ['🥇', '1°', s.primero],
+                    ['🥈', '2°', s.segundo],
+                    ['🥉', '3°', s.tercero],
+                    ['·', '4°', s.cuarto],
+                  ].map(([ico, lbl, jug]: any) =>
                     jug ? (
-                      <div key={lbl} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 14, marginBottom: 2 }}>
-                        <span style={{ width: 28, fontWeight: 700 }}>{lbl}</span>
-                        <span style={{ fontWeight: 600 }}>{jug.nombre}</span>
-                        {jug.ranking && <span style={{ background: ACENTO, color: '#fff', padding: '1px 6px', borderRadius: 3, fontSize: 12, fontWeight: 800 }}>#{jug.ranking}</span>}
+                      <div key={lbl} style={{ display: 'flex', gap: 7, alignItems: 'center', marginBottom: 3 }}>
+                        <span style={{ fontSize: 12, width: 18 }}>{ico}</span>
+                        <span style={{
+                          fontSize: 11, fontWeight: 700, color: GOLD, width: 20,
+                          fontFamily: "'Saira Condensed', sans-serif",
+                        }}>{lbl}</span>
+                        <span style={{
+                          flex: 1, fontSize: 13, fontWeight: 600,
+                          color: 'rgba(255,255,255,0.8)',
+                          fontFamily: "'Rajdhani', sans-serif",
+                        }}>{jug.nombre}</span>
+                        {jug.ranking && (
+                          <span style={{
+                            background: 'rgba(255,255,255,0.10)', color: CYAN,
+                            padding: '1px 6px', borderRadius: 3, fontSize: 10, fontWeight: 800,
+                            fontFamily: "'Saira Condensed', sans-serif",
+                          }}>#{jug.ranking}</span>
+                        )}
                       </div>
                     ) : null
                   )}
@@ -404,8 +614,6 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
               )}
             </div>
           ) : <div key={si} style={{ flex: 1 }} />)}
-        </div>
-      ))}
     </div>
   );
 }
