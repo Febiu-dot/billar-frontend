@@ -613,7 +613,7 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
                 </div>
               )}
             </div>
-          ) : <div key={si} style={{ flex: 1 }} />)}
+          ) : (<div key={si} style={{ flex: 1 }} />))}
     </div>
   );
 }
