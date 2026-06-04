@@ -90,7 +90,6 @@ function PubHeader({ data, tema }: { data: any; tema: any }) {
   // Si es torneo nacional, usar paleta V2 premium
   if (data.categoriaFederal) {
     const CV2 = getCatV2(data.categoriaFederal);
-    const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Condensed:wght@600;700;800;900&display=swap');`;
     return (
       <div style={{
         position: 'relative', overflow: 'hidden',
@@ -102,7 +101,7 @@ function PubHeader({ data, tema }: { data: any; tema: any }) {
         padding: '32px 48px 28px',
         display: 'flex', alignItems: 'center', gap: 36,
       }}>
-        <style>{FONT_IMPORT}</style>
+        
         {/* Top accent line */}
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, height: 3,
@@ -341,8 +340,6 @@ function PlantillaRankingNacional({ data }: { data: any }) {
   const col1 = jugadores.slice(0, mitad);
   const col2 = jugadores.slice(mitad);
 
-  const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Condensed:wght@600;700;800;900&display=swap');`;
-
   const Fila = ({ j, index }: { j: any; index: number }) => {
     const clasifica = j.posicion <= CLASIFICAN;
     const esTop3    = j.posicion <= 3;
@@ -441,7 +438,7 @@ function PlantillaRankingNacional({ data }: { data: any }) {
       fontFamily:"'Rajdhani', sans-serif",
       position:'relative', overflow:'hidden',
     }}>
-      <style>{FONT_IMPORT}</style>
+      
 
 
 
@@ -685,8 +682,6 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
   const CYANSOFT = CV2 ? CV2.cyanSoft : '#8fe3ff';
   const INK    = CV2 ? CV2.ink        : '#0a1a2e';
 
-  const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Condensed:wght@600;700;800;900&display=swap');`;
-
   /* ── jugador row ── */
   const mkRow = (jugador: any, isWinner: boolean) => (
     <div style={{
@@ -809,7 +804,7 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
       fontFamily:"'Rajdhani', sans-serif",
       position:'relative', overflow:'hidden',
     }}>
-      <style>{FONT_IMPORT}</style>
+      
 
       {/* Top glow line */}
       <div style={{
@@ -944,7 +939,6 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
 // ── Plantilla Cruces Nacional ────────────────────────────────────────
 function PlantillaCrucesNacional({ data }: { data: any }) {
   const CV2 = getCatV2(data.categoriaFederal ?? 'primera');
-  const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Condensed:wght@600;700;800;900&display=swap');`;
 
   const octavos: any[] = data.octavos ?? [];
   const cuartos: any[] = data.cuartos ?? [];
@@ -1089,7 +1083,7 @@ function PlantillaCrucesNacional({ data }: { data: any }) {
         linear-gradient(180deg, ${CV2.navy} 0%, ${CV2.navyDeep} 55%, #020d1a 100%)`,
       fontFamily:"'Rajdhani', sans-serif", position:'relative', overflow:'hidden',
     }}>
-      <style>{FONT_IMPORT}</style>
+      
       {/* Top glow */}
       <div style={{position:'absolute',top:0,left:0,right:0,height:3,zIndex:2,background:`linear-gradient(90deg,transparent,${CV2.cyan} 20%,${CV2.goldBright} 50%,${CV2.cyan} 80%,transparent)`,boxShadow:`0 0 18px ${CV2.cyan}77`}} />
 
@@ -1626,6 +1620,18 @@ export default function AdminPublicacionesPage() {
       setError(e?.response?.data?.error ?? 'Error al cargar los datos');
     } finally { setLoading(false); }
   };
+
+  // Ensure Google Fonts loaded for export
+  React.useEffect(() => {
+    const id = 'febiu-fonts';
+    if (!document.getElementById(id)) {
+      const link = document.createElement('link');
+      link.id = id;
+      link.rel = 'stylesheet';
+      link.href = 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Condensed:wght@600;700;800;900&display=swap';
+      document.head.appendChild(link);
+    }
+  }, []);
 
   const exportar = async () => {
     if (!exportRef.current) return;
