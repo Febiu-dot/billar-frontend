@@ -510,12 +510,13 @@ function PlantillaRankingNacional({ data }: { data: any }) {
 
       {/* ── BLOQUE CLASIFICADOS ── */}
       {(() => {
-        const clasificados: {pos:string; nombre:string; club:string|null; serie:number; ranking:number|null}[] = [];
+        const clasificados: {pos:string; nombre:string; club:string|null; serie:number; ranking:number|null; pendiente:boolean}[] = [];
         series.forEach(s => {
-          if (s.primero) clasificados.push({ pos:'1°', nombre:s.primero.nombre, club:s.primero.club, serie:s.numero, ranking:s.primero.ranking });
-          if (s.segundo) clasificados.push({ pos:'2°', nombre:s.segundo.nombre, club:s.segundo.club, serie:s.numero, ranking:s.segundo.ranking });
+          if (s.primero) clasificados.push({ pos:'1°', nombre:s.primero.nombre, club:s.primero.club, serie:s.numero, ranking:s.primero.ranking, pendiente:false });
+          if (s.segundo) clasificados.push({ pos:'2°', nombre:s.segundo.nombre, club:s.segundo.club, serie:s.numero, ranking:s.segundo.ranking, pendiente:false });
         });
-        if (clasificados.length === 0) return null;
+        // Solo mostrar si todas las series están completas
+        if (series.length === 0 || !series.every(s => s.completa)) return null;
         // ordenar por serie, luego pos
         clasificados.sort((a,b) => a.serie - b.serie || (a.pos === '1°' ? -1 : 1));
         const mitad = Math.ceil(clasificados.length / 2);
@@ -603,7 +604,7 @@ function PlantillaRankingNacional({ data }: { data: any }) {
                       {/* nombre */}
                       <div style={{
                         flex:1, fontSize:14, fontWeight: c.pos==='1°' ? 700 : 500,
-                        color: c.pos==='1°' ? '#fff' : 'rgba(255,255,255,0.65)',
+                        color: c.pendiente ? 'rgba(255,255,255,0.28)' : c.pos==='1°' ? '#fff' : 'rgba(255,255,255,0.65)',
                         fontFamily:"'Rajdhani', sans-serif", letterSpacing:'0.01em',
                         wordBreak:'break-word', lineHeight:1.2,
                       }}>{c.nombre}</div>
