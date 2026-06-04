@@ -1117,53 +1117,6 @@ function PlantillaCrucesNacional({ data }: { data: any }) {
           {octavos.map((p,i) => <PartidoCard key={i} p={p} rondaLabel={`OCT · PARTIDO ${i+1}`} />)}
         </div>
 
-        {/* CUARTOS */}
-        <RondaHeader label="CUARTOS DE FINAL" n={4} />
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-          {cuartos.map((p,i) => <PartidoCard key={i} p={p} rondaLabel={`CUA · PARTIDO ${i+1}`} />)}
-        </div>
-
-        {/* SEMIS */}
-        <RondaHeader label="SEMIFINALES" n={2} />
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-          {semis.map((p,i) => <PartidoCard key={i} p={p} rondaLabel={`SEMI · PARTIDO ${i+1}`} />)}
-        </div>
-
-        {/* FINAL */}
-        <RondaHeader label="GRAN FINAL" n={1} />
-        <div style={{maxWidth:480,margin:'0 auto'}}>
-          <PartidoCard p={final} rondaLabel="FINAL" />
-        </div>
-
-        {/* CAMPEON */}
-        {campeon && (
-          <div style={{
-            marginTop:24, padding:'18px 24px', textAlign:'center',
-            background:`linear-gradient(90deg,${CV2.goldDeep}44,${CV2.goldBright}22,${CV2.goldDeep}44)`,
-            border:`1.5px solid ${CV2.goldBright}88`, borderRadius:12,
-            boxShadow:`0 0 40px ${CV2.goldDeep}55`,
-          }}>
-            <div style={{fontSize:28,marginBottom:6}}>🏆</div>
-            <div style={{
-              fontFamily:"'Saira Condensed', sans-serif", fontSize:13, fontWeight:700,
-              color:CV2.cyanSoft, letterSpacing:'0.28em', marginBottom:6,
-            }}>CAMPEÓN</div>
-            <div style={{
-              fontFamily:"'Saira Condensed', sans-serif", fontSize:32, fontWeight:900,
-              color:CV2.goldBright, letterSpacing:'0.06em',
-              textShadow:`0 0 30px ${CV2.goldDeep}99`,
-            }}>{campeon.nombre}</div>
-            {campeon.club && (
-              <div style={{
-                marginTop:8, display:'inline-block',
-                background:'rgba(255,255,255,0.10)', border:'1px solid rgba(255,255,255,0.2)',
-                color:'rgba(255,255,255,0.8)', padding:'3px 14px', borderRadius:6,
-                fontFamily:"'Saira Condensed', sans-serif", fontSize:14, fontWeight:800, letterSpacing:'0.12em',
-              }}>{campeon.club}</div>
-            )}
-          </div>
-        )}
-
         {/* Footer */}
         <div style={{display:'flex',alignItems:'center',gap:12,marginTop:20}}>
           <div style={{flex:1,height:1,background:`linear-gradient(90deg,transparent,${CV2.cyanSoft}44,transparent)`}} />
