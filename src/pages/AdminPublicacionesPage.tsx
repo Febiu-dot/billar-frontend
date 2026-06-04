@@ -23,7 +23,8 @@ const TEMAS: Record<string, { header: string; accent: string; light: string; bad
   acumulado:        { header: '#1a3a5c', accent: '#1565c0', light: '#e8f0fe', badge: '#1a3a5c' },
   'series-nacional':{ header: '#1a5c2a', accent: '#2d8a3e', light: '#edf7ef', badge: '#1a5c2a' },
   'bracket-nacional':{ header: '#135c1a', accent: '#f5d020', light: '#fffde7', badge: '#135c1a' },
-  'cruces-nacional':  { header: '#06182f', accent: '#f4c430', light: '#0a223f', badge: '#014f86' },
+  'cruces-nacional':   { header: '#06182f', accent: '#f4c430', light: '#0a223f', badge: '#014f86' },
+  'inicial-nacional':  { header: '#06182f', accent: '#f4c430', light: '#0a223f', badge: '#014f86' },
 };
 
 // Colores del bracket nacional por categoría federal
@@ -502,7 +503,7 @@ function PlantillaRankingNacional({ data }: { data: any }) {
       {/* ── BLOQUE CLASIFICADOS ── */}
       {(() => {
         const top16: any[] = data.top16 ?? [];
-        if (top16.length === 0) return null;
+        if (top16.length === 0 || ocultarResultados) return null;
         const clasificados = top16;
         const mitad = Math.ceil(clasificados.length / 2);
         const col1 = clasificados.slice(0, mitad);
@@ -669,6 +670,7 @@ function PlantillaRanking({ data, tema }: { data: any; tema: any }) {
 
 // ── Plantilla Series Nacional ─────────────────────────────────────────
 function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
+  const ocultarResultados = data.ocultarResultados ?? false;
   const series: any[] = data.series ?? [];
   const CV2 = data.categoriaFederal ? getCatV2(data.categoriaFederal) : null;
   const NAVY   = CV2 ? CV2.navy     : tema.header;
@@ -686,10 +688,10 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
   const mkRow = (jugador: any, isWinner: boolean) => (
     <div style={{
       display:'flex', alignItems:'center', padding:'9px 14px', gap:10,
-      background: isWinner
+      background: isWinner && !ocultarResultados
         ? `linear-gradient(90deg, ${GOLDB}15, ${GOLD}08, transparent)`
         : 'rgba(0,0,0,0.10)',
-      borderLeft: isWinner
+      borderLeft: isWinner && !ocultarResultados
         ? `3px solid ${GOLDB}`
         : `3px solid rgba(255,255,255,0.06)`,
       position:'relative', overflow:'hidden',
@@ -772,7 +774,7 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
               {p.sede && <>{p.sede}</>}
             </span>
           )}
-          {p.resultado && (
+          {p.resultado && !ocultarResultados && (
             <span style={{
               fontWeight:900, fontSize:15,
               fontFamily:"'Saira Condensed', sans-serif",
@@ -1510,6 +1512,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
       {data.tipo === 'cruces'          && <PlantillaCruces          data={data} tema={temaUsado} />}
       {data.tipo === 'ranking'         && <PlantillaRanking         data={data} tema={temaUsado} />}
       {data.tipo === 'series-nacional'  && <PlantillaSeriesNacional  data={data} tema={temaUsado} />}
+      {data.tipo === 'inicial-nacional' && <PlantillaSeriesNacional  data={{...data, ocultarResultados: true}} tema={temaUsado} />}
       {data.tipo === 'cruces-nacional'  && <PlantillaCrucesNacional  data={data} />}
       <PubFooter notas={notas} tema={temaUsado} />
     </>
@@ -1668,7 +1671,23 @@ export default function AdminPublicacionesPage() {
   };
 
   const tema = TEMAS[tipoFase] ?? TEMAS.clasificatorio;
-  const circuitos = torneos.flatMap((t: any) => (t.circuits ?? []).map((c: any) => ({ ...c, torneoNombre: t.name })));
+  // Ordenar: nacionales primero (por nombre torneo), luego departamentales; dentro de cada torneo por order
+  const esNacionalTorneo = (nombre: string) => /nacional/i.test(nombre);
+  const ordenTorneo = (nombre: string) => {
+    if (/primera/i.test(nombre)) return 1;
+    if (/segunda/i.test(nombre)) return 2;
+    if (/tercera/i.test(nombre)) return 3;
+    return 99;
+  };
+  const circuitos = torneos
+    .flatMap((t: any) => (t.circuits ?? []).map((c: any) => ({ ...c, torneoNombre: t.name, esNacional: esNacionalTorneo(t.name) })))
+    .sort((a: any, b: any) => {
+      if (a.esNacional !== b.esNacional) return a.esNacional ? -1 : 1;
+      const ot = ordenTorneo(a.torneoNombre) - ordenTorneo(b.torneoNombre);
+      if (ot !== 0) return ot;
+      if (a.torneoNombre !== b.torneoNombre) return a.torneoNombre.localeCompare(b.torneoNombre);
+      return (a.order ?? 0) - (b.order ?? 0);
+    });
   const esBracket = tipoFase === 'bracket-nacional';
 
   return (
@@ -1705,7 +1724,20 @@ export default function AdminPublicacionesPage() {
             <div>
               <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Publicación</label>
               <select className="input" value={tipoFase} onChange={e => { setTipoFase(e.target.value); setPubData(null); }}>
-                {FASES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                {(() => {
+                  const circSelec = circuitos.find((c: any) => String(c.id) === String(circuitId));
+                  const esNac = circSelec?.esNacional ?? false;
+                  const fasesNacional = ['inicial-nacional', 'series-nacional', 'ranking', 'cruces-nacional', 'bracket-nacional'];
+                  const fasesDep = FASES.filter(f => !['series-nacional','cruces-nacional','bracket-nacional','inicial-nacional'].includes(f.value));
+                  const fasesNac = [
+                    { value: 'inicial-nacional', label: '📋 Inicial (fixture sin resultados)' },
+                    { value: 'series-nacional',  label: '🎱 Series Nacional (con resultados)' },
+                    { value: 'ranking',          label: '🏅 Ranking del Circuito' },
+                    { value: 'cruces-nacional',  label: '⚔️ Cruces Nacional' },
+                    { value: 'bracket-nacional', label: '🏟 Bracket Nacional' },
+                  ];
+                  return (esNac ? fasesNac : fasesDep).map(f => <option key={f.value} value={f.value}>{f.label}</option>);
+                })()}
               </select>
             </div>
             <div className="flex items-end">
