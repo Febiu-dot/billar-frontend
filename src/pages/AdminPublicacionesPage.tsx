@@ -772,7 +772,7 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
               fontFamily:"'Rajdhani', sans-serif", letterSpacing:'0.04em',
               display:'flex', alignItems:'center', gap:5,
             }}>
-              {p.hora && <><svg viewBox="0 0 24 24" fill="none" stroke={CYANSOFT} strokeWidth="2.2" style={{width:11,height:11,opacity:0.7}}><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>{p.hora}</>}
+              {p.hora && <><span style={{fontSize:11,opacity:0.7}}>⏱</span>{p.hora}</>}
               {p.hora && p.sede && <span style={{opacity:0.35}}>·</span>}
               {p.sede && <>{p.sede}</>}
             </span>
@@ -1038,7 +1038,7 @@ function PlantillaCrucesNacional({ data }: { data: any }) {
           <div style={{display:'flex', alignItems:'center', gap:8}}>
             {p.hora && (
               <span style={{fontSize:11,color:'rgba(255,255,255,0.45)',fontFamily:"'Rajdhani', sans-serif",display:'flex',alignItems:'center',gap:4}}>
-                <svg viewBox="0 0 24 24" fill="none" stroke={CV2.cyanSoft} strokeWidth="2.2" style={{width:10,height:10,opacity:0.7}}><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+<span style={{fontSize:10,opacity:0.7}}>⏱</span>
                 {p.hora}
               </span>
             )}
