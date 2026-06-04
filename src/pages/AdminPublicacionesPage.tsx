@@ -114,8 +114,7 @@ function PubHeader({ data, tema }: { data: any; tema: any }) {
           position: 'absolute', inset: 0, pointerEvents: 'none',
           backgroundImage: `linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px)`,
           backgroundSize: '36px 36px',
-          maskImage: 'radial-gradient(80% 70% at 50% 45%, #000 30%, transparent 85%)',
-          WebkitMaskImage: 'radial-gradient(80% 70% at 50% 45%, #000 30%, transparent 85%)',
+
         }} />
         {/* Vignette */}
         <div style={{
@@ -134,10 +133,8 @@ function PubHeader({ data, tema }: { data: any; tema: any }) {
           }} />
           <div style={{
             position: 'absolute', inset: -3, borderRadius: '50%',
-            background: `conic-gradient(from 0deg, ${CV2.goldBright}, ${CV2.cyan}, ${CV2.goldBright}, ${CV2.cyan}, ${CV2.goldBright})`,
-            opacity: 0.55, filter: 'blur(1px)',
-            WebkitMask: 'radial-gradient(circle, transparent 50px, #000 51px)',
-            mask: 'radial-gradient(circle, transparent 50px, #000 51px)',
+            border: `2px solid ${CV2.goldBright}88`,
+            boxShadow: `0 0 10px ${CV2.goldDeep}88, inset 0 0 8px ${CV2.goldDeep}44`,
           }} />
           <div style={{
             position: 'absolute', inset: 0, borderRadius: '50%',
