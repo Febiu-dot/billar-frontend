@@ -23,6 +23,7 @@ const TEMAS: Record<string, { header: string; accent: string; light: string; bad
   acumulado:        { header: '#1a3a5c', accent: '#1565c0', light: '#e8f0fe', badge: '#1a3a5c' },
   'series-nacional':{ header: '#1a5c2a', accent: '#2d8a3e', light: '#edf7ef', badge: '#1a5c2a' },
   'bracket-nacional':{ header: '#135c1a', accent: '#f5d020', light: '#fffde7', badge: '#135c1a' },
+  'cruces-nacional':  { header: '#06182f', accent: '#f4c430', light: '#0a223f', badge: '#014f86' },
 };
 
 // Colores del bracket nacional por categoría federal
@@ -68,6 +69,7 @@ const FASES = [
   { value: 'ranking-final',     label: '🏆 Ranking Final' },
   { value: 'acumulado',         label: '📊 Ranking Acumulado' },
   { value: 'series-nacional',   label: '🎱 Series Nacional' },
+  { value: 'cruces-nacional',   label: '⚔️ Cruces Nacional' },
   { value: 'bracket-nacional',  label: '🏟 Bracket Nacional' },
 ];
 
@@ -954,6 +956,225 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
   );
 }
 
+// ── Plantilla Cruces Nacional ────────────────────────────────────────
+function PlantillaCrucesNacional({ data }: { data: any }) {
+  const CV2 = getCatV2(data.categoriaFederal ?? 'primera');
+  const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Condensed:wght@600;700;800;900&display=swap');`;
+
+  const octavos: any[] = data.octavos ?? [];
+  const cuartos: any[] = data.cuartos ?? [];
+  const semis:   any[] = data.semis   ?? [];
+  const final:   any   = data.final   ?? null;
+  const campeon: any   = data.campeon ?? null;
+
+  const PartidoCard = ({ p, rondaLabel }: { p: any; rondaLabel: string }) => {
+    if (!p) return (
+      <div style={{
+        background:'rgba(0,0,0,0.18)', border:`1px solid rgba(255,255,255,0.06)`,
+        borderRadius:10, padding:'14px 16px', opacity:0.4,
+        fontFamily:"'Saira Condensed', sans-serif", color:'rgba(255,255,255,0.3)',
+        fontSize:13, letterSpacing:'0.1em', textAlign:'center',
+      }}>POR DEFINIR</div>
+    );
+
+    const jugA = p.jugadorA ?? { nombre: p.slotA ?? '?', club: null };
+    const jugB = p.jugadorB ?? { nombre: p.slotB ?? '?', club: null };
+    const winA = p.winA;
+    const winB = p.winB;
+    const jugado = !!p.resultado;
+
+    const JugRow = ({ jug, isWinner }: { jug: any; isWinner: boolean }) => (
+      <div style={{
+        display:'flex', alignItems:'center', gap:9, padding:'9px 14px',
+        background: isWinner
+          ? `linear-gradient(90deg, ${CV2.goldBright}14, transparent)`
+          : 'transparent',
+        borderLeft: isWinner
+          ? `3px solid ${CV2.goldBright}`
+          : `3px solid rgba(255,255,255,0.06)`,
+        position:'relative',
+      }}>
+        {isWinner && jugado && (
+          <div style={{
+            position:'absolute', inset:0, pointerEvents:'none',
+            background:`linear-gradient(100deg,transparent 40%,${CV2.goldBright}08 60%,transparent 80%)`,
+          }} />
+        )}
+        <div style={{
+          flex:1, fontSize:15, fontWeight: isWinner ? 700 : 500,
+          color: isWinner ? '#ffffff' : 'rgba(255,255,255,0.52)',
+          fontFamily:"'Rajdhani', sans-serif", letterSpacing:'0.01em',
+          wordBreak:'break-word', lineHeight:1.2, position:'relative', zIndex:1,
+        }}>{jug.nombre}</div>
+        {jug.club && (
+          <div style={{
+            background: isWinner ? 'rgba(255,255,255,0.13)' : 'rgba(255,255,255,0.06)',
+            color: isWinner ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)',
+            padding:'2px 7px', borderRadius:4, fontSize:10, fontWeight:800, flexShrink:0,
+            fontFamily:"'Saira Condensed', sans-serif", letterSpacing:'0.07em',
+            border:`1px solid ${isWinner?'rgba(255,255,255,0.20)':'rgba(255,255,255,0.06)'}`,
+            position:'relative', zIndex:1,
+          }}>{jug.club}</div>
+        )}
+        {jugado && (
+          <div style={{
+            width:22, height:22, borderRadius:4, flexShrink:0,
+            background: isWinner
+              ? `linear-gradient(135deg, ${CV2.goldBright}, ${CV2.goldDeep})`
+              : 'rgba(255,255,255,0.06)',
+            display:'flex', alignItems:'center', justifyContent:'center',
+            fontSize:12, position:'relative', zIndex:1,
+          }}>{isWinner ? '✓' : '✗'}</div>
+        )}
+      </div>
+    );
+
+    return (
+      <div style={{
+        background:`linear-gradient(175deg, rgba(14,58,100,0.95), rgba(7,26,50,0.97))`,
+        border:`1px solid rgba(95,212,255,0.15)`,
+        borderRadius:10, overflow:'hidden',
+        boxShadow:`0 6px 24px rgba(0,0,0,0.50), 0 0 0 1px rgba(255,255,255,0.04)`,
+        position:'relative',
+      }}>
+        {/* top accent */}
+        <div style={{position:'absolute',top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,${CV2.cyan}55,${CV2.goldBright}88,${CV2.cyan}55)`}} />
+        {/* header */}
+        <div style={{
+          background:`linear-gradient(90deg,${CV2.navy2}f0,${CV2.petrol}cc,${CV2.navy}aa)`,
+          borderBottom:`1.5px solid ${CV2.goldDeep}77`,
+          padding:'8px 14px',
+          display:'flex', justifyContent:'space-between', alignItems:'center',
+        }}>
+          <span style={{
+            fontFamily:"'Saira Condensed', sans-serif", fontWeight:800, fontSize:11,
+            color:CV2.cyanSoft, letterSpacing:'0.16em', textTransform:'uppercase',
+          }}>{rondaLabel}</span>
+          <div style={{display:'flex', alignItems:'center', gap:8}}>
+            {p.hora && (
+              <span style={{fontSize:11,color:'rgba(255,255,255,0.45)',fontFamily:"'Rajdhani', sans-serif",display:'flex',alignItems:'center',gap:4}}>
+                <svg viewBox="0 0 24 24" fill="none" stroke={CV2.cyanSoft} strokeWidth="2.2" style={{width:10,height:10,opacity:0.7}}><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                {p.hora}
+              </span>
+            )}
+            {p.sede && <span style={{fontSize:10,color:'rgba(255,255,255,0.35)',fontFamily:"'Rajdhani', sans-serif",letterSpacing:'0.03em'}}>{p.sede}{p.mesa ? ` · M${p.mesa}` : ''}</span>}
+            {jugado && (
+              <span style={{
+                fontFamily:"'Saira Condensed', sans-serif", fontWeight:900, fontSize:16,
+                background:`linear-gradient(135deg,${CV2.goldBright},${CV2.gold},${CV2.goldDeep})`,
+                color:CV2.ink, padding:'2px 10px', borderRadius:5,
+                boxShadow:`0 2px 8px ${CV2.goldDeep}77`,letterSpacing:'0.04em',
+              }}>{p.resultado}</span>
+            )}
+          </div>
+        </div>
+        <JugRow jug={jugA} isWinner={winA} />
+        <div style={{height:1,background:'rgba(255,255,255,0.04)',marginLeft:14}} />
+        <JugRow jug={jugB} isWinner={winB} />
+      </div>
+    );
+  };
+
+  const RondaHeader = ({ label, n }: { label: string; n: number }) => (
+    <div style={{
+      display:'flex', alignItems:'center', gap:12, marginBottom:12, marginTop:20,
+    }}>
+      <div style={{
+        background:`linear-gradient(135deg,${CV2.goldBright},${CV2.goldDeep})`,
+        color:CV2.ink, borderRadius:6, padding:'4px 14px',
+        fontFamily:"'Saira Condensed', sans-serif", fontSize:15, fontWeight:900,
+        letterSpacing:'0.08em', boxShadow:`0 2px 10px ${CV2.goldDeep}88`,
+      }}>{n}</div>
+      <span style={{
+        fontFamily:"'Saira Condensed', sans-serif", fontWeight:900, fontSize:18,
+        color:CV2.goldBright, letterSpacing:'0.18em', textTransform:'uppercase',
+        textShadow:`0 0 20px ${CV2.goldDeep}66`,
+      }}>{label}</span>
+      <div style={{flex:1,height:1,background:`linear-gradient(90deg,${CV2.goldDeep}55,transparent)`}} />
+    </div>
+  );
+
+  return (
+    <div style={{
+      padding:'20px 24px 32px',
+      background:`
+        radial-gradient(ellipse 160% 50% at 50% -5%, ${CV2.cyan}14 0%, transparent 50%),
+        radial-gradient(ellipse 100% 70% at 15% 60%, ${CV2.navy2}bb, transparent 55%),
+        radial-gradient(ellipse 100% 70% at 85% 60%, ${CV2.petrol}77, transparent 55%),
+        linear-gradient(180deg, ${CV2.navy} 0%, ${CV2.navyDeep} 55%, #020d1a 100%)`,
+      fontFamily:"'Rajdhani', sans-serif", position:'relative', overflow:'hidden',
+    }}>
+      <style>{FONT_IMPORT}</style>
+      {/* Top glow */}
+      <div style={{position:'absolute',top:0,left:0,right:0,height:3,zIndex:2,background:`linear-gradient(90deg,transparent,${CV2.cyan} 20%,${CV2.goldBright} 50%,${CV2.cyan} 80%,transparent)`,boxShadow:`0 0 18px ${CV2.cyan}77`}} />
+      {/* Grid texture */}
+      <div style={{position:'absolute',inset:0,pointerEvents:'none',backgroundImage:`linear-gradient(rgba(255,255,255,0.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.015) 1px,transparent 1px)`,backgroundSize:'36px 36px',maskImage:'radial-gradient(80% 70% at 50% 45%,#000 30%,transparent 85%)',WebkitMaskImage:'radial-gradient(80% 70% at 50% 45%,#000 30%,transparent 85%)'}} />
+
+      <div style={{position:'relative',zIndex:1}}>
+        {/* OCTAVOS */}
+        <RondaHeader label="OCTAVOS DE FINAL" n={8} />
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+          {octavos.map((p,i) => <PartidoCard key={i} p={p} rondaLabel={`OCT · PARTIDO ${i+1}`} />)}
+        </div>
+
+        {/* CUARTOS */}
+        <RondaHeader label="CUARTOS DE FINAL" n={4} />
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+          {cuartos.map((p,i) => <PartidoCard key={i} p={p} rondaLabel={`CUA · PARTIDO ${i+1}`} />)}
+        </div>
+
+        {/* SEMIS */}
+        <RondaHeader label="SEMIFINALES" n={2} />
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+          {semis.map((p,i) => <PartidoCard key={i} p={p} rondaLabel={`SEMI · PARTIDO ${i+1}`} />)}
+        </div>
+
+        {/* FINAL */}
+        <RondaHeader label="GRAN FINAL" n={1} />
+        <div style={{maxWidth:480,margin:'0 auto'}}>
+          <PartidoCard p={final} rondaLabel="FINAL" />
+        </div>
+
+        {/* CAMPEON */}
+        {campeon && (
+          <div style={{
+            marginTop:24, padding:'18px 24px', textAlign:'center',
+            background:`linear-gradient(90deg,${CV2.goldDeep}44,${CV2.goldBright}22,${CV2.goldDeep}44)`,
+            border:`1.5px solid ${CV2.goldBright}88`, borderRadius:12,
+            boxShadow:`0 0 40px ${CV2.goldDeep}55`,
+          }}>
+            <div style={{fontSize:28,marginBottom:6}}>🏆</div>
+            <div style={{
+              fontFamily:"'Saira Condensed', sans-serif", fontSize:13, fontWeight:700,
+              color:CV2.cyanSoft, letterSpacing:'0.28em', marginBottom:6,
+            }}>CAMPEÓN</div>
+            <div style={{
+              fontFamily:"'Saira Condensed', sans-serif", fontSize:32, fontWeight:900,
+              color:CV2.goldBright, letterSpacing:'0.06em',
+              textShadow:`0 0 30px ${CV2.goldDeep}99`,
+            }}>{campeon.nombre}</div>
+            {campeon.club && (
+              <div style={{
+                marginTop:8, display:'inline-block',
+                background:'rgba(255,255,255,0.10)', border:'1px solid rgba(255,255,255,0.2)',
+                color:'rgba(255,255,255,0.8)', padding:'3px 14px', borderRadius:6,
+                fontFamily:"'Saira Condensed', sans-serif", fontSize:14, fontWeight:800, letterSpacing:'0.12em',
+              }}>{campeon.club}</div>
+            )}
+          </div>
+        )}
+
+        {/* Footer */}
+        <div style={{display:'flex',alignItems:'center',gap:12,marginTop:20}}>
+          <div style={{flex:1,height:1,background:`linear-gradient(90deg,transparent,${CV2.cyanSoft}44,transparent)`}} />
+          <span style={{fontSize:11,color:CV2.cyanSoft,fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.28em',opacity:0.6,textTransform:'uppercase'}}>FEBIU · TORNEO NACIONAL</span>
+          <div style={{flex:1,height:1,background:`linear-gradient(90deg,transparent,${CV2.cyanSoft}44,transparent)`}} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Plantilla Bracket Nacional ────────────────────────────────────────
 type HorasBracket = { oct: string[]; cua: string[]; sem: string[]; fin: string };
 
@@ -1357,7 +1578,8 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
       {data.tipo === 'reduccion'       && <PlantillaReduccion       data={data} tema={temaUsado} />}
       {data.tipo === 'cruces'          && <PlantillaCruces          data={data} tema={temaUsado} />}
       {data.tipo === 'ranking'         && <PlantillaRanking         data={data} tema={temaUsado} />}
-      {data.tipo === 'series-nacional' && <PlantillaSeriesNacional  data={data} tema={temaUsado} />}
+      {data.tipo === 'series-nacional'  && <PlantillaSeriesNacional  data={data} tema={temaUsado} />}
+      {data.tipo === 'cruces-nacional'  && <PlantillaCrucesNacional  data={data} />}
       <PubFooter notas={notas} tema={temaUsado} />
     </>
   );
