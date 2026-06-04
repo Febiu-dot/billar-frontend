@@ -585,7 +585,7 @@ function PlantillaRankingNacional({ data }: { data: any }) {
                       }}>{c.posicion}</div>
                       {/* nombre */}
                       <div style={{
-                        flex:1, fontSize:14, fontWeight: c.pos==='1°' ? 700 : 500,
+                        flex:1, fontSize:14, fontWeight: c.posicion<=8 ? 700 : 500,
                         color: c.posicion<=8 ? '#fff' : 'rgba(255,255,255,0.65)',
                         fontFamily:"'Rajdhani', sans-serif", letterSpacing:'0.01em',
                         wordBreak:'break-word', lineHeight:1.2,
