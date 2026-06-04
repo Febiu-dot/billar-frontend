@@ -85,6 +85,122 @@ const cargarHtml2Canvas = (): Promise<any> =>
 
 // ── Componentes base ──────────────────────────────────────────────────
 function PubHeader({ data, tema }: { data: any; tema: any }) {
+  // Si es torneo nacional, usar paleta V2 premium
+  if (data.categoriaFederal) {
+    const CV2 = getCatV2(data.categoriaFederal);
+    const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Condensed:wght@600;700;800;900&display=swap');`;
+    return (
+      <div style={{
+        position: 'relative', overflow: 'hidden',
+        background: `
+          radial-gradient(ellipse 160% 55% at 50% -10%, ${CV2.cyan}1a 0%, transparent 55%),
+          radial-gradient(ellipse 120% 80% at 20% 60%, ${CV2.navy2}cc, transparent 55%),
+          radial-gradient(ellipse 120% 80% at 80% 60%, ${CV2.petrol}88, transparent 55%),
+          linear-gradient(180deg, ${CV2.petrol} 0%, ${CV2.navy} 40%, ${CV2.navyDeep} 100%)`,
+        padding: '32px 48px 28px',
+        display: 'flex', alignItems: 'center', gap: 36,
+      }}>
+        <style>{FONT_IMPORT}</style>
+        {/* Top accent line */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+          background: `linear-gradient(90deg, transparent, ${CV2.cyan} 20%, ${CV2.goldBright} 50%, ${CV2.cyan} 80%, transparent)`,
+          boxShadow: `0 0 18px ${CV2.cyan}77`,
+        }} />
+        {/* Grid texture */}
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px)`,
+          backgroundSize: '36px 36px',
+          maskImage: 'radial-gradient(80% 70% at 50% 45%, #000 30%, transparent 85%)',
+          WebkitMaskImage: 'radial-gradient(80% 70% at 50% 45%, #000 30%, transparent 85%)',
+        }} />
+        {/* Vignette */}
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: 'radial-gradient(120% 100% at 50% 50%, transparent 55%, rgba(0,0,0,0.45) 100%)',
+        }} />
+        {/* Logo halo */}
+        <div style={{
+          position: 'relative', width: 110, height: 110, flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2,
+        }}>
+          <div style={{
+            position: 'absolute', inset: -14, borderRadius: '50%',
+            background: `radial-gradient(circle, ${CV2.cyan}44, transparent 68%)`,
+            filter: 'blur(4px)',
+          }} />
+          <div style={{
+            position: 'absolute', inset: -3, borderRadius: '50%',
+            background: `conic-gradient(from 0deg, ${CV2.goldBright}, ${CV2.cyan}, ${CV2.goldBright}, ${CV2.cyan}, ${CV2.goldBright})`,
+            opacity: 0.55, filter: 'blur(1px)',
+            WebkitMask: 'radial-gradient(circle, transparent 50px, #000 51px)',
+            mask: 'radial-gradient(circle, transparent 50px, #000 51px)',
+          }} />
+          <div style={{
+            position: 'absolute', inset: 0, borderRadius: '50%',
+            border: `2px solid ${CV2.goldBright}55`,
+            boxShadow: `inset 0 0 12px ${CV2.goldBright}22`,
+            zIndex: 3,
+          }} />
+          <img src="/logo-febiu.png" alt="FEBIU" crossOrigin="anonymous" style={{
+            width: 100, height: 100, borderRadius: '50%', objectFit: 'contain',
+            position: 'relative', zIndex: 2,
+            boxShadow: `0 6px 24px rgba(0,0,0,0.5)`,
+          }} />
+        </div>
+        {/* Texts */}
+        <div style={{ flex: 1, textAlign: 'center', position: 'relative', zIndex: 2 }}>
+          <div style={{
+            fontFamily: "'Saira Condensed', sans-serif",
+            letterSpacing: '0.55em', fontSize: 11, fontWeight: 600,
+            color: CV2.cyanSoft, textIndent: '0.55em',
+            marginBottom: 6, textTransform: 'uppercase', opacity: 0.85,
+          }}>FEBIU · TEMPORADA {data.temporada}</div>
+          <div style={{
+            fontFamily: "'Saira Condensed', sans-serif",
+            fontWeight: 900, fontSize: 44, lineHeight: 0.92,
+            letterSpacing: '0.04em', textTransform: 'uppercase',
+            color: CV2.goldBright,
+            textShadow: `0 0 40px ${CV2.goldDeep}88`,
+          }}>{data.torneo}</div>
+          <div style={{
+            fontFamily: "'Saira Condensed', sans-serif",
+            fontWeight: 700, fontSize: 20, marginTop: 10,
+            letterSpacing: '0.28em', textTransform: 'uppercase',
+            color: 'rgba(255,255,255,0.88)', textIndent: '0.28em',
+          }}>{data.fase}</div>
+          {data.fechaPrincipal && (
+            <div style={{
+              fontFamily: "'Rajdhani', sans-serif",
+              fontSize: 15, marginTop: 6, color: 'rgba(255,255,255,0.65)',
+              letterSpacing: '0.12em', textTransform: 'uppercase',
+            }}>{data.fechaPrincipal}</div>
+          )}
+          {data.formato && (
+            <div style={{
+              marginTop: 14, display: 'inline-block',
+              background: `linear-gradient(135deg, ${CV2.goldBright}22, ${CV2.gold}18)`,
+              border: `1px solid ${CV2.goldDeep}88`,
+              borderRadius: 8, padding: '7px 22px',
+              fontFamily: "'Saira Condensed', sans-serif",
+              fontSize: 14, fontWeight: 800, letterSpacing: '0.16em',
+              color: CV2.goldBright,
+              boxShadow: `0 0 16px ${CV2.goldDeep}44`,
+            }}>PARTIDAS A {data.formato.toUpperCase()}</div>
+          )}
+        </div>
+        {/* Bottom rule */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0, height: 2,
+          background: `linear-gradient(90deg, transparent, ${CV2.goldDeep} 15%, ${CV2.goldBright} 50%, ${CV2.goldDeep} 85%, transparent)`,
+          boxShadow: `0 0 12px ${CV2.goldDeep}66`,
+        }} />
+      </div>
+    );
+  }
+
+  // Header departamental (original)
   return (
     <div style={{ background: tema.header, padding: '36px 50px 32px', display: 'flex', alignItems: 'center', gap: 36, fontFamily: F }}>
       <div style={{ width: 120, height: 120, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, padding: 6 }}>
