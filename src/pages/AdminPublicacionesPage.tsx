@@ -576,17 +576,12 @@ function PlantillaRankingNacional({ data }: { data: any }) {
                       {/* posicion badge */}
                       <div style={{
                         width:34, height:26, borderRadius:5, flexShrink:0,
-                        background: c.posicion<=3
-                          ? `linear-gradient(135deg, ${GOLDB}, ${GOLDD})`
-                          : c.posicion<=16
-                            ? `linear-gradient(135deg, ${NAVY2}, ${PETROL})`
-                            : 'rgba(255,255,255,0.07)',
-                        color: c.posicion<=3 ? INK : GOLDB,
+                        background: `linear-gradient(135deg, ${GOLDB}, ${GOLDD})`,
+                        color: INK,
                         fontSize:13, fontWeight:900,
                         fontFamily:"'Saira Condensed', sans-serif",
                         display:'flex', alignItems:'center', justifyContent:'center',
-                        boxShadow: c.posicion<=3 ? `0 1px 8px ${GOLDD}88` : 'none',
-                        border: c.posicion<=16 && c.posicion>3 ? `1px solid ${GOLDD}55` : 'none',
+                        boxShadow: `0 1px 8px ${GOLDD}88`,
                       }}>{c.posicion}</div>
                       {/* nombre */}
                       <div style={{
