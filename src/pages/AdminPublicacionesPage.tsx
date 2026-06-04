@@ -508,6 +508,123 @@ function PlantillaRankingNacional({ data }: { data: any }) {
         ))}
       </div>
 
+      {/* ── BLOQUE CLASIFICADOS ── */}
+      {(() => {
+        const clasificados: {pos:string; nombre:string; club:string|null; serie:number; ranking:number|null}[] = [];
+        series.forEach(s => {
+          if (s.primero) clasificados.push({ pos:'1°', nombre:s.primero.nombre, club:s.primero.club, serie:s.numero, ranking:s.primero.ranking });
+          if (s.segundo) clasificados.push({ pos:'2°', nombre:s.segundo.nombre, club:s.segundo.club, serie:s.numero, ranking:s.segundo.ranking });
+        });
+        if (clasificados.length === 0) return null;
+        // ordenar por serie, luego pos
+        clasificados.sort((a,b) => a.serie - b.serie || (a.pos === '1°' ? -1 : 1));
+        const mitad = Math.ceil(clasificados.length / 2);
+        const col1 = clasificados.slice(0, mitad);
+        const col2 = clasificados.slice(mitad);
+        return (
+          <div style={{position:'relative', zIndex:2, marginTop:20}}>
+            {/* Header clasificados */}
+            <div style={{
+              display:'flex', alignItems:'center', gap:14, marginBottom:14, padding:'13px 20px',
+              background:`linear-gradient(90deg, ${GOLDD}44, ${GOLDB}18, transparent)`,
+              border:`1px solid ${GOLDD}88`, borderRadius:10,
+              boxShadow:`0 0 32px ${GOLDD}33, inset 0 1px 0 rgba(255,255,255,0.07)`,
+            }}>
+              <span style={{fontSize:24}}>🏆</span>
+              <div>
+                <div style={{
+                  fontFamily:"'Saira Condensed', sans-serif", fontWeight:900, fontSize:20,
+                  color:GOLDB, letterSpacing:'0.18em', textTransform:'uppercase',
+                  textShadow:`0 0 20px ${GOLDD}88`,
+                }}>CLASIFICADOS A OCTAVOS DE FINAL</div>
+                <div style={{
+                  fontFamily:"'Rajdhani', sans-serif", fontSize:13, color:'rgba(255,255,255,0.5)',
+                  letterSpacing:'0.08em', marginTop:1,
+                }}>{clasificados.length} jugadores · Top 2 de cada serie</div>
+              </div>
+              <div style={{flex:1, height:1, background:`linear-gradient(90deg, ${GOLDD}55, transparent)`}} />
+              <div style={{
+                background:`linear-gradient(135deg, ${GOLDB}, ${GOLD}, ${GOLDD})`,
+                color:INK, borderRadius:6, padding:'4px 14px',
+                fontFamily:"'Saira Condensed', sans-serif", fontSize:18, fontWeight:900,
+                boxShadow:`0 3px 12px ${GOLDD}88`,
+              }}>{clasificados.length}</div>
+            </div>
+            {/* Tabla dos columnas */}
+            <div style={{
+              display:'flex', gap:10,
+              border:`1px solid rgba(255,255,255,0.09)`, borderRadius:10, overflow:'hidden',
+              boxShadow:`0 12px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04)`,
+            }}>
+              {[col1, col2].map((col, ci) => (
+                <div key={ci} style={{flex:1, borderLeft:ci===1?`1px solid rgba(255,255,255,0.07)`:'none'}}>
+                  {/* col header */}
+                  <div style={{
+                    display:'flex', gap:8, padding:'7px 14px', alignItems:'center',
+                    background:`linear-gradient(90deg, ${PETROL}ee, ${NAVY2}cc, ${NAVY}aa)`,
+                    borderBottom:`2px solid ${GOLDD}`,
+                  }}>
+                    <span style={{width:28,fontSize:10,fontWeight:800,color:GOLDB,fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.1em'}}>S.</span>
+                    <span style={{width:26,fontSize:10,fontWeight:800,color:GOLDB,fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.1em'}}>#</span>
+                    <span style={{flex:1,fontSize:10,fontWeight:800,color:GOLDB,fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.1em'}}>JUGADOR</span>
+                    <span style={{fontSize:10,fontWeight:800,color:CYANSOFT,fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.07em',marginRight:4}}>CLUB</span>
+                  </div>
+                  {col.map((c, idx) => (
+                    <div key={idx} style={{
+                      display:'flex', alignItems:'center', gap:8, padding:'8px 14px',
+                      background: c.pos==='1°'
+                        ? (idx%2===0 ? `linear-gradient(90deg, ${GOLDB}13, transparent)` : `linear-gradient(90deg, ${GOLDB}0b, transparent)`)
+                        : (idx%2===0 ? 'rgba(255,255,255,0.048)' : 'rgba(0,0,0,0.10)'),
+                      borderBottom:`1px solid rgba(255,255,255,0.045)`,
+                      borderLeft:c.pos==='1°'?`3px solid ${GOLDB}`:`3px solid rgba(255,255,255,0.08)`,
+                    }}>
+                      {/* serie badge */}
+                      <div style={{
+                        width:26, height:22, borderRadius:4, flexShrink:0,
+                        background:`linear-gradient(135deg, ${NAVY2}, ${PETROL})`,
+                        border:`1px solid ${CYAN}44`,
+                        color:CYANSOFT, fontSize:11, fontWeight:900,
+                        fontFamily:"'Saira Condensed', sans-serif",
+                        display:'flex', alignItems:'center', justifyContent:'center',
+                        letterSpacing:'0.02em',
+                      }}>S{c.serie}</div>
+                      {/* pos badge */}
+                      <div style={{
+                        width:24, height:22, borderRadius:4, flexShrink:0,
+                        background: c.pos==='1°'
+                          ? `linear-gradient(135deg, ${GOLDB}, ${GOLDD})`
+                          : 'rgba(255,255,255,0.10)',
+                        color: c.pos==='1°' ? INK : 'rgba(255,255,255,0.55)',
+                        fontSize:11, fontWeight:900,
+                        fontFamily:"'Saira Condensed', sans-serif",
+                        display:'flex', alignItems:'center', justifyContent:'center',
+                        boxShadow: c.pos==='1°' ? `0 1px 6px ${GOLDD}77` : 'none',
+                      }}>{c.pos}</div>
+                      {/* nombre */}
+                      <div style={{
+                        flex:1, fontSize:14, fontWeight: c.pos==='1°' ? 700 : 500,
+                        color: c.pos==='1°' ? '#fff' : 'rgba(255,255,255,0.65)',
+                        fontFamily:"'Rajdhani', sans-serif", letterSpacing:'0.01em',
+                        wordBreak:'break-word', lineHeight:1.2,
+                      }}>{c.nombre}</div>
+                      {/* club */}
+                      {c.club && (
+                        <div style={{
+                          background:'rgba(255,255,255,0.09)', color:'rgba(255,255,255,0.7)',
+                          padding:'1px 6px', borderRadius:3, fontSize:10, fontWeight:800, flexShrink:0,
+                          fontFamily:"'Saira Condensed', sans-serif", letterSpacing:'0.07em',
+                          border:'1px solid rgba(255,255,255,0.08)',
+                        }}>{c.club}</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Footer rule */}
       <div style={{position:'relative', zIndex:2, display:'flex', alignItems:'center', gap:12, marginTop:16}}>
         <div style={{flex:1, height:1, background:`linear-gradient(90deg, transparent, ${CV2.cyanSoft}44, transparent)`}} />
