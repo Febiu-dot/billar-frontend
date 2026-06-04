@@ -510,14 +510,9 @@ function PlantillaRankingNacional({ data }: { data: any }) {
 
       {/* ── BLOQUE CLASIFICADOS ── */}
       {(() => {
-        const clasificados: {pos:string; nombre:string; club:string|null; serie:number; ranking:number|null; pendiente:boolean}[] = [];
-        series.forEach(s => {
-          if (s.primero) clasificados.push({ pos:'1°', nombre:s.primero.nombre, club:s.primero.club, serie:s.numero, ranking:s.primero.ranking, pendiente:false });
-          if (s.segundo) clasificados.push({ pos:'2°', nombre:s.segundo.nombre, club:s.segundo.club, serie:s.numero, ranking:s.segundo.ranking, pendiente:false });
-        });
-        if (series.length === 0 || clasificados.length === 0) return null;
-        // ordenar por serie, luego pos
-        clasificados.sort((a,b) => a.serie - b.serie || (a.pos === '1°' ? -1 : 1));
+        const top16: any[] = data.top16 ?? [];
+        if (top16.length === 0) return null;
+        const clasificados = top16;
         const mitad = Math.ceil(clasificados.length / 2);
         const col1 = clasificados.slice(0, mitad);
         const col2 = clasificados.slice(mitad);
@@ -572,38 +567,31 @@ function PlantillaRankingNacional({ data }: { data: any }) {
                   {col.map((c, idx) => (
                     <div key={idx} style={{
                       display:'flex', alignItems:'center', gap:8, padding:'8px 14px',
-                      background: c.pos==='1°'
+                      background: c.posicion<=8
                         ? (idx%2===0 ? `linear-gradient(90deg, ${GOLDB}13, transparent)` : `linear-gradient(90deg, ${GOLDB}0b, transparent)`)
                         : (idx%2===0 ? 'rgba(255,255,255,0.048)' : 'rgba(0,0,0,0.10)'),
                       borderBottom:`1px solid rgba(255,255,255,0.045)`,
-                      borderLeft:c.pos==='1°'?`3px solid ${GOLDB}`:`3px solid rgba(255,255,255,0.08)`,
+                      borderLeft:c.posicion<=8?`3px solid ${GOLDB}`:`3px solid rgba(255,255,255,0.08)`,
                     }}>
-                      {/* serie badge */}
+                      {/* posicion badge */}
                       <div style={{
-                        width:26, height:22, borderRadius:4, flexShrink:0,
-                        background:`linear-gradient(135deg, ${NAVY2}, ${PETROL})`,
-                        border:`1px solid ${CYAN}44`,
-                        color:CYANSOFT, fontSize:11, fontWeight:900,
-                        fontFamily:"'Saira Condensed', sans-serif",
-                        display:'flex', alignItems:'center', justifyContent:'center',
-                        letterSpacing:'0.02em',
-                      }}>S{c.serie}</div>
-                      {/* pos badge */}
-                      <div style={{
-                        width:24, height:22, borderRadius:4, flexShrink:0,
-                        background: c.pos==='1°'
+                        width:34, height:26, borderRadius:5, flexShrink:0,
+                        background: c.posicion<=3
                           ? `linear-gradient(135deg, ${GOLDB}, ${GOLDD})`
-                          : 'rgba(255,255,255,0.10)',
-                        color: c.pos==='1°' ? INK : 'rgba(255,255,255,0.55)',
-                        fontSize:11, fontWeight:900,
+                          : c.posicion<=16
+                            ? `linear-gradient(135deg, ${NAVY2}, ${PETROL})`
+                            : 'rgba(255,255,255,0.07)',
+                        color: c.posicion<=3 ? INK : GOLDB,
+                        fontSize:13, fontWeight:900,
                         fontFamily:"'Saira Condensed', sans-serif",
                         display:'flex', alignItems:'center', justifyContent:'center',
-                        boxShadow: c.pos==='1°' ? `0 1px 6px ${GOLDD}77` : 'none',
-                      }}>{c.pos}</div>
+                        boxShadow: c.posicion<=3 ? `0 1px 8px ${GOLDD}88` : 'none',
+                        border: c.posicion<=16 && c.posicion>3 ? `1px solid ${GOLDD}55` : 'none',
+                      }}>{c.posicion}</div>
                       {/* nombre */}
                       <div style={{
                         flex:1, fontSize:14, fontWeight: c.pos==='1°' ? 700 : 500,
-                        color: c.pendiente ? 'rgba(255,255,255,0.28)' : c.pos==='1°' ? '#fff' : 'rgba(255,255,255,0.65)',
+                        color: c.posicion<=8 ? '#fff' : 'rgba(255,255,255,0.65)',
                         fontFamily:"'Rajdhani', sans-serif", letterSpacing:'0.01em',
                         wordBreak:'break-word', lineHeight:1.2,
                       }}>{c.nombre}</div>
