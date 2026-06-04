@@ -226,142 +226,180 @@ function PlantillaRankingNacional({ data }: { data: any }) {
   const col1 = jugadores.slice(0, mitad);
   const col2 = jugadores.slice(mitad);
 
-  // Fuentes premium via @import
   const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Condensed:wght@600;700;800;900&display=swap');`;
 
   const Fila = ({ j, index }: { j: any; index: number }) => {
     const clasifica = j.posicion <= CLASIFICAN;
-    const esTop3 = j.posicion <= 3;
-    const rowBg = clasifica
-      ? (index % 2 === 0 ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)')
-      : (index % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.12)');
-    const medalColor = j.posicion === 1 ? CV2.goldBright : j.posicion === 2 ? '#c0c8d8' : j.posicion === 3 ? '#d4905a' : null;
+    const esTop3    = j.posicion <= 3;
+    const medalColor = j.posicion === 1 ? '#ffd700' : j.posicion === 2 ? '#c0c8d8' : j.posicion === 3 ? '#d4905a' : null;
     return (
       <div style={{
-        display: 'flex', alignItems: 'center', padding: '7px 12px', gap: 10,
-        background: rowBg,
-        borderBottom: `1px solid rgba(255,255,255,${clasifica ? '0.07' : '0.03'})`,
-        borderLeft: clasifica ? `3px solid ${CV2.goldBright}` : `3px solid transparent`,
+        display:'flex', alignItems:'center', padding:'8px 14px', gap:10,
+        background: clasifica
+          ? (index%2===0 ? 'rgba(255,255,255,0.072)' : 'rgba(255,255,255,0.036)')
+          : (index%2===0 ? 'rgba(0,0,0,0.18)' : 'rgba(0,0,0,0.10)'),
+        borderBottom:`1px solid rgba(255,255,255,${clasifica?'0.07':'0.03'})`,
+        borderLeft: clasifica
+          ? `3px solid ${esTop3 && medalColor ? medalColor : CV2.goldBright}`
+          : '3px solid rgba(255,255,255,0.08)',
+        position:'relative', overflow:'hidden',
       }}>
-        {/* Posición */}
+        {/* shimmer line for top3 */}
+        {esTop3 && (
+          <div style={{
+            position:'absolute', inset:0, pointerEvents:'none',
+            background:`linear-gradient(100deg,transparent 30%,${medalColor ?? CV2.goldBright}14 50%,transparent 70%)`,
+          }} />
+        )}
+        {/* Posición badge */}
         <div style={{
-          width: 38, height: 28, borderRadius: 5, flexShrink: 0,
+          width:38, height:30, borderRadius:6, flexShrink:0,
           background: esTop3 && medalColor
-            ? `linear-gradient(135deg, ${medalColor}, ${medalColor}aa)`
+            ? `linear-gradient(145deg, ${medalColor}, ${medalColor}99)`
             : clasifica
-              ? `linear-gradient(135deg, ${CV2.gold}, ${CV2.goldDeep})`
-              : 'rgba(255,255,255,0.08)',
-          color: esTop3 ? CV2.navyDeep : clasifica ? CV2.navyDeep : 'rgba(255,255,255,0.55)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 14, fontWeight: 900,
-          fontFamily: "'Saira Condensed', sans-serif",
-          boxShadow: clasifica ? `0 2px 8px ${CV2.goldDeep}66` : 'none',
-          letterSpacing: '0.02em',
+              ? `linear-gradient(145deg, ${CV2.goldBright}, ${CV2.goldDeep})`
+              : 'rgba(255,255,255,0.07)',
+          color: esTop3 ? '#1a1200' : clasifica ? CV2.navyDeep : 'rgba(255,255,255,0.4)',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          fontSize:15, fontWeight:900,
+          fontFamily:"'Saira Condensed', sans-serif",
+          boxShadow: clasifica ? `0 2px 10px ${CV2.goldDeep}55,inset 0 1px 0 rgba(255,255,255,0.35)` : 'none',
+          letterSpacing:'0.02em', position:'relative', zIndex:1,
         }}>{j.posicion}</div>
 
         {/* Nombre */}
         <div style={{
-          flex: 1, fontSize: 17, fontWeight: clasifica ? 700 : 600,
-          color: clasifica ? '#ffffff' : 'rgba(255,255,255,0.6)',
-          wordBreak: 'break-word', lineHeight: 1.2,
-          fontFamily: "'Rajdhani', sans-serif",
-          letterSpacing: '0.01em',
+          flex:1, fontSize:clasifica?17:15, fontWeight:clasifica?700:500,
+          color: clasifica ? '#ffffff' : 'rgba(255,255,255,0.5)',
+          wordBreak:'break-word', lineHeight:1.2,
+          fontFamily:"'Rajdhani', sans-serif",
+          letterSpacing:'0.01em', position:'relative', zIndex:1,
         }}>{j.nombre}</div>
 
         {/* Club badge */}
         {j.club && (
           <div style={{
-            background: clasifica ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)',
-            color: clasifica ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.35)',
-            padding: '2px 7px', borderRadius: 4, fontSize: 11, fontWeight: 800,
-            fontFamily: "'Saira Condensed', sans-serif",
-            letterSpacing: '0.08em', flexShrink: 0,
-            border: `1px solid ${clasifica ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`,
+            background: clasifica ? 'rgba(255,255,255,0.13)' : 'rgba(255,255,255,0.05)',
+            color: clasifica ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)',
+            padding:'2px 8px', borderRadius:4, fontSize:11, fontWeight:800,
+            fontFamily:"'Saira Condensed', sans-serif",
+            letterSpacing:'0.08em', flexShrink:0,
+            border:`1px solid ${clasifica?'rgba(255,255,255,0.22)':'rgba(255,255,255,0.07)'}`,
+            position:'relative', zIndex:1,
           }}>{j.club}</div>
         )}
 
         {/* Puntos */}
         <div style={{
-          width: 46, fontSize: 17, fontWeight: 900,
-          color: clasifica ? CV2.goldBright : 'rgba(255,255,255,0.35)',
-          textAlign: 'right', flexShrink: 0,
-          fontFamily: "'Saira Condensed', sans-serif",
-          letterSpacing: '0.02em',
+          width:50, fontSize:clasifica?18:14, fontWeight:900,
+          color: clasifica ? CV2.goldBright : 'rgba(255,255,255,0.3)',
+          textAlign:'right', flexShrink:0,
+          fontFamily:"'Saira Condensed', sans-serif",
+          letterSpacing:'0.02em', position:'relative', zIndex:1,
+          textShadow: clasifica ? `0 0 16px ${CV2.goldDeep}88` : 'none',
         }}>{j.puntos}</div>
       </div>
     );
   };
 
-  // Columna header
   const ColHeader = () => (
     <div style={{
-      display: 'flex', alignItems: 'center', padding: '6px 12px', gap: 10,
-      background: `linear-gradient(90deg, ${CV2.navy2}, ${CV2.petrol})`,
-      borderBottom: `2px solid ${CV2.goldDeep}`,
+      display:'flex', alignItems:'center', padding:'7px 14px', gap:10,
+      background:`linear-gradient(90deg, ${CV2.petrol}, ${CV2.navy2} 60%, ${CV2.navy})`,
+      borderBottom:`2px solid ${CV2.goldDeep}`,
     }}>
-      <span style={{ width: 38, fontSize: 11, fontWeight: 700, color: CV2.goldBright, textAlign: 'center', fontFamily: "'Saira Condensed', sans-serif", letterSpacing: '0.1em' }}>#</span>
-      <span style={{ flex: 1, fontSize: 11, fontWeight: 700, color: CV2.goldBright, fontFamily: "'Saira Condensed', sans-serif", letterSpacing: '0.1em' }}>JUGADOR</span>
-      <span style={{ fontSize: 11, fontWeight: 700, color: CV2.cyanSoft, fontFamily: "'Saira Condensed', sans-serif", letterSpacing: '0.08em', marginRight: 4 }}>CLUB</span>
-      <span style={{ width: 46, fontSize: 11, fontWeight: 700, color: CV2.goldBright, textAlign: 'right', fontFamily: "'Saira Condensed', sans-serif", letterSpacing: '0.1em' }}>PTS</span>
+      <span style={{width:38,fontSize:11,fontWeight:800,color:CV2.goldBright,textAlign:'center',fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.12em'}}>#</span>
+      <span style={{flex:1,fontSize:11,fontWeight:800,color:CV2.goldBright,fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.12em'}}>JUGADOR</span>
+      <span style={{fontSize:11,fontWeight:800,color:CV2.cyanSoft,fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.08em',marginRight:6}}>CLUB</span>
+      <span style={{width:50,fontSize:11,fontWeight:800,color:CV2.goldBright,textAlign:'right',fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.12em'}}>PTS</span>
     </div>
   );
 
   return (
     <div style={{
-      padding: '22px 26px 28px',
-      background: `radial-gradient(ellipse 120% 80% at 50% 0%, ${CV2.navy2}cc, transparent 65%),
-                   radial-gradient(ellipse 100% 60% at 50% 100%, ${CV2.navyDeep}ee, transparent 70%),
-                   linear-gradient(180deg, ${CV2.navy} 0%, ${CV2.navyDeep} 60%, #020d1a 100%)`,
-      fontFamily: "'Rajdhani', sans-serif",
+      padding:'24px 28px 32px',
+      background:`
+        radial-gradient(ellipse 160% 60% at 50% -5%, ${CV2.cyan}18 0%, transparent 55%),
+        radial-gradient(ellipse 120% 80% at 20% 50%, ${CV2.navy2}cc, transparent 60%),
+        radial-gradient(ellipse 120% 80% at 80% 50%, ${CV2.petrol}88, transparent 60%),
+        linear-gradient(180deg, ${CV2.navy} 0%, ${CV2.navyDeep} 50%, #020d1a 100%)`,
+      fontFamily:"'Rajdhani', sans-serif",
+      position:'relative', overflow:'hidden',
     }}>
       <style>{FONT_IMPORT}</style>
 
+      {/* Noise texture overlay */}
+      <div style={{
+        position:'absolute', inset:0, pointerEvents:'none', zIndex:0,
+        backgroundImage:`url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E")`,
+        backgroundSize:'180px 180px', opacity:0.4,
+      }} />
+
+      {/* Top accent line */}
+      <div style={{
+        position:'absolute', top:0, left:0, right:0, height:3, zIndex:2,
+        background:`linear-gradient(90deg, transparent, ${CV2.cyan} 20%, ${CV2.goldBright} 50%, ${CV2.cyan} 80%, transparent)`,
+        boxShadow:`0 0 20px ${CV2.cyan}88`,
+      }} />
+
       {/* Clasificados banner */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14,
-        padding: '10px 16px',
-        background: `linear-gradient(90deg, ${CV2.goldDeep}33, ${CV2.goldBright}22, ${CV2.goldDeep}11)`,
-        border: `1px solid ${CV2.goldDeep}66`,
-        borderRadius: 8,
-        boxShadow: `0 0 24px ${CV2.goldDeep}33`,
+        position:'relative', zIndex:2,
+        display:'flex', alignItems:'center', gap:14, marginBottom:18,
+        padding:'12px 18px',
+        background:`linear-gradient(90deg, ${CV2.goldDeep}44, ${CV2.goldBright}18, transparent)`,
+        border:`1px solid ${CV2.goldDeep}88`,
+        borderRadius:10,
+        boxShadow:`0 0 32px ${CV2.goldDeep}44, inset 0 1px 0 rgba(255,255,255,0.08)`,
       }}>
         <div style={{
-          background: `linear-gradient(135deg, ${CV2.goldBright}, ${CV2.gold})`,
-          color: CV2.navyDeep, borderRadius: 5, padding: '3px 10px',
-          fontSize: 13, fontWeight: 900,
-          fontFamily: "'Saira Condensed', sans-serif",
-          letterSpacing: '0.06em',
-          boxShadow: `0 2px 8px ${CV2.goldDeep}88`,
+          background:`linear-gradient(135deg, ${CV2.goldBright}, ${CV2.gold}, ${CV2.goldDeep})`,
+          color:CV2.navyDeep, borderRadius:6, padding:'4px 12px',
+          fontSize:13, fontWeight:900,
+          fontFamily:"'Saira Condensed', sans-serif",
+          letterSpacing:'0.06em',
+          boxShadow:`0 3px 12px ${CV2.goldDeep}99, inset 0 1px 0 rgba(255,255,255,0.4)`,
         }}>1–{CLASIFICAN}</div>
         <span style={{
-          fontSize: 15, fontWeight: 700, color: CV2.goldBright,
-          fontFamily: "'Saira Condensed', sans-serif",
-          letterSpacing: '0.18em', textTransform: 'uppercase',
+          fontSize:16, fontWeight:800, color:CV2.goldBright,
+          fontFamily:"'Saira Condensed', sans-serif",
+          letterSpacing:'0.20em', textTransform:'uppercase',
+          textShadow:`0 0 20px ${CV2.goldDeep}88`,
         }}>CLASIFICAN A LA ETAPA DE CRUCES</span>
-        <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${CV2.goldDeep}88, transparent)` }} />
+        <div style={{flex:1, height:1, background:`linear-gradient(90deg, ${CV2.goldDeep}66, transparent)`}} />
+        <span style={{
+          fontSize:11, color:CV2.cyanSoft, fontFamily:"'Saira Condensed', sans-serif",
+          letterSpacing:'0.18em', opacity:0.7,
+        }}>TOP {CLASIFICAN}</span>
       </div>
 
-      {/* Tabla de dos columnas */}
-      <div style={{ display: 'flex', gap: 10, border: `1px solid rgba(255,255,255,0.08)`, borderRadius: 10, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+      {/* Tabla */}
+      <div style={{
+        position:'relative', zIndex:2,
+        display:'flex', gap:12,
+        border:`1px solid rgba(255,255,255,0.10)`,
+        borderRadius:12, overflow:'hidden',
+        boxShadow:`0 16px 48px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.05)`,
+      }}>
         {[col1, col2].map((col, ci) => (
-          <div key={ci} style={{ flex: 1, borderLeft: ci === 1 ? `1px solid rgba(255,255,255,0.08)` : 'none' }}>
+          <div key={ci} style={{flex:1, borderLeft:ci===1?`1px solid rgba(255,255,255,0.09)`:'none'}}>
             <ColHeader />
-            {col.map((j: any, idx: number) => <Fila key={j.posicion} j={j} index={idx} />)}
-            {ci === 1 && col.length < col1.length && Array.from({ length: col1.length - col.length }).map((_, i) => (
-              <div key={`e-${i}`} style={{ height: 43, background: 'rgba(0,0,0,0.12)', borderBottom: '1px solid rgba(255,255,255,0.03)' }} />
+            {col.map((j:any, idx:number) => <Fila key={j.posicion} j={j} index={idx} />)}
+            {ci===1 && col.length<col1.length && Array.from({length:col1.length-col.length}).map((_,i)=>(
+              <div key={`e-${i}`} style={{height:47, background:'rgba(0,0,0,0.15)', borderBottom:'1px solid rgba(255,255,255,0.025)'}} />
             ))}
           </div>
         ))}
       </div>
 
-      {/* Divisor inferior clasificados / resto */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}>
-        <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, transparent, ${CV2.cyanSoft}55, transparent)` }} />
+      {/* Footer rule */}
+      <div style={{position:'relative', zIndex:2, display:'flex', alignItems:'center', gap:12, marginTop:16}}>
+        <div style={{flex:1, height:1, background:`linear-gradient(90deg, transparent, ${CV2.cyanSoft}44, transparent)`}} />
         <span style={{
-          fontSize: 11, color: CV2.cyanSoft, fontFamily: "'Saira Condensed', sans-serif",
-          letterSpacing: '0.22em', opacity: 0.7,
+          fontSize:11, color:CV2.cyanSoft, fontFamily:"'Saira Condensed', sans-serif",
+          letterSpacing:'0.28em', opacity:0.6, textTransform:'uppercase',
         }}>FEBIU · TORNEO NACIONAL</span>
-        <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, transparent, ${CV2.cyanSoft}55, transparent)` }} />
+        <div style={{flex:1, height:1, background:`linear-gradient(90deg, transparent, ${CV2.cyanSoft}44, transparent)`}} />
       </div>
     </div>
   );
@@ -425,197 +463,277 @@ function PlantillaRanking({ data, tema }: { data: any; tema: any }) {
 // ── Plantilla Series Nacional ─────────────────────────────────────────
 function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
   const series: any[] = data.series ?? [];
-  // Detectar paleta V2 si hay categoriaFederal en data, si no usar colores del tema
   const CV2 = data.categoriaFederal ? getCatV2(data.categoriaFederal) : null;
   const NAVY   = CV2 ? CV2.navy     : tema.header;
   const NAVY2  = CV2 ? CV2.navy2    : tema.accent;
-  const GOLD   = CV2 ? CV2.goldBright : '#f5d020';
+  const NAVYD  = CV2 ? CV2.navyDeep : '#06182f';
+  const PETROL = CV2 ? CV2.petrol   : NAVY;
+  const GOLD   = CV2 ? CV2.gold     : '#f5d020';
+  const GOLDB  = CV2 ? CV2.goldBright : '#ffd95a';
   const GOLDD  = CV2 ? CV2.goldDeep   : '#c9962a';
   const CYAN   = CV2 ? CV2.cyan       : '#5fd4ff';
-  const NAVYD  = CV2 ? CV2.navyDeep   : '#06182f';
+  const CYANSOFT = CV2 ? CV2.cyanSoft : '#8fe3ff';
   const INK    = CV2 ? CV2.ink        : '#0a1a2e';
+
   const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Condensed:wght@600;700;800;900&display=swap');`;
 
+  /* ── jugador row ── */
   const mkRow = (jugador: any, isWinner: boolean) => (
     <div style={{
-      display: 'flex', alignItems: 'center', padding: '8px 12px', gap: 9,
-      background: isWinner ? `linear-gradient(90deg, ${GOLD}18, ${GOLD}08)` : 'transparent',
-      borderLeft: isWinner ? `3px solid ${GOLD}` : `3px solid transparent`,
+      display:'flex', alignItems:'center', padding:'9px 14px', gap:10,
+      background: isWinner
+        ? `linear-gradient(90deg, ${GOLDB}15, ${GOLD}08, transparent)`
+        : 'rgba(0,0,0,0.10)',
+      borderLeft: isWinner
+        ? `3px solid ${GOLDB}`
+        : `3px solid rgba(255,255,255,0.06)`,
+      position:'relative', overflow:'hidden',
     }}>
+      {isWinner && (
+        <div style={{
+          position:'absolute', inset:0, pointerEvents:'none',
+          background:`linear-gradient(100deg, transparent 40%, ${GOLDB}0a 60%, transparent 80%)`,
+        }} />
+      )}
       {jugador.ranking !== null ? (
         <div style={{
-          width: 30, height: 24, borderRadius: 4, flexShrink: 0,
+          width:32, height:26, borderRadius:5, flexShrink:0,
           background: isWinner
-            ? `linear-gradient(135deg, ${GOLD}, ${GOLDD})`
-            : 'rgba(255,255,255,0.10)',
-          color: isWinner ? INK : 'rgba(255,255,255,0.5)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 12, fontWeight: 900,
-          fontFamily: "'Saira Condensed', sans-serif",
-          boxShadow: isWinner ? `0 1px 6px ${GOLDD}88` : 'none',
+            ? `linear-gradient(135deg, ${GOLDB}, ${GOLDD})`
+            : 'rgba(255,255,255,0.09)',
+          color: isWinner ? INK : 'rgba(255,255,255,0.45)',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          fontSize:12, fontWeight:900,
+          fontFamily:"'Saira Condensed', sans-serif",
+          boxShadow: isWinner ? `0 1px 8px ${GOLDD}88, inset 0 1px 0 rgba(255,255,255,0.4)` : 'none',
+          position:'relative', zIndex:1,
         }}>{jugador.ranking}</div>
       ) : (
-        <div style={{ width: 30, height: 24, borderRadius: 4, flexShrink: 0, background: 'rgba(255,255,255,0.05)' }} />
+        <div style={{width:32,height:26,borderRadius:5,flexShrink:0,background:'rgba(255,255,255,0.04)'}} />
       )}
       <div style={{
-        flex: 1, fontSize: 15, fontWeight: isWinner ? 700 : 500,
-        color: isWinner ? '#ffffff' : 'rgba(255,255,255,0.65)',
-        wordBreak: 'break-word', lineHeight: 1.2,
-        fontFamily: "'Rajdhani', sans-serif",
+        flex:1, fontSize:15, fontWeight: isWinner ? 700 : 500,
+        color: isWinner ? '#ffffff' : 'rgba(255,255,255,0.58)',
+        wordBreak:'break-word', lineHeight:1.2,
+        fontFamily:"'Rajdhani', sans-serif",
+        letterSpacing:'0.01em', position:'relative', zIndex:1,
       }}>
         {jugador.esSlot
-          ? <span style={{ color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>{jugador.nombre}</span>
+          ? <span style={{color:'rgba(255,255,255,0.22)',fontStyle:'italic'}}>{jugador.nombre}</span>
           : jugador.nombre}
       </div>
       {jugador.club && !jugador.esSlot && (
         <div style={{
-          background: isWinner ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.06)',
-          color: isWinner ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.35)',
-          padding: '2px 6px', borderRadius: 3, fontSize: 10, fontWeight: 800, flexShrink: 0,
-          fontFamily: "'Saira Condensed', sans-serif", letterSpacing: '0.07em',
-          border: `1px solid ${isWinner ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.07)'}`,
+          background: isWinner ? 'rgba(255,255,255,0.13)' : 'rgba(255,255,255,0.06)',
+          color: isWinner ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.32)',
+          padding:'2px 7px', borderRadius:4, fontSize:10, fontWeight:800, flexShrink:0,
+          fontFamily:"'Saira Condensed', sans-serif", letterSpacing:'0.07em',
+          border:`1px solid ${isWinner?'rgba(255,255,255,0.22)':'rgba(255,255,255,0.07)'}`,
+          position:'relative', zIndex:1,
         }}>{jugador.club}</div>
       )}
     </div>
   );
 
+  /* ── partido row ── */
   const PartidoRow = ({ p, label }: { p: any; label: string }) => {
     if (!p) return null;
-    const winA = p.resultado && p.resultado.split('-')[0] > p.resultado.split('-')[1];
-    const winB = p.resultado && p.resultado.split('-')[1] > p.resultado.split('-')[0];
+    const parts = p.resultado ? p.resultado.split('-') : ['',''];
+    const winA = p.resultado && parseInt(parts[0])>parseInt(parts[1]);
+    const winB = p.resultado && parseInt(parts[1])>parseInt(parts[0]);
     return (
-      <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        {/* Cabecera del partido */}
+      <div style={{borderTop:'1px solid rgba(255,255,255,0.055)'}}>
+        {/* partido header */}
         <div style={{
-          background: `linear-gradient(90deg, ${NAVY2}ee, ${NAVY}cc)`,
-          color: '#fff', padding: '5px 12px',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          borderLeft: `2px solid ${CYAN}55`,
+          background:`linear-gradient(90deg, ${PETROL}ee, ${NAVY2}cc, ${NAVY}aa)`,
+          padding:'5px 14px',
+          display:'flex', justifyContent:'space-between', alignItems:'center',
+          borderLeft:`3px solid ${CYAN}55`,
+          gap:8,
         }}>
           <span style={{
-            fontWeight: 800, fontSize: 11,
-            fontFamily: "'Saira Condensed', sans-serif",
-            letterSpacing: '0.14em', color: CYAN, opacity: 0.9,
+            fontWeight:800, fontSize:10.5,
+            fontFamily:"'Saira Condensed', sans-serif",
+            letterSpacing:'0.16em', color:CYANSOFT, flexShrink:0,
           }}>{label}</span>
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontFamily: "'Rajdhani', sans-serif" }}>
-            {p.hora ? `${p.hora}` : ''}{p.sede ? `  ·  ${p.sede}` : ''}
-          </span>
+          {(p.hora||p.sede) && (
+            <span style={{
+              fontSize:10, color:'rgba(255,255,255,0.45)',
+              fontFamily:"'Rajdhani', sans-serif", letterSpacing:'0.04em',
+              display:'flex', alignItems:'center', gap:5,
+            }}>
+              {p.hora && <><svg viewBox="0 0 24 24" fill="none" stroke={CYANSOFT} strokeWidth="2.2" style={{width:11,height:11,opacity:0.7}}><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>{p.hora}</>}
+              {p.hora && p.sede && <span style={{opacity:0.35}}>·</span>}
+              {p.sede && <>{p.sede}</>}
+            </span>
+          )}
           {p.resultado && (
             <span style={{
-              fontWeight: 900, fontSize: 15,
-              fontFamily: "'Saira Condensed', sans-serif",
-              background: `linear-gradient(135deg, ${GOLD}, ${GOLDD})`,
-              color: INK, padding: '1px 9px', borderRadius: 4,
-              boxShadow: `0 1px 6px ${GOLDD}66`,
+              fontWeight:900, fontSize:15,
+              fontFamily:"'Saira Condensed', sans-serif",
+              background:`linear-gradient(135deg, ${GOLDB}, ${GOLD}, ${GOLDD})`,
+              color:INK, padding:'2px 10px', borderRadius:5, flexShrink:0,
+              boxShadow:`0 2px 8px ${GOLDD}77, inset 0 1px 0 rgba(255,255,255,0.45)`,
+              letterSpacing:'0.04em',
             }}>{p.resultado}</span>
           )}
         </div>
         {mkRow(p.jugadorA, winA)}
-        <div style={{ height: 1, background: 'rgba(255,255,255,0.04)', marginLeft: 12 }} />
+        <div style={{height:1, background:'rgba(255,255,255,0.035)', marginLeft:14}} />
         {mkRow(p.jugadorB, winB)}
       </div>
     );
   };
 
   const pares: any[][] = [];
-  for (let i = 0; i < series.length; i += 2) pares.push([series[i], series[i + 1] ?? null]);
+  for (let i=0; i<series.length; i+=2) pares.push([series[i], series[i+1]??null]);
 
   return (
     <div style={{
-      padding: '18px 22px 24px',
-      background: `radial-gradient(ellipse 130% 70% at 50% 0%, ${NAVY2}99, transparent 55%),
-                   linear-gradient(180deg, ${NAVY} 0%, ${NAVYD} 55%, #020d1a 100%)`,
-      fontFamily: "'Rajdhani', sans-serif",
+      padding:'20px 24px 28px',
+      background:`
+        radial-gradient(ellipse 160% 50% at 50% -5%, ${CYAN}14 0%, transparent 50%),
+        radial-gradient(ellipse 100% 70% at 15% 60%, ${NAVY2}bb, transparent 55%),
+        radial-gradient(ellipse 100% 70% at 85% 60%, ${PETROL}77, transparent 55%),
+        linear-gradient(180deg, ${NAVY} 0%, ${NAVYD} 55%, #020d1a 100%)`,
+      fontFamily:"'Rajdhani', sans-serif",
+      position:'relative', overflow:'hidden',
     }}>
       <style>{FONT_IMPORT}</style>
-      {pares.map((par, pi) => (
-        <div key={pi} style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-          {par.map((s, si) => s ? (
-            <div key={si} style={{
-              flex: 1,
-              background: `linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)`,
-              border: `1px solid rgba(255,255,255,0.10)`,
-              borderRadius: 10, overflow: 'hidden',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.45)',
-            }}>
-              {/* Header de la serie */}
-              <div style={{
-                background: `linear-gradient(90deg, ${NAVY2}, ${NAVY2}cc)`,
-                borderBottom: `2px solid ${GOLD}88`,
-                padding: '10px 14px',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+
+      {/* Top glow line */}
+      <div style={{
+        position:'absolute', top:0, left:0, right:0, height:3, zIndex:2,
+        background:`linear-gradient(90deg, transparent, ${CYAN} 20%, ${GOLDB} 50%, ${CYAN} 80%, transparent)`,
+        boxShadow:`0 0 18px ${CYAN}77`,
+      }} />
+
+      {/* Subtle grid texture */}
+      <div style={{
+        position:'absolute', inset:0, pointerEvents:'none', zIndex:0,
+        backgroundImage:`linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px)`,
+        backgroundSize:'36px 36px',
+        maskImage:'radial-gradient(80% 70% at 50% 45%, #000 30%, transparent 85%)',
+        WebkitMaskImage:'radial-gradient(80% 70% at 50% 45%, #000 30%, transparent 85%)',
+      }} />
+
+      {/* Series grid */}
+      <div style={{position:'relative', zIndex:1}}>
+        {pares.map((par, pi) => (
+          <div key={pi} style={{display:'flex', gap:14, marginBottom:14}}>
+            {par.map((s, si) => s ? (
+              <div key={si} style={{
+                flex:1,
+                background:`linear-gradient(175deg, rgba(14,58,100,0.95) 0%, rgba(7,26,50,0.97) 100%)`,
+                border:`1px solid rgba(95,212,255,0.18)`,
+                borderRadius:12, overflow:'hidden',
+                boxShadow:`0 8px 28px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06)`,
+                position:'relative',
               }}>
-                <span style={{
-                  fontSize: 20, fontWeight: 900, letterSpacing: '0.1em',
-                  fontFamily: "'Saira Condensed', sans-serif",
-                  background: `linear-gradient(90deg, ${GOLD}, ${GOLDD})`,
-                  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                }}>SERIE {s.numero}</span>
-                {s.completa && (
-                  <span style={{
-                    background: `linear-gradient(135deg, ${GOLD}33, ${GOLD}22)`,
-                    border: `1px solid ${GOLD}55`,
-                    color: GOLD, padding: '2px 10px', borderRadius: 20,
-                    fontSize: 10, fontWeight: 800,
-                    fontFamily: "'Saira Condensed', sans-serif",
-                    letterSpacing: '0.12em',
-                  }}>✓ COMPLETA</span>
-                )}
-              </div>
-
-              {/* Partidos */}
-              <PartidoRow p={s.p1} label="P1 — Partido 1" />
-              <PartidoRow p={s.p2} label="P2 — Partido 2" />
-              <PartidoRow p={s.p3} label="P3 — Por el 1°" />
-              <PartidoRow p={s.p4} label="P4 — Por el 4°" />
-              <PartidoRow p={s.p5} label="P5 — Por el 2° y 3°" />
-
-              {/* Clasificación final */}
-              {s.completa && (
+                {/* Card top accent */}
                 <div style={{
-                  borderTop: `2px solid ${GOLD}44`,
-                  padding: '9px 12px',
-                  background: `linear-gradient(90deg, ${GOLD}10, transparent)`,
+                  position:'absolute', top:0, left:0, right:0, height:2,
+                  background:`linear-gradient(90deg, ${CYAN}66, ${GOLDB}99, ${CYAN}66)`,
+                  zIndex:2,
+                }} />
+
+                {/* Serie header */}
+                <div style={{
+                  background:`linear-gradient(90deg, ${NAVY2}f0, ${PETROL}cc, ${NAVY}aa)`,
+                  borderBottom:`1.5px solid ${GOLDD}88`,
+                  padding:'11px 16px',
+                  display:'flex', justifyContent:'space-between', alignItems:'center',
                 }}>
-                  <div style={{
-                    fontSize: 10, fontWeight: 800, color: GOLD, marginBottom: 6,
-                    fontFamily: "'Saira Condensed', sans-serif",
-                    letterSpacing: '0.2em', opacity: 0.85,
-                  }}>CLASIFICACIÓN FINAL</div>
-                  {[
-                    ['🥇', '1°', s.primero],
-                    ['🥈', '2°', s.segundo],
-                    ['🥉', '3°', s.tercero],
-                    ['·', '4°', s.cuarto],
-                  ].map(([ico, lbl, jug]: any) =>
-                    jug ? (
-                      <div key={lbl} style={{ display: 'flex', gap: 7, alignItems: 'center', marginBottom: 3 }}>
-                        <span style={{ fontSize: 12, width: 18 }}>{ico}</span>
-                        <span style={{
-                          fontSize: 11, fontWeight: 700, color: GOLD, width: 20,
-                          fontFamily: "'Saira Condensed', sans-serif",
-                        }}>{lbl}</span>
-                        <span style={{
-                          flex: 1, fontSize: 13, fontWeight: 600,
-                          color: 'rgba(255,255,255,0.8)',
-                          fontFamily: "'Rajdhani', sans-serif",
-                        }}>{jug.nombre}</span>
-                        {jug.ranking && (
-                          <span style={{
-                            background: 'rgba(255,255,255,0.10)', color: CYAN,
-                            padding: '1px 6px', borderRadius: 3, fontSize: 10, fontWeight: 800,
-                            fontFamily: "'Saira Condensed', sans-serif",
-                          }}>#{jug.ranking}</span>
-                        )}
-                      </div>
-                    ) : null
+                  <div style={{display:'flex', alignItems:'center', gap:10}}>
+                    <div style={{
+                      width:36, height:36, borderRadius:8, flexShrink:0,
+                      background:`linear-gradient(135deg, ${GOLDB}, ${GOLD}, ${GOLDD})`,
+                      color:INK, display:'flex', alignItems:'center', justifyContent:'center',
+                      fontSize:18, fontWeight:900,
+                      fontFamily:"'Saira Condensed', sans-serif",
+                      boxShadow:`0 3px 12px ${GOLDD}88, inset 0 1px 0 rgba(255,255,255,0.45)`,
+                      letterSpacing:'0.02em',
+                    }}>{s.numero}</div>
+                    <span style={{
+                      fontSize:22, fontWeight:900, letterSpacing:'0.08em',
+                      fontFamily:"'Saira Condensed', sans-serif",
+                      background:`linear-gradient(90deg, ${GOLDB}, ${CYAN})`,
+                      WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
+                      textTransform:'uppercase',
+                    }}>SERIE {s.numero}</span>
+                  </div>
+                  {s.completa && (
+                    <span style={{
+                      background:`linear-gradient(135deg, ${GOLDD}44, ${GOLD}22)`,
+                      border:`1.5px solid ${GOLDB}66`,
+                      color:GOLDB, padding:'3px 12px', borderRadius:20,
+                      fontSize:10, fontWeight:900,
+                      fontFamily:"'Saira Condensed', sans-serif",
+                      letterSpacing:'0.14em',
+                      boxShadow:`0 0 12px ${GOLDD}44`,
+                    }}>✓ COMPLETA</span>
                   )}
                 </div>
-              )}
-            </div>
-          ) : <div key={si} style={{ flex: 1 }} />)}
-        </div>
-      ))}
+
+                {/* Partidos */}
+                <PartidoRow p={s.p1} label="P1 · PARTIDO 1" />
+                <PartidoRow p={s.p2} label="P2 · PARTIDO 2" />
+                <PartidoRow p={s.p3} label="P3 · POR EL 1°" />
+                <PartidoRow p={s.p4} label="P4 · POR EL 4°" />
+                <PartidoRow p={s.p5} label="P5 · POR 2° Y 3°" />
+
+                {/* Clasificación final */}
+                {s.completa && (
+                  <div style={{
+                    borderTop:`1.5px solid ${GOLDD}55`,
+                    padding:'10px 14px',
+                    background:`linear-gradient(90deg, ${GOLD}0e, transparent 70%)`,
+                  }}>
+                    <div style={{
+                      fontSize:10, fontWeight:900, color:GOLDB, marginBottom:8,
+                      fontFamily:"'Saira Condensed', sans-serif",
+                      letterSpacing:'0.22em', opacity:0.9,
+                      display:'flex', alignItems:'center', gap:8,
+                    }}>
+                      <div style={{flex:0, width:24, height:1, background:`linear-gradient(90deg, transparent, ${GOLDB}55)`}} />
+                      CLASIFICACIÓN FINAL
+                      <div style={{flex:1, height:1, background:`linear-gradient(90deg, ${GOLDB}55, transparent)`}} />
+                    </div>
+                    {([
+                      ['🥇','1°',s.primero,'#ffd700'],
+                      ['🥈','2°',s.segundo,'#c0c8d8'],
+                      ['🥉','3°',s.tercero,'#d4905a'],
+                      ['·', '4°',s.cuarto, 'rgba(255,255,255,0.25)'],
+                    ] as [string,string,any,string][]).map(([ico,lbl,jug,col]) =>
+                      jug ? (
+                        <div key={lbl} style={{display:'flex',gap:8,alignItems:'center',marginBottom:4}}>
+                          <span style={{fontSize:13,width:20,flexShrink:0}}>{ico}</span>
+                          <span style={{
+                            fontSize:11,fontWeight:900,color:col,width:22,
+                            fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.04em',flexShrink:0,
+                          }}>{lbl}</span>
+                          <span style={{
+                            flex:1,fontSize:13,fontWeight:600,
+                            color:'rgba(255,255,255,0.85)',
+                            fontFamily:"'Rajdhani', sans-serif",letterSpacing:'0.01em',
+                          }}>{jug.nombre}</span>
+                          {jug.ranking && (
+                            <span style={{
+                              background:'rgba(255,255,255,0.09)',color:CYANSOFT,
+                              padding:'1px 7px',borderRadius:3,fontSize:10,fontWeight:800,
+                              fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.06em',flexShrink:0,
+                            }}>#{jug.ranking}</span>
+                          )}
+                        </div>
+                      ) : null
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : <div key={si} style={{flex:1}} />)}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
