@@ -515,8 +515,7 @@ function PlantillaRankingNacional({ data }: { data: any }) {
           if (s.primero) clasificados.push({ pos:'1°', nombre:s.primero.nombre, club:s.primero.club, serie:s.numero, ranking:s.primero.ranking, pendiente:false });
           if (s.segundo) clasificados.push({ pos:'2°', nombre:s.segundo.nombre, club:s.segundo.club, serie:s.numero, ranking:s.segundo.ranking, pendiente:false });
         });
-        // Solo mostrar si todas las series están completas
-        if (series.length === 0 || !series.every(s => s.completa)) return null;
+        if (series.length === 0 || clasificados.length === 0) return null;
         // ordenar por serie, luego pos
         clasificados.sort((a,b) => a.serie - b.serie || (a.pos === '1°' ? -1 : 1));
         const mitad = Math.ceil(clasificados.length / 2);
