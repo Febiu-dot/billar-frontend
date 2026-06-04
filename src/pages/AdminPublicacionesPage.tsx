@@ -347,7 +347,7 @@ function PlantillaRankingNacional({ data }: { data: any }) {
   const Fila = ({ j, index }: { j: any; index: number }) => {
     const clasifica = j.posicion <= CLASIFICAN;
     const esTop3    = j.posicion <= 3;
-    const medalColor = j.posicion === 1 ? '#ffd700' : j.posicion === 2 ? '#c0c8d8' : j.posicion === 3 ? '#d4905a' : null;
+    const medalColor = j.posicion === 1 ? '#ffd700' : null;
     return (
       <div style={{
         display:'flex', alignItems:'center', padding:'8px 14px', gap:10,
