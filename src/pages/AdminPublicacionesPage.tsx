@@ -446,12 +446,7 @@ function PlantillaRankingNacional({ data }: { data: any }) {
     }}>
       <style>{FONT_IMPORT}</style>
 
-      {/* Noise texture overlay */}
-      <div style={{
-        position:'absolute', inset:0, pointerEvents:'none', zIndex:0,
-        backgroundImage:`url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E")`,
-        backgroundSize:'180px 180px', opacity:0.4,
-      }} />
+
 
       {/* Top accent line */}
       <div style={{
@@ -826,14 +821,7 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
         boxShadow:`0 0 18px ${CYAN}77`,
       }} />
 
-      {/* Subtle grid texture */}
-      <div style={{
-        position:'absolute', inset:0, pointerEvents:'none', zIndex:0,
-        backgroundImage:`linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px)`,
-        backgroundSize:'36px 36px',
-        maskImage:'radial-gradient(80% 70% at 50% 45%, #000 30%, transparent 85%)',
-        WebkitMaskImage:'radial-gradient(80% 70% at 50% 45%, #000 30%, transparent 85%)',
-      }} />
+
 
       {/* Series grid */}
       <div style={{position:'relative', zIndex:1}}>
@@ -1107,8 +1095,7 @@ function PlantillaCrucesNacional({ data }: { data: any }) {
       <style>{FONT_IMPORT}</style>
       {/* Top glow */}
       <div style={{position:'absolute',top:0,left:0,right:0,height:3,zIndex:2,background:`linear-gradient(90deg,transparent,${CV2.cyan} 20%,${CV2.goldBright} 50%,${CV2.cyan} 80%,transparent)`,boxShadow:`0 0 18px ${CV2.cyan}77`}} />
-      {/* Grid texture */}
-      <div style={{position:'absolute',inset:0,pointerEvents:'none',backgroundImage:`linear-gradient(rgba(255,255,255,0.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.015) 1px,transparent 1px)`,backgroundSize:'36px 36px',maskImage:'radial-gradient(80% 70% at 50% 45%,#000 30%,transparent 85%)',WebkitMaskImage:'radial-gradient(80% 70% at 50% 45%,#000 30%,transparent 85%)'}} />
+
 
       <div style={{position:'relative',zIndex:1}}>
         {/* OCTAVOS */}
@@ -1649,13 +1636,14 @@ export default function AdminPublicacionesPage() {
     try {
       const h2c = await cargarHtml2Canvas();
       const isBracket = pubData?.tipo === 'bracket-nacional';
+      const isNacional = pubData?.tipo === 'series-nacional' || pubData?.tipo === 'cruces-nacional' || pubData?.tipo === 'ranking-final' || pubData?.tipo === 'ranking';
       const el = exportRef.current;
       const rect = el.getBoundingClientRect();
       const canvas = await h2c(el, {
-        scale: 3,
+        scale: isNacional ? 2 : 3,
         useCORS: true,
         allowTaint: true,
-        backgroundColor: isBracket ? null : '#ffffff',
+        backgroundColor: isBracket ? null : '#06182f',
         width: el.scrollWidth,
         height: el.scrollHeight,
         windowWidth: el.scrollWidth,
@@ -1665,6 +1653,8 @@ export default function AdminPublicacionesPage() {
         scrollX: -rect.left,
         scrollY: -rect.top,
         logging: false,
+        imageTimeout: 0,
+        removeContainer: true,
       });
       const link = document.createElement('a');
       link.download = `${pubData?.fase ?? 'publicacion'} - ${pubData?.circuito ?? ''}.png`.replace(/[/\\?%*:|"<>]/g, '-');
