@@ -1703,7 +1703,7 @@ export default function AdminPublicacionesPage() {
   return (
     <div>
       {pubData && esAdmin && (
-        <div ref={exportRef} style={{ position: 'absolute', top: '-9999px', left: 0, fontFamily: F, lineHeight: 1.3, width: pubData?.tipo === 'bracket-nacional' ? '1440px' : '1080px' }}>
+        <div ref={exportRef} style={{ position: 'fixed', top: 0, left: '-9999px', fontFamily: F, lineHeight: 1.3, width: pubData?.tipo === 'bracket-nacional' ? '1440px' : '1080px' }}>
           <PubContenido data={pubData} tema={tema} notas={notas} sala={sala} fechaBracket={fechaBracket} horas={horas} />
         </div>
       )}
