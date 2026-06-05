@@ -1664,16 +1664,9 @@ export default function AdminPublicacionesPage() {
         logging: false,
         imageTimeout: 0,
         removeContainer: true,
-        onclone: (_doc: Document, cloned: HTMLElement) => {
-          cloned.querySelectorAll('style, script').forEach(el => el.remove());
-          cloned.querySelectorAll('*').forEach(el => {
-            const h = el as HTMLElement;
-            if (h.style && h.style.cssText.includes('conic-gradient')) h.style.background = 'transparent';
-            if (h.style && (h.style.cssText.includes('mask') || h.style.cssText.includes('webkit-mask'))) {
-              (h.style as any).mask = 'none';
-              (h.style as any).webkitMask = 'none';
-            }
-          });
+        foreignObjectRendering: false,
+        onclone: (clonedDoc: Document) => {
+          clonedDoc.querySelectorAll('style, script').forEach((el: Element) => el.remove());
         },
       });
       const link = document.createElement('a');
