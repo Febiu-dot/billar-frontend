@@ -20,7 +20,6 @@ function SeccionNacional() {
 
   useEffect(() => {
     api.get('/publicaciones/circuitos').then(r => {
-      // Solo torneos nacionales
       const nac = (r.data as any[]).filter(t =>
         /nacional/i.test(t.name)
       );
@@ -79,7 +78,6 @@ function SeccionNacional() {
         Torneo Nacional
       </h2>
 
-      {/* Selector */}
       <div className="card mb-4">
         <select
           className="input w-full"
@@ -98,7 +96,6 @@ function SeccionNacional() {
 
       {!loading && circuitId && (series !== null || ranking !== null) && (
         <>
-          {/* Tabs */}
           <div className="flex gap-2 mb-4">
             <button
               onClick={() => setTab('fixture')}
@@ -114,7 +111,6 @@ function SeccionNacional() {
             </button>
           </div>
 
-          {/* FIXTURE DE SERIES */}
           {tab === 'fixture' && (
             errorSeries
               ? <div className="card text-silver-dark text-sm text-center py-8">{errorSeries}</div>
@@ -131,19 +127,11 @@ function SeccionNacional() {
                         <span className="text-xs text-green-400 font-semibold">✓ Completa</span>
                       )}
                     </div>
-
-                    {/* P1 */}
                     {s.p1 && <PartidoRow p={s.p1} label="P1" />}
-                    {/* P2 */}
                     {s.p2 && <PartidoRow p={s.p2} label="P2" />}
-                    {/* P3 si existe */}
                     {s.p3 && <PartidoRow p={s.p3} label="P3 · Final" />}
-                    {/* P4 si existe */}
                     {s.p4 && <PartidoRow p={s.p4} label="P4 · 3°/4°" />}
-                    {/* P5 si existe */}
                     {s.p5 && <PartidoRow p={s.p5} label="P5 · 2°/3°" />}
-
-                    {/* Clasificación final */}
                     {s.completa && (
                       <div className="border-t border-silver-muted/10 pt-2 space-y-1">
                         {[['🥇', s.primero], ['🥈', s.segundo], ['🥉', s.tercero], ['4°', s.cuarto]].map(([lbl, jug]: any) =>
@@ -162,7 +150,6 @@ function SeccionNacional() {
               </div>
           )}
 
-          {/* CLASIFICADOS */}
           {tab === 'clasificados' && (
             errorRanking
               ? <div className="card text-silver-dark text-sm text-center py-8">{errorRanking}</div>
@@ -333,8 +320,6 @@ export default function PublicPage() {
             </div>
             <p className="text-silver-dark text-xs font-mono">{lastUpdate.toLocaleTimeString('es-UY')}</p>
             <div className="flex flex-col items-end gap-1">
-              <a href="/ranking" className="text-gold text-xs hover:text-gold/80 font-medium">🏆 Ver Ranking</a>
-              <a href="/ranking-final" className="text-gold text-xs hover:text-gold/80 font-medium">🥇 Ranking Final</a>
               <a href="/publicaciones" className="text-gold text-xs hover:text-gold/80 font-medium">📢 Publicaciones</a>
               <a href="/login" className="text-orange/70 text-xs hover:text-orange">Ingresar →</a>
             </div>
