@@ -1665,6 +1665,7 @@ export default function AdminPublicacionesPage() {
         logging: false,
         imageTimeout: 0,
         removeContainer: true,
+        ignoreElements: (el: Element) => el.tagName === 'STYLE',
       });
       const link = document.createElement('a');
       link.download = `${pubData?.fase ?? 'publicacion'} - ${pubData?.circuito ?? ''}.png`.replace(/[/\\?%*:|"<>]/g, '-');
