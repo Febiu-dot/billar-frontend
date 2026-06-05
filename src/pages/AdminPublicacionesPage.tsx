@@ -1649,10 +1649,6 @@ export default function AdminPublicacionesPage() {
       const isNacional = pubData?.tipo === 'series-nacional' || pubData?.tipo === 'cruces-nacional' || pubData?.tipo === 'ranking-final' || pubData?.tipo === 'ranking';
       const el = exportRef.current;
       const W = isBracket ? 1440 : 1080;
-      // Move element into viewport temporarily so html2canvas can measure it
-      const prevStyle = el.getAttribute('style') || '';
-      el.setAttribute('style', `position:fixed;top:0;left:0;width:${W}px;z-index:-9999;font-family:Arial,Helvetica,sans-serif;line-height:1.3;`);
-      await new Promise<void>(r => setTimeout(r, 150));
       const H = el.scrollHeight;
       const canvas = await h2c(el, {
         scale: isNacional ? 2 : 3,
@@ -1668,16 +1664,23 @@ export default function AdminPublicacionesPage() {
         logging: false,
         imageTimeout: 0,
         removeContainer: true,
-        ignoreElements: (e: Element) => e.tagName === 'STYLE' || e.tagName === 'SCRIPT',
+        onclone: (_doc: Document, cloned: HTMLElement) => {
+          cloned.querySelectorAll('style, script').forEach(el => el.remove());
+          cloned.querySelectorAll('*').forEach(el => {
+            const h = el as HTMLElement;
+            if (h.style && h.style.cssText.includes('conic-gradient')) h.style.background = 'transparent';
+            if (h.style && (h.style.cssText.includes('mask') || h.style.cssText.includes('webkit-mask'))) {
+              (h.style as any).mask = 'none';
+              (h.style as any).webkitMask = 'none';
+            }
+          });
+        },
       });
-      el.setAttribute('style', prevStyle);
       const link = document.createElement('a');
       link.download = `${pubData?.fase ?? 'publicacion'} - ${pubData?.circuito ?? ''}.png`.replace(/[/\\?%*:|"<>]/g, '-');
       link.href = canvas.toDataURL('image/png', 1.0);
       link.click();
-    } catch (e: any) {
-      alert(`Error al exportar: ${e.message}`);
-    }
+    } catch (e: any) { alert(`Error al exportar: ${e.message}`); }
     finally { setExportando(false); }
   };
 
@@ -1704,7 +1707,7 @@ export default function AdminPublicacionesPage() {
   return (
     <div>
       {pubData && esAdmin && (
-        <div ref={exportRef} style={{ position: 'fixed', top: 0, left: '-9999px', fontFamily: F, lineHeight: 1.3, width: pubData?.tipo === 'bracket-nacional' ? '1440px' : '1080px' }}>
+        <div ref={exportRef} style={{ position: 'absolute', top: '-9999px', left: 0, fontFamily: F, lineHeight: 1.3, width: pubData?.tipo === 'bracket-nacional' ? '1440px' : '1080px' }}>
           <PubContenido data={pubData} tema={tema} notas={notas} sala={sala} fechaBracket={fechaBracket} horas={horas} />
         </div>
       )}
