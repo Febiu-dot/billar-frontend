@@ -22,6 +22,7 @@ const TEMAS: Record<string, { header: string; accent: string; light: string; bad
   'ranking-final':  { header: '#1a3560', accent: '#1e40af', light: '#eff6ff', badge: '#1a3560' },
   acumulado:        { header: '#1a3a5c', accent: '#1565c0', light: '#e8f0fe', badge: '#1a3a5c' },
   'series-nacional':{ header: '#1a5c2a', accent: '#2d8a3e', light: '#edf7ef', badge: '#1a5c2a' },
+  'inicial-nacional':{ header: '#06182f', accent: '#0277bd', light: '#0a223f', badge: '#014f86' },
   'bracket-nacional':{ header: '#135c1a', accent: '#f5d020', light: '#fffde7', badge: '#135c1a' },
   'cruces-nacional':   { header: '#06182f', accent: '#f4c430', light: '#0a223f', badge: '#014f86' },
   'inicial-nacional':  { header: '#06182f', accent: '#f4c430', light: '#0a223f', badge: '#014f86' },
