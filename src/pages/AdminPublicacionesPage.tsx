@@ -76,13 +76,13 @@ const FASES = [
 
 const F = 'Arial, Helvetica, sans-serif';
 
-const cargarHtml2Canvas = (): Promise<any> =>
+const cargarHtmlToImage = (): Promise<any> =>
   new Promise((resolve, reject) => {
-    if ((window as any).html2canvas) { resolve((window as any).html2canvas); return; }
+    if ((window as any).htmlToImage) { resolve((window as any).htmlToImage); return; }
     const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-    script.onload = () => resolve((window as any).html2canvas);
-    script.onerror = () => reject(new Error('No se pudo cargar html2canvas'));
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js';
+    script.onload = () => resolve((window as any).htmlToImage);
+    script.onerror = () => reject(new Error('No se pudo cargar html-to-image'));
     document.head.appendChild(script);
   });
 
@@ -1644,34 +1644,37 @@ export default function AdminPublicacionesPage() {
     if (!exportRef.current) return;
     setExportando(true);
     try {
-      const h2c = await cargarHtml2Canvas();
+      const hti = await cargarHtmlToImage();
       const isBracket = pubData?.tipo === 'bracket-nacional';
       const isNacional = pubData?.tipo === 'series-nacional' || pubData?.tipo === 'cruces-nacional' || pubData?.tipo === 'ranking-final' || pubData?.tipo === 'ranking';
       const el = exportRef.current;
       const W = isBracket ? 1440 : 1080;
       const H = el.scrollHeight;
-      const canvas = await h2c(el, {
-        scale: isNacional ? 2 : 3,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: isBracket ? null : '#06182f',
+      const scale = isNacional ? 2 : 3;
+      const opts = {
         width: W,
         height: H,
-        windowWidth: W,
-        windowHeight: H,
-        x: 0,
-        y: 0,
-        logging: false,
-        imageTimeout: 0,
-        removeContainer: true,
-        foreignObjectRendering: false,
-        onclone: (clonedDoc: Document) => {
-          clonedDoc.querySelectorAll('style, script').forEach((el: Element) => el.remove());
+        pixelRatio: scale,
+        backgroundColor: isBracket ? undefined : '#06182f',
+        skipFonts: false,
+        useCORS: true,
+        style: {
+          transform: 'none',
+          position: 'static',
+          top: '0',
+          left: '0',
         },
-      });
+        filter: (node: HTMLElement) => {
+          if (node.tagName === 'SCRIPT') return false;
+          return true;
+        },
+      };
+      // html-to-image a veces necesita dos pasadas para cargar las fuentes
+      await hti.toPng(el, opts);
+      const dataUrl = await hti.toPng(el, opts);
       const link = document.createElement('a');
       link.download = `${pubData?.fase ?? 'publicacion'} - ${pubData?.circuito ?? ''}.png`.replace(/[/\\?%*:|"<>]/g, '-');
-      link.href = canvas.toDataURL('image/png', 1.0);
+      link.href = dataUrl;
       link.click();
     } catch (e: any) { alert(`Error al exportar: ${e.message}`); }
     finally { setExportando(false); }
