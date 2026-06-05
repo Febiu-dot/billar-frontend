@@ -1500,19 +1500,23 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
   if (data.tipo === 'bracket-nacional') {
     return <PlantillaBracketNacional data={data} sala={sala} fechaBracket={fechaBracket} horas={horas} />;
   }
-  // Ranking nacional: el header superior usa el color de la categoría federal
+  // Para tipos nacionales garantizar que categoriaFederal llegue a PubHeader
+  const tiposNacionales = ['series-nacional','inicial-nacional','cruces-nacional','ranking-final'];
+  const dataFinal = (tiposNacionales.includes(data.tipo) && !data.categoriaFederal)
+    ? { ...data, categoriaFederal: 'primera' }
+    : data;
   const temaUsado = (data.tipo === 'ranking' && data.categoriaFederal)
     ? (() => { const c = getColoresCategoria(data.categoriaFederal); return { ...tema, header: c.bg, accent: c.bg2, light: c.bg }; })()
     : tema;
   return (
     <>
-      <PubHeader data={data} tema={temaUsado} />
+      <PubHeader data={dataFinal} tema={temaUsado} />
       {data.tipo === 'series'          && <PlantillaSeries          data={data} tema={temaUsado} />}
       {data.tipo === 'reduccion'       && <PlantillaReduccion       data={data} tema={temaUsado} />}
       {data.tipo === 'cruces'          && <PlantillaCruces          data={data} tema={temaUsado} />}
       {data.tipo === 'ranking'         && <PlantillaRanking         data={data} tema={temaUsado} />}
-      {data.tipo === 'series-nacional'  && <PlantillaSeriesNacional  data={data} tema={temaUsado} />}
-      {data.tipo === 'inicial-nacional' && <PlantillaSeriesNacional  data={{...data, ocultarResultados: true}} tema={temaUsado} />}
+      {data.tipo === 'series-nacional'  && <PlantillaSeriesNacional  data={dataFinal} tema={temaUsado} />}
+      {data.tipo === 'inicial-nacional' && <PlantillaSeriesNacional  data={{...dataFinal, ocultarResultados: true}} tema={temaUsado} />}
       {data.tipo === 'cruces-nacional'  && <PlantillaCrucesNacional  data={data} />}
       <PubFooter notas={notas} tema={temaUsado} />
     </>
