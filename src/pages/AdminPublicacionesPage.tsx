@@ -746,8 +746,8 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
   const PartidoRow = ({ p, label }: { p: any; label: string }) => {
     if (!p) return null;
     const parts = p.resultado ? p.resultado.split('-') : ['',''];
-    const winA = p.resultado && parseInt(parts[0])>parseInt(parts[1]);
-    const winB = p.resultado && parseInt(parts[1])>parseInt(parts[0]);
+    const winA = !ocultarResultados && p.resultado && parseInt(parts[0])>parseInt(parts[1]);
+    const winB = !ocultarResultados && p.resultado && parseInt(parts[1])>parseInt(parts[0]);
     return (
       <div style={{borderTop:'1px solid rgba(255,255,255,0.055)'}}>
         {/* partido header */}
