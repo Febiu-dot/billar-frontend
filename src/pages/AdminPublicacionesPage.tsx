@@ -1665,7 +1665,12 @@ export default function AdminPublicacionesPage() {
         logging: false,
         imageTimeout: 0,
         removeContainer: true,
-        ignoreElements: (el: Element) => el.tagName === 'STYLE',
+        ignoreElements: (el: Element) => {
+          if (el.tagName === 'STYLE' || el.tagName === 'SCRIPT') return true;
+          const htmlEl = el as HTMLElement;
+          if (htmlEl.offsetWidth === 0 && htmlEl.offsetHeight === 0) return true;
+          return false;
+        },
       });
       const link = document.createElement('a');
       link.download = `${pubData?.fase ?? 'publicacion'} - ${pubData?.circuito ?? ''}.png`.replace(/[/\\?%*:|"<>]/g, '-');
