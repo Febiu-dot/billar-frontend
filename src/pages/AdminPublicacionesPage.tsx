@@ -1689,7 +1689,7 @@ export default function AdminPublicacionesPage() {
       const W = 1080;
       const H = el.scrollHeight;
       const mitad = Math.floor(H / 2);
-      const scale = 2;
+      const scale = 1.5;
       const nombre = `${pubData?.fase ?? 'publicacion'} - ${pubData?.circuito ?? ''}`.replace(/[/\\?%*:|"<>]/g, '-');
 
       // Crear canvas completo
