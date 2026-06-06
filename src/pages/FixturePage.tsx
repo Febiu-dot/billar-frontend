@@ -117,11 +117,12 @@ export default function FixturePage() {
       setLoading(false);
       const circuits: Circuit[] = r.data.circuits ?? [];
       if (circuits.length > 1) {
+        // Ocultar el último circuito (order más alto), mostrar el primero
         const maxOrder = Math.max(...circuits.map((c: any) => c.order ?? 0));
-        const anteriores: Set<number> = new Set(
-          circuits.filter((c: any) => (c.order ?? 0) < maxOrder).map((c: any) => c.id)
+        const ultimos: Set<number> = new Set(
+          circuits.filter((c: any) => (c.order ?? 0) === maxOrder).map((c: any) => c.id)
         );
-        setCircuitosOcultos(anteriores);
+        setCircuitosOcultos(ultimos);
       }
     });
   };
@@ -367,8 +368,6 @@ export default function FixturePage() {
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows: any[] = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
-        // Buscar columnas: Posicion, DNI, Apellido, Nombre
-        // Saltar filas de cabecera hasta encontrar datos numéricos en col 0
         const parsed: { dni: string; position: number; nombre: string }[] = [];
         for (const row of rows) {
           const pos = Number(row[0]);
@@ -401,6 +400,7 @@ export default function FixturePage() {
       });
       alert(`✅ Ranking cargado correctamente\n\nCargados: ${res.data.cargados} / ${res.data.total}${res.data.errores?.length ? `\n\nNo encontrados:\n${res.data.errores.join('\n')}` : ''}`);
       setRankingModal(null);
+      refreshSelected();
     } catch (err: any) {
       setRankingError(err?.response?.data?.error ?? 'Error al cargar el ranking');
     } finally {
