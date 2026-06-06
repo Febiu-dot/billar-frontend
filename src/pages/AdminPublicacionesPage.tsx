@@ -1680,6 +1680,52 @@ export default function AdminPublicacionesPage() {
     finally { setExportando(false); }
   };
 
+  const exportarEnPartes = async () => {
+    if (!exportRef.current) return;
+    setExportando(true);
+    try {
+      const hti = await cargarHtmlToImage();
+      const el = exportRef.current;
+      const W = 1080;
+      const H = el.scrollHeight;
+      const mitad = Math.floor(H / 2);
+      const scale = 2;
+      const nombre = `${pubData?.fase ?? 'publicacion'} - ${pubData?.circuito ?? ''}`.replace(/[/\\?%*:|"<>]/g, '-');
+
+      // Crear canvas completo
+      await hti.toPng(el, { width: W, height: H, pixelRatio: scale, backgroundColor: '#06182f', skipFonts: false, useCORS: true, style: { transform: 'none', position: 'static', top: '0', left: '0' }, filter: (node: HTMLElement) => node.tagName !== 'SCRIPT' });
+      const dataUrl = await hti.toPng(el, { width: W, height: H, pixelRatio: scale, backgroundColor: '#06182f', skipFonts: false, useCORS: true, style: { transform: 'none', position: 'static', top: '0', left: '0' }, filter: (node: HTMLElement) => node.tagName !== 'SCRIPT' });
+
+      // Dividir en 2 usando canvas
+      const img = new Image();
+      await new Promise<void>(resolve => { img.onload = () => resolve(); img.src = dataUrl; });
+
+      const corte = mitad * scale;
+      const totalH = H * scale;
+
+      // Parte 1
+      const c1 = document.createElement('canvas');
+      c1.width = W * scale; c1.height = corte;
+      c1.getContext('2d')!.drawImage(img, 0, 0, W * scale, corte, 0, 0, W * scale, corte);
+      const url1 = c1.toDataURL('image/png');
+      const a1 = document.createElement('a');
+      a1.download = `${nombre} - Parte 1.png`; a1.href = url1; a1.click();
+
+      // Esperar un momento entre descargas
+      await new Promise(r => setTimeout(r, 800));
+
+      // Parte 2
+      const c2 = document.createElement('canvas');
+      c2.width = W * scale; c2.height = totalH - corte;
+      c2.getContext('2d')!.drawImage(img, 0, corte, W * scale, totalH - corte, 0, 0, W * scale, totalH - corte);
+      const url2 = c2.toDataURL('image/png');
+      const a2 = document.createElement('a');
+      a2.download = `${nombre} - Parte 2.png`; a2.href = url2; a2.click();
+
+    } catch (e: any) { alert(`Error al exportar: ${e.message}`); }
+    finally { setExportando(false); }
+  };
+
   const tema = TEMAS[tipoFase] ?? TEMAS.clasificatorio;
   // Ordenar: nacionales primero (por nombre torneo), luego departamentales; dentro de cada torneo por order
   const esNacionalTorneo = (nombre: string) => /nacional/i.test(nombre);
@@ -1857,10 +1903,16 @@ export default function AdminPublicacionesPage() {
                   <textarea className="input w-full" rows={2} placeholder="Ej: Los ganadores pasan a la siguiente fase..." value={notas} onChange={e => setNotas(e.target.value)} />
                 </div>
               )}
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-wrap">
                 <button className="btn-primary px-8" disabled={exportando} onClick={exportar}>
                   {exportando ? 'Exportando...' : '⬇ Exportar PNG'}
                 </button>
+                {(pubData?.tipo === 'inicial-nacional' || pubData?.tipo === 'series-nacional') && (
+                  <button className="btn-primary px-8" disabled={exportando} onClick={exportarEnPartes}
+                    style={{ background: 'linear-gradient(135deg, #1a3560, #0a223f)', border: '1px solid #f4c43055' }}>
+                    {exportando ? 'Exportando...' : '⬇ Exportar en 2 partes (WhatsApp)'}
+                  </button>
+                )}
                 <span className="text-chalk/30 text-xs">Alta resolución · WhatsApp y redes</span>
               </div>
             </>
