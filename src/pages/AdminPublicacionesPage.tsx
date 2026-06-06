@@ -1726,7 +1726,14 @@ export default function AdminPublicacionesPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Circuito</label>
-              <select className="input" value={circuitId} onChange={e => { setCircuitId(e.target.value); setPubData(null); }}>
+              <select className="input" value={circuitId} onChange={e => {
+                const cId = e.target.value;
+                const circ = circuitos.find((c: any) => String(c.id) === String(cId));
+                const esNac = /nacional/i.test(circ?.torneoNombre ?? '');
+                setCircuitId(cId);
+                setTipoFase(esNac ? 'inicial-nacional' : 'clasificatorio');
+                setPubData(null);
+              }}>
                 <option value="">Seleccionar circuito...</option>
                 {circuitos.map((c: any) => <option key={c.id} value={c.id}>{c.torneoNombre} — {c.name}</option>)}
               </select>
