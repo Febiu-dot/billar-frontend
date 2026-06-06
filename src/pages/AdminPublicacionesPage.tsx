@@ -878,9 +878,9 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
                 {/* Partidos */}
                 <PartidoRow p={s.p1} label="P1 · PARTIDO 1" />
                 <PartidoRow p={s.p2} label="P2 · PARTIDO 2" />
-                <PartidoRow p={s.p3} label="P3 · POR EL 1°" />
-                <PartidoRow p={s.p4} label="P4 · POR EL 4°" />
-                <PartidoRow p={s.p5} label="P5 · POR 2° Y 3°" />
+                {!ocultarResultados && <PartidoRow p={s.p3} label="P3 · POR EL 1°" />}
+                {!ocultarResultados && <PartidoRow p={s.p4} label="P4 · POR EL 4°" />}
+                {!ocultarResultados && <PartidoRow p={s.p5} label="P5 · POR 2° Y 3°" />}
 
                 {/* Clasificación final */}
                 {s.completa && (
