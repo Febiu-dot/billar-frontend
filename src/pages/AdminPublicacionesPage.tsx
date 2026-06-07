@@ -862,7 +862,7 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
                       textTransform:'uppercase',
                     }}>SERIE {s.numero}</span>
                   </div>
-                  {s.completa && (
+                  {s.completa && !ocultarResultados && (
                     <span style={{
                       background:`linear-gradient(135deg, ${GOLDD}44, ${GOLD}22)`,
                       border:`1.5px solid ${GOLDB}66`,
@@ -880,7 +880,7 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
                 <PartidoRow p={s.p2} label="P2 · PARTIDO 2" />
 
                 {/* Clasificación final */}
-                {s.completa && (
+                {s.completa && !ocultarResultados && (
                   <div style={{
                     borderTop:`1.5px solid ${GOLDD}55`,
                     padding:'10px 14px',
