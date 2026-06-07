@@ -51,10 +51,16 @@ export default function RankingFinalPage() {
   const [guardadoMsg, setGuardadoMsg]     = useState('');
   const [generandoBracket, setGenerandoBracket] = useState(false);
   const [bracketMsg, setBracketMsg]       = useState('');
+  const [iniciandoC2, setIniciandoC2]     = useState(false);
+  const [iniciarC2Msg, setIniciarC2Msg]   = useState('');
+  const [allCircuits, setAllCircuits]     = useState<Circuit[]>([]);
 
   useEffect(() => {
     api.get('/tournaments').then(r => setTournaments(r.data));
-    api.get('/circuits').then(r => setCircuits(r.data));
+    api.get('/circuits').then(r => {
+      setCircuits(r.data);
+      setAllCircuits(r.data);
+    });
   }, []);
 
   const circuitsFiltrados = selectedTournament
@@ -72,7 +78,7 @@ export default function RankingFinalPage() {
 
   const handleCircuitChange = async (circuitId: string) => {
     setSelectedCircuit(circuitId);
-    setGuardadoMsg(''); setBracketMsg('');
+    setGuardadoMsg(''); setBracketMsg(''); setIniciarC2Msg('');
     const c = circuits.find(c => c.id === Number(circuitId));
     setCircuitName(c?.name ?? '');
     if (!circuitId) { setRanking([]); return; }
@@ -115,6 +121,29 @@ export default function RankingFinalPage() {
     } catch (e: any) {
       setBracketMsg(`❌ ${e?.response?.data?.error ?? 'Error al generar bracket'}`);
     } finally { setGenerandoBracket(false); }
+  };
+
+  const handleIniciarC2 = async () => {
+    if (!selectedCircuit || !selectedTournament) return;
+    const currentCircuit = allCircuits.find(c => c.id === Number(selectedCircuit));
+    if (!currentCircuit) return;
+    const nextCircuit = allCircuits.find(c =>
+      c.tournamentId === currentCircuit.tournamentId &&
+      c.order === currentCircuit.order + 1
+    );
+    if (!nextCircuit) {
+      setIniciarC2Msg('❌ No se encontró el Circuito 2 para este torneo.');
+      return;
+    }
+    const msg = '¿Iniciar ' + nextCircuit.name + ' con el ranking del ' + currentCircuit.name + '?\n\nInscribirá los 32 jugadores con posiciones de siembra (puntos en 0).\nEl Circuito 1 NO se modifica.';
+    if (!confirm(msg)) return;
+    setIniciandoC2(true); setIniciarC2Msg('');
+    try {
+      const res = await api.post('/circuits/' + nextCircuit.id + '/init-from-circuit/' + selectedCircuit);
+      setIniciarC2Msg('✅ ' + res.data.message + ' — ' + res.data.inscriptos + ' jugadores inscriptos en ' + nextCircuit.name);
+    } catch (e: any) {
+      setIniciarC2Msg('❌ ' + (e?.response?.data?.error ?? 'Error al iniciar Circuito 2'));
+    } finally { setIniciandoC2(false); }
   };
 
   const filtrado = ranking
@@ -201,6 +230,23 @@ export default function RankingFinalPage() {
                     )}
                     <p className="text-chalk/30 text-xs text-center">
                       Crea los 15 partidos del bracket con los top 16 del ranking
+                    </p>
+                  </div>
+                )}
+
+                {/* Botón Iniciar Circuito 2 — solo para Nacional */}
+                {esNacional && (
+                  <div className="flex flex-col items-center gap-1 w-full max-w-sm">
+                    <button className="btn-primary px-6 w-full" style={{background:'linear-gradient(90deg,#014f86,#0277bd)'}} disabled={iniciandoC2} onClick={handleIniciarC2}>
+                      {iniciandoC2 ? 'Iniciando...' : '🚀 Iniciar Circuito 2 con este ranking'}
+                    </button>
+                    {iniciarC2Msg && (
+                      <span className={`text-sm ${iniciarC2Msg.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>
+                        {iniciarC2Msg}
+                      </span>
+                    )}
+                    <p className="text-chalk/30 text-xs text-center">
+                      Inscribe los 32 jugadores en el Circuito 2 con las posiciones de siembra del Circuito 1 (puntos en 0)
                     </p>
                   </div>
                 )}
