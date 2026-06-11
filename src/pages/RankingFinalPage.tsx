@@ -54,6 +54,8 @@ export default function RankingFinalPage() {
   const [iniciandoC2, setIniciandoC2]     = useState(false);
   const [iniciarC2Msg, setIniciarC2Msg]   = useState('');
   const [allCircuits, setAllCircuits]     = useState<Circuit[]>([]);
+  const [recalculando, setRecalculando]   = useState(false);
+  const [recalcularMsg, setRecalcularMsg] = useState('');
 
   useEffect(() => {
     api.get('/tournaments').then(r => setTournaments(r.data));
@@ -71,14 +73,22 @@ export default function RankingFinalPage() {
     setSelectedTournament(tournamentId);
     setSelectedCircuit('');
     setRanking([]);
-    setGuardadoMsg(''); setBracketMsg('');
+    setGuardadoMsg(''); setBracketMsg(''); setRecalcularMsg('');
     const t = tournaments.find(t => t.id === Number(tournamentId));
     setTournamentName(t?.name ?? '');
   };
 
+  const cargarRanking = (circuitId: string) => {
+    setLoading(true);
+    api.get(`/rankings/final?circuitId=${circuitId}`)
+      .then(r => { setRanking(r.data); setFiltro('general'); })
+      .catch(() => setRanking([]))
+      .finally(() => setLoading(false));
+  };
+
   const handleCircuitChange = async (circuitId: string) => {
     setSelectedCircuit(circuitId);
-    setGuardadoMsg(''); setBracketMsg(''); setIniciarC2Msg('');
+    setGuardadoMsg(''); setBracketMsg(''); setIniciarC2Msg(''); setRecalcularMsg('');
     const c = circuits.find(c => c.id === Number(circuitId));
     setCircuitName(c?.name ?? '');
     if (!circuitId) { setRanking([]); return; }
@@ -88,11 +98,20 @@ export default function RankingFinalPage() {
       setEsNacional(cfgRes.data?.tipo === 'nacional');
     } catch { setEsNacional(false); }
 
-    setLoading(true);
-    api.get(`/rankings/final?circuitId=${circuitId}`)
-      .then(r => { setRanking(r.data); setFiltro('general'); })
-      .catch(() => setRanking([]))
-      .finally(() => setLoading(false));
+    cargarRanking(circuitId);
+  };
+
+  const handleRecalcular = async () => {
+    if (!selectedCircuit) return;
+    if (!confirm(`¿Recalcular el ranking del ${circuitName} con el nuevo sistema de desempate?\n\nEsto aplica el criterio de porcentaje de sets y tantos en lugar de acumulados absolutos.`)) return;
+    setRecalculando(true); setRecalcularMsg('');
+    try {
+      const res = await api.post(`/rankings/recalcular-stats/${selectedCircuit}`);
+      setRecalcularMsg(`✅ Recalculado — ${res.data.jugadores} jugadores`);
+      cargarRanking(selectedCircuit);
+    } catch (e: any) {
+      setRecalcularMsg(`❌ ${e?.response?.data?.error ?? 'Error al recalcular'}`);
+    } finally { setRecalculando(false); }
   };
 
   const handleGuardar = async () => {
@@ -119,7 +138,7 @@ export default function RankingFinalPage() {
         console.log('Seeding bracket:', seeds);
       }
     } catch (e: any) {
-      setBracketMsg(`❌ ${e?.response?.data?.error ?? 'Error al generar bracket'}`);
+      setBracketMsg(`❌ ${e?.response?.data?.error ?? 'Error al generar bracket'}`)
     } finally { setGenerandoBracket(false); }
   };
 
@@ -216,6 +235,26 @@ export default function RankingFinalPage() {
             {/* Acciones admin */}
             {user?.role === 'admin' && (
               <div className="flex flex-col items-center gap-3 mb-6">
+
+                {/* Botón Recalcular ranking */}
+                <div className="flex flex-col items-center gap-1 w-full max-w-sm">
+                  <button
+                    className="btn-secondary px-6 w-full"
+                    style={{ background: 'linear-gradient(90deg,#1a3a1a,#2d5a2d)', borderColor: '#4ade80' }}
+                    disabled={recalculando}
+                    onClick={handleRecalcular}
+                  >
+                    {recalculando ? 'Recalculando...' : '🔄 Recalcular ranking (nuevo criterio)'}
+                  </button>
+                  {recalcularMsg && (
+                    <span className={`text-sm ${recalcularMsg.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>
+                      {recalcularMsg}
+                    </span>
+                  )}
+                  <p className="text-chalk/30 text-xs text-center">
+                    Aplica el desempate por % de sets y tantos (Alternativa 4)
+                  </p>
+                </div>
 
                 {/* Botón generar bracket — solo para Nacional */}
                 {esNacional && (
@@ -360,7 +399,7 @@ export default function RankingFinalPage() {
             </div>
 
             <p className="text-center text-chalk/20 text-xs mt-4">
-              {filtrado.length} jugadores · ordenados por puntos → sets → tantos → promedio
+              {filtrado.length} jugadores · ordenados por puntos → % sets → % tantos → promedio
             </p>
           </>
         )}
