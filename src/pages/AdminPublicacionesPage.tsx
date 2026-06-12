@@ -1521,6 +1521,8 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
+const BUILD_TAG = 'pub-2026-06-12-a';
+
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
   const esAdmin = user?.role === 'admin';
@@ -1754,7 +1756,7 @@ export default function AdminPublicacionesPage() {
       <div className="px-6 pt-6 pb-4 border-b border-felt-light/20 flex items-center justify-between">
         <div>
           <h1 className="font-display text-4xl text-gold">PUBLICACIONES</h1>
-          <p className="text-chalk/50 text-sm mt-1">{esAdmin ? 'Generación y exportación de gráficos para difusión' : 'Gráficos del torneo'}</p>
+          <p className="text-chalk/50 text-sm mt-1" data-build={BUILD_TAG}>{esAdmin ? 'Generación y exportación de gráficos para difusión' : 'Gráficos del torneo'}</p>
         </div>
         {esAdmin && (
           <button className="py-1.5 px-4 text-xs rounded-lg border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all disabled:opacity-40"
