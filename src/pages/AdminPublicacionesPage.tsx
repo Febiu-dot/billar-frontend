@@ -1498,7 +1498,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
     return <PlantillaBracketNacional data={data} sala={sala} fechaBracket={fechaBracket} horas={horas} />;
   }
   // Para tipos nacionales garantizar que categoriaFederal llegue a PubHeader y PlantillaSeriesNacional
-  const tiposNacionales = ["series-nacional","inicial-nacional","cruces-nacional","ranking-final"];
+  const tiposNacionales = ["series-nacional","inicial-nacional","cruces-nacional","ranking-final","ranking-acumulado-nacional"];
   const dataFinal = tiposNacionales.includes(data.tipo)
     ? { ...data, categoriaFederal: data.categoriaFederal || "primera" }
     : data;
@@ -1596,6 +1596,42 @@ export default function AdminPublicacionesPage() {
         setPubData(res.data); setNotas(''); setLoading(false); return;
       }
 
+      if (tipoFase === 'ranking-acumulado-nacional') {
+        const todosCircuitos2 = torneos.flatMap((t: any) =>
+          (t.circuits ?? []).map((c: any) => ({ ...c, torneoNombre: t.name, torneoYear: t.year, torneoId: t.id }))
+        );
+        const circuito2 = todosCircuitos2.find((c: any) => c.id === Number(circuitId));
+        if (!circuito2) { setError('Circuito no encontrado.'); setLoading(false); return; }
+        const acumRes2 = await api.get(`/acumulado/${circuito2.torneoId}`);
+        if (!acumRes2.data || acumRes2.data.length === 0) {
+          setError('No hay ranking final disponible aún.'); setLoading(false); return;
+        }
+        const jugadoresAcum = acumRes2.data.map((e: any) => ({
+          posicion: e.position ?? 0,
+          nombre: `${e.player.lastName}, ${e.player.firstName}`,
+          club: abrevClub(e.player.club),
+          puntos: e.points,
+          categoria: e.player?.category?.name ?? null,
+          setsGanados: e.setsWon,
+          setsPerdidos: e.setsLost,
+          tantosFavor: e.pointsFor,
+          tantosContra: e.pointsAgainst,
+          promedio: e.matchesPlayed > 0 ? parseFloat((e.pointsFor / e.matchesPlayed).toFixed(2)) : 0,
+        }));
+        const cat = circuito2.torneoNombre?.toLowerCase().includes('primera') ? 'primera'
+          : circuito2.torneoNombre?.toLowerCase().includes('segunda') ? 'segunda' : 'tercera';
+        setPubData({
+          tipo: 'ranking-final',
+          tipoFase: 'ranking-acumulado-nacional',
+          torneo: circuito2.torneoNombre,
+          temporada: String(circuito2.torneoYear),
+          fase: 'RANKING FINAL',
+          categoriaFederal: cat,
+          jugadores: jugadoresAcum,
+        });
+        setNotas(''); setLoading(false); return;
+      }
+
       if (tipoFase === 'acumulado') {
         const todosCircuitos = torneos.flatMap((t: any) =>
           (t.circuits ?? []).map((c: any) => ({ ...c, torneoNombre: t.name, torneoYear: t.year, torneoId: t.id }))
@@ -1645,7 +1681,7 @@ export default function AdminPublicacionesPage() {
     try {
       const hti = await cargarHtmlToImage();
       const isBracket = pubData?.tipo === 'bracket-nacional';
-      const isNacional = pubData?.tipo === 'series-nacional' || pubData?.tipo === 'cruces-nacional' || pubData?.tipo === 'ranking-final' || pubData?.tipo === 'ranking';
+      const isNacional = pubData?.tipo === 'series-nacional' || pubData?.tipo === 'cruces-nacional' || pubData?.tipo === 'ranking-final' || pubData?.tipo === 'ranking' || pubData?.tipoFase === 'ranking-acumulado-nacional';
       const el = exportRef.current;
       const W = isBracket ? 1440 : 1080;
       const H = el.scrollHeight;
@@ -1789,14 +1825,15 @@ export default function AdminPublicacionesPage() {
                 {(() => {
                   const circSelec = circuitos.find((c: any) => String(c.id) === String(circuitId));
                   const esNac = circSelec?.esNacional ?? false;
-                  const fasesNacional = ['inicial-nacional', 'series-nacional', 'ranking', 'cruces-nacional', 'bracket-nacional'];
+                  const fasesNacional = ['inicial-nacional', 'series-nacional', 'ranking', 'cruces-nacional', 'bracket-nacional', 'ranking-acumulado-nacional'];
                   const fasesDep = FASES.filter(f => !['series-nacional','cruces-nacional','bracket-nacional','inicial-nacional'].includes(f.value));
                   const fasesNac = [
-                    { value: 'inicial-nacional', label: '📋 Inicial (fixture sin resultados)' },
-                    { value: 'series-nacional',  label: '🎱 Series Nacional (con resultados)' },
-                    { value: 'ranking',          label: '🏅 Ranking del Circuito' },
-                    { value: 'cruces-nacional',  label: '⚔️ Cruces Nacional' },
-                    { value: 'bracket-nacional', label: '🏟 Bracket Nacional' },
+                    { value: 'inicial-nacional',           label: '📋 Inicial (fixture sin resultados)' },
+                    { value: 'series-nacional',            label: '🎱 Series Nacional (con resultados)' },
+                    { value: 'ranking',                    label: '🏅 Ranking del Circuito' },
+                    { value: 'cruces-nacional',            label: '⚔️ Cruces Nacional' },
+                    { value: 'bracket-nacional',           label: '🏟 Bracket Nacional' },
+                    { value: 'ranking-acumulado-nacional', label: '🏆 Ranking Final' },
                   ];
                   return (esNac ? fasesNac : fasesDep).map(f => <option key={f.value} value={f.value}>{f.label}</option>);
                 })()}
