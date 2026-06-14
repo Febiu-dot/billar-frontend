@@ -10,35 +10,44 @@ function SeccionNacional() {
   const [torneos, setTorneos]         = useState<any[]>([]);
   const [circuitId, setCircuitId]     = useState('');
   const [torneoNombre, setTorneoNombre] = useState('');
+  const [torneoId, setTorneoId]       = useState<number | null>(null);
   const [series, setSeries]           = useState<any[] | null>(null);
+  const [cruces, setCruces]           = useState<any | null>(null);
   const [ranking, setRanking]         = useState<any[] | null>(null);
-  const [tab, setTab]                 = useState<'fixture'|'clasificados'>('fixture');
+  const [rankingFinal, setRankingFinal] = useState<any[] | null>(null);
+  const [tab, setTab]                 = useState<'fixture'|'clasificados'|'cruces'|'ranking-final'>('fixture');
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState('');
   const [errorSeries, setErrorSeries] = useState('');
   const [errorRanking, setErrorRanking] = useState('');
+  const [errorCruces, setErrorCruces] = useState('');
+  const [errorRankingFinal, setErrorRankingFinal] = useState('');
 
   useEffect(() => {
     api.get('/publicaciones/circuitos').then(r => {
-      const nac = (r.data as any[]).filter(t =>
-        /nacional/i.test(t.name)
-      );
+      const nac = (r.data as any[]).filter(t => /nacional/i.test(t.name));
       setTorneos(nac);
     }).catch(() => {});
   }, []);
 
-  const cargar = async (cid: string) => {
+  const cargar = async (cid: string, tId: number) => {
     if (!cid) return;
     setLoading(true);
     setError('');
     setErrorSeries('');
     setErrorRanking('');
+    setErrorCruces('');
+    setErrorRankingFinal('');
     setSeries(null);
     setRanking(null);
+    setCruces(null);
+    setRankingFinal(null);
     try {
-      const [serRes, rkRes] = await Promise.allSettled([
+      const [serRes, rkRes, crucesRes, acumRes] = await Promise.allSettled([
         api.get(`/publicaciones/${cid}/series-nacional`),
         api.get(`/publicaciones/${cid}/ranking`),
+        api.get(`/publicaciones/${cid}/cruces-nacional`),
+        api.get(`/acumulado/${tId}`),
       ]);
       if (serRes.status === 'fulfilled') {
         setSeries(serRes.value.data.series ?? []);
@@ -52,6 +61,18 @@ function SeccionNacional() {
         setErrorRanking((rkRes.reason as any)?.response?.data?.error ?? 'No hay ranking para este circuito.');
         setRanking([]);
       }
+      if (crucesRes.status === 'fulfilled') {
+        setCruces(crucesRes.value.data);
+      } else {
+        setErrorCruces('No hay cruces disponibles aún.');
+        setCruces(null);
+      }
+      if (acumRes.status === 'fulfilled' && acumRes.value.data?.length > 0) {
+        setRankingFinal(acumRes.value.data);
+      } else {
+        setErrorRankingFinal('No hay ranking final disponible aún.');
+        setRankingFinal([]);
+      }
     } catch (e: any) {
       setError('Error de conexión.');
     } finally {
@@ -60,17 +81,37 @@ function SeccionNacional() {
   };
 
   const circuitos = torneos.flatMap((t: any) =>
-    (t.circuits ?? []).map((c: any) => ({ id: c.id, label: `${t.name} — ${c.name}`, torneoNombre: t.name }))
+    (t.circuits ?? []).map((c: any) => ({ id: c.id, label: `${t.name} — ${c.name}`, torneoNombre: t.name, torneoId: t.id }))
   );
 
   const handleCircuit = (cid: string) => {
     setCircuitId(cid);
     const found = circuitos.find(c => String(c.id) === cid);
     setTorneoNombre(found?.torneoNombre ?? '');
-    cargar(cid);
+    setTorneoId(found?.torneoId ?? null);
+    if (found) cargar(cid, found.torneoId);
   };
 
   const CLASIFICA = 16;
+
+  // Construir lista de partidos de cruces en orden
+  const partidosCruces = (() => {
+    if (!cruces) return [];
+    const partidos: any[] = [];
+    const etapas = [
+      { key: 'octavos',  label: 'Octavos de Final', items: cruces.octavos ?? [] },
+      { key: 'cuartos',  label: 'Cuartos de Final', items: cruces.cuartos ?? [] },
+      { key: 'semis',    label: 'Semifinales',       items: [cruces.semi1, cruces.semi2].filter(Boolean) },
+      { key: 'final',    label: 'Final',             items: [cruces.final].filter(Boolean) },
+    ];
+    for (const etapa of etapas) {
+      if (etapa.items.length > 0) partidos.push({ esEncabezado: true, label: etapa.label });
+      for (const p of etapa.items) partidos.push({ esEncabezado: false, partido: p });
+    }
+    return partidos;
+  })();
+
+  const hayCruces = cruces && (cruces.octavos?.length > 0 || cruces.cuartos?.length > 0 || cruces.semi1 || cruces.final);
 
   return (
     <section>
@@ -96,7 +137,7 @@ function SeccionNacional() {
 
       {!loading && circuitId && (series !== null || ranking !== null) && (
         <>
-          <div className="flex gap-2 mb-4">
+          <div className="flex gap-2 mb-4 flex-wrap">
             <button
               onClick={() => setTab('fixture')}
               className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${tab === 'fixture' ? 'bg-orange text-carbon-100' : 'bg-carbon-50 text-silver-dark hover:text-silver-light'}`}
@@ -107,10 +148,27 @@ function SeccionNacional() {
               onClick={() => setTab('clasificados')}
               className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${tab === 'clasificados' ? 'bg-orange text-carbon-100' : 'bg-carbon-50 text-silver-dark hover:text-silver-light'}`}
             >
-              🏆 Clasificados
+              📋 Clasificados
             </button>
+            {hayCruces && (
+              <button
+                onClick={() => setTab('cruces')}
+                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${tab === 'cruces' ? 'bg-orange text-carbon-100' : 'bg-carbon-50 text-silver-dark hover:text-silver-light'}`}
+              >
+                ⚔️ Cruces
+              </button>
+            )}
+            {(rankingFinal && rankingFinal.length > 0) && (
+              <button
+                onClick={() => setTab('ranking-final')}
+                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${tab === 'ranking-final' ? 'bg-orange text-carbon-100' : 'bg-carbon-50 text-silver-dark hover:text-silver-light'}`}
+              >
+                🏆 Ranking Final
+              </button>
+            )}
           </div>
 
+          {/* Fixture de Series */}
           {tab === 'fixture' && (
             errorSeries
               ? <div className="card text-silver-dark text-sm text-center py-8">{errorSeries}</div>
@@ -150,6 +208,7 @@ function SeccionNacional() {
               </div>
           )}
 
+          {/* Clasificados */}
           {tab === 'clasificados' && (
             errorRanking
               ? <div className="card text-silver-dark text-sm text-center py-8">{errorRanking}</div>
@@ -197,6 +256,78 @@ function SeccionNacional() {
                 </div>
                 <div className="px-4 py-2 border-t border-silver-muted/10 text-xs text-silver-dark text-center">
                   ✓ = Clasifica a la Etapa de Cruces
+                </div>
+              </div>
+          )}
+
+          {/* Cruces */}
+          {tab === 'cruces' && (
+            errorCruces
+              ? <div className="card text-silver-dark text-sm text-center py-8">{errorCruces}</div>
+              : !hayCruces
+              ? <div className="card text-silver-dark text-sm text-center py-8">No hay cruces generados aún.</div>
+              : <div className="space-y-4">
+                {partidosCruces.map((item: any, idx: number) =>
+                  item.esEncabezado
+                    ? (
+                      <h3 key={idx} className="font-display text-sm font-bold text-orange uppercase tracking-wide pl-1 mt-2">
+                        {item.label}
+                      </h3>
+                    )
+                    : (
+                      <PartidoRow key={idx} p={item.partido} label={`R${item.partido?.round ?? ''}`} />
+                    )
+                )}
+                {cruces.campeon && (
+                  <div className="card border border-orange/30 bg-orange/5 text-center py-4">
+                    <p className="text-silver-dark text-xs uppercase tracking-widest mb-1">🏆 Campeón</p>
+                    <p className="text-orange font-bold text-lg font-display">{cruces.campeon.nombre}</p>
+                    {cruces.campeon.club && <p className="text-silver-dark text-sm">{cruces.campeon.club}</p>}
+                  </div>
+                )}
+              </div>
+          )}
+
+          {/* Ranking Final */}
+          {tab === 'ranking-final' && (
+            errorRankingFinal
+              ? <div className="card text-silver-dark text-sm text-center py-8">{errorRankingFinal}</div>
+              : !rankingFinal || rankingFinal.length === 0
+              ? <div className="card text-silver-dark text-sm text-center py-8">No hay ranking final disponible aún.</div>
+              : <div className="card overflow-hidden p-0">
+                <div className="px-4 py-3 border-b border-silver-muted/10 flex items-center justify-between">
+                  <span className="font-display text-silver-light font-bold uppercase tracking-wide text-sm">
+                    Ranking Final — {torneoNombre}
+                  </span>
+                </div>
+                <div className="divide-y divide-silver-muted/10">
+                  {rankingFinal.map((e: any) => {
+                    const pos = e.position ?? 0;
+                    const top3 = pos <= 3;
+                    return (
+                      <div
+                        key={e.id}
+                        className={`flex items-center gap-3 px-4 py-2.5 ${top3 ? 'bg-orange/8' : ''}`}
+                      >
+                        <div className={`w-8 h-7 rounded flex items-center justify-center text-sm font-bold shrink-0 ${
+                          top3 ? 'bg-orange text-carbon-100' : pos <= 16 ? 'bg-silver-muted/30 text-silver-light' : 'bg-silver-muted/10 text-silver-dark'
+                        }`}>
+                          {pos}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-semibold truncate ${pos <= 16 ? 'text-silver-light' : 'text-silver-dark'}`}>
+                            {e.player?.lastName}, {e.player?.firstName}
+                          </p>
+                          {e.player?.club && (
+                            <p className="text-silver-dark text-xs truncate">{e.player.club}</p>
+                          )}
+                        </div>
+                        <span className={`text-sm font-mono font-bold shrink-0 ${top3 ? 'text-orange' : pos <= 16 ? 'text-silver-light' : 'text-silver-dark'}`}>
+                          {e.points} pts
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
           )}
@@ -319,10 +450,6 @@ export default function PublicPage() {
               En vivo
             </div>
             <p className="text-silver-dark text-xs font-mono">{lastUpdate.toLocaleTimeString('es-UY')}</p>
-            <div className="flex flex-col items-end gap-1">
-              <a href="/publicaciones" className="text-gold text-xs hover:text-gold/80 font-medium">📢 Publicaciones</a>
-              <a href="/login" className="text-orange/70 text-xs hover:text-orange">Ingresar →</a>
-            </div>
           </div>
         </div>
       </header>
