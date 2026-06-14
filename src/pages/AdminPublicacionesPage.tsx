@@ -1515,6 +1515,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
       {data.tipo === 'series-nacional'  && <PlantillaSeriesNacional  data={dataFinal} tema={temaUsado} />}
       {data.tipo === 'inicial-nacional' && <PlantillaSeriesNacional  data={{...dataFinal, ocultarResultados: true}} tema={temaUsado} />}
       {data.tipo === 'cruces-nacional'  && <PlantillaCrucesNacional  data={data} />}
+      {data.tipo === 'ranking-final'      && <PlantillaRankingNacional data={data} />}
       <PubFooter notas={notas} tema={temaUsado} />
     </>
   );
