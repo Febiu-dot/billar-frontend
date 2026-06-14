@@ -182,6 +182,8 @@ export default function RankingAcumuladoPage() {
                     <th className="text-center px-3 py-3 hidden sm:table-cell">PJ</th>
                     <th className="text-center px-3 py-3 hidden sm:table-cell">PG</th>
                     <th className="text-center px-3 py-3 hidden md:table-cell">Sets G</th>
+                    <th className="text-center px-3 py-3 hidden md:table-cell">Sets P</th>
+                    <th className="text-center px-3 py-3 hidden lg:table-cell">Prom.</th>
                     <th className="text-center px-3 py-3 hidden lg:table-cell">Tantos</th>
                   </tr>
                 </thead>
@@ -233,6 +235,12 @@ export default function RankingAcumuladoPage() {
                       </td>
                       <td className="px-3 py-2.5 text-center hidden md:table-cell text-chalk/50 font-mono text-xs">
                         {entry.setsWon}
+                      </td>
+                      <td className="px-3 py-2.5 text-center hidden md:table-cell text-red-400/60 font-mono text-xs">
+                        {entry.setsLost}
+                      </td>
+                      <td className="px-3 py-2.5 text-center hidden lg:table-cell text-cyan-400/60 font-mono text-xs">
+                        {entry.matchesPlayed > 0 ? (entry.pointsFor / entry.matchesPlayed).toFixed(2) : '—'}
                       </td>
                       <td className="px-3 py-2.5 text-center hidden lg:table-cell text-chalk/50 font-mono text-xs">
                         {entry.pointsFor}
