@@ -402,9 +402,36 @@ function PlantillaRankingNacional({ data }: { data: any }) {
           }}>{j.club}</div>
         )}
 
+        {/* Sets ganados */}
+        <div style={{
+          width:38, fontSize:clasifica?15:13, fontWeight:700,
+          color: clasifica ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.25)',
+          textAlign:'right', flexShrink:0,
+          fontFamily:"'Saira Condensed', sans-serif",
+          position:'relative', zIndex:1,
+        }}>{j.setsGanados ?? j.sets ?? '—'}</div>
+
+        {/* Sets perdidos */}
+        <div style={{
+          width:44, fontSize:clasifica?15:13, fontWeight:700,
+          color: clasifica ? 'rgba(255,160,160,0.85)' : 'rgba(255,160,160,0.25)',
+          textAlign:'right', flexShrink:0,
+          fontFamily:"'Saira Condensed', sans-serif",
+          position:'relative', zIndex:1,
+        }}>{j.setsPerdidos ?? '—'}</div>
+
+        {/* Promedio */}
+        <div style={{
+          width:46, fontSize:clasifica?15:13, fontWeight:700,
+          color: clasifica ? 'rgba(120,220,255,0.9)' : 'rgba(120,220,255,0.25)',
+          textAlign:'right', flexShrink:0,
+          fontFamily:"'Saira Condensed', sans-serif",
+          position:'relative', zIndex:1,
+        }}>{j.promedio != null ? j.promedio : '—'}</div>
+
         {/* Puntos */}
         <div style={{
-          width:50, fontSize:clasifica?18:14, fontWeight:900,
+          width:44, fontSize:clasifica?18:14, fontWeight:900,
           color: clasifica ? CV2.goldBright : 'rgba(255,255,255,0.3)',
           textAlign:'right', flexShrink:0,
           fontFamily:"'Saira Condensed', sans-serif",
@@ -424,7 +451,10 @@ function PlantillaRankingNacional({ data }: { data: any }) {
       <span style={{width:38,fontSize:11,fontWeight:800,color:CV2.goldBright,textAlign:'center',fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.12em'}}>#</span>
       <span style={{flex:1,fontSize:11,fontWeight:800,color:CV2.goldBright,fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.12em'}}>JUGADOR</span>
       <span style={{fontSize:11,fontWeight:800,color:CV2.cyanSoft,fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.08em',marginRight:6}}>CLUB</span>
-      <span style={{width:50,fontSize:11,fontWeight:800,color:CV2.goldBright,textAlign:'right',fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.12em'}}>PTS</span>
+      <span style={{width:38,fontSize:11,fontWeight:800,color:CV2.goldBright,textAlign:'right',fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.10em'}}>SETS</span>
+      <span style={{width:44,fontSize:11,fontWeight:800,color:'rgba(255,160,160,0.8)',textAlign:'right',fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.08em'}}>PERD.</span>
+      <span style={{width:46,fontSize:11,fontWeight:800,color:CV2.cyanSoft,textAlign:'right',fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.08em'}}>PROM.</span>
+      <span style={{width:44,fontSize:11,fontWeight:800,color:CV2.goldBright,textAlign:'right',fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.12em'}}>PTS</span>
     </div>
   );
 
