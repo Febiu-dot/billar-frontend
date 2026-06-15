@@ -107,6 +107,9 @@ export default function RankingFinalPage() {
     setRecalculando(true); setRecalcularMsg('');
     try {
       const res = await api.post(`/rankings/recalcular-stats/${selectedCircuit}`);
+      if (esNacional && selectedTournament) {
+        await api.post(`/acumulado/calcular/${selectedTournament}`);
+      }
       setRecalcularMsg(`✅ Recalculado — ${res.data.jugadores} jugadores`);
       cargarRanking(selectedCircuit);
     } catch (e: any) {
