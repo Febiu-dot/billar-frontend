@@ -392,10 +392,18 @@ export default function PublicPage() {
       api.get('/matches?status=finalizado'),
       api.get('/matches'),
     ]).then(([t, active, assigned, pending, finished, all]) => {
+      const activeMerged = [...active.data, ...assigned.data];
       setTables(t.data);
-      setActiveMatches([...active.data, ...assigned.data]);
+      setActiveMatches(activeMerged);
       setPendingMatches(pending.data.slice(0, 8));
-      setRecentMatches(finished.data.slice(-5).reverse());
+      // Detectar circuito activo por los partidos en juego/asignados
+      const circuitoActivo: number | null = activeMerged.length > 0
+        ? (activeMerged[0] as any)?.phase?.circuitId ?? null
+        : (pending.data[0] as any)?.phase?.circuitId ?? null;
+      const finalizadosFiltrados = circuitoActivo
+        ? finished.data.filter((m: any) => m.phase?.circuitId === circuitoActivo)
+        : finished.data;
+      setRecentMatches(finalizadosFiltrados.slice(-5).reverse());
       setAllMatches(all.data);
       setLastUpdate(new Date());
       setLoading(false);
@@ -720,3 +728,4 @@ export default function PublicPage() {
     </div>
   );
 }
+
