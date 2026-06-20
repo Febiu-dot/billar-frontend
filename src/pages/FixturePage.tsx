@@ -117,12 +117,12 @@ export default function FixturePage() {
       setLoading(false);
       const circuits: Circuit[] = r.data.circuits ?? [];
       if (circuits.length > 1) {
-        // Ocultar el último circuito (order más alto), mostrar el primero
+        // Ocultar todos los circuitos anteriores, mostrar solo el de mayor order (activo)
         const maxOrder = Math.max(...circuits.map((c: any) => c.order ?? 0));
-        const ultimos: Set<number> = new Set(
-          circuits.filter((c: any) => (c.order ?? 0) === maxOrder).map((c: any) => c.id)
+        const anteriores: Set<number> = new Set(
+          circuits.filter((c: any) => (c.order ?? 0) < maxOrder).map((c: any) => c.id)
         );
-        setCircuitosOcultos(ultimos);
+        setCircuitosOcultos(anteriores);
       }
     });
   };
