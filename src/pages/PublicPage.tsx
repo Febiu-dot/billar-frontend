@@ -392,14 +392,16 @@ export default function PublicPage() {
       api.get('/matches?status=finalizado'),
       api.get('/matches'),
     ]).then(([t, active, assigned, pending, finished, all]) => {
-      const activeMerged = [...active.data, ...assigned.data];
+      const activeMerged = active.data; // solo en_juego
       setTables(t.data);
       setActiveMatches(activeMerged);
-      setPendingMatches(pending.data.slice(0, 8));
+      // Asignados van a pendientes, junto con los pendientes reales
+      const pendientesMerged = [...assigned.data, ...pending.data];
+      setPendingMatches(pendientesMerged.slice(0, 8));
       // Detectar circuito activo por los partidos en juego/asignados
       const circuitoActivo: number | null = activeMerged.length > 0
         ? (activeMerged[0] as any)?.phase?.circuitId ?? null
-        : (pending.data[0] as any)?.phase?.circuitId ?? null;
+        : (assigned.data[0] as any)?.phase?.circuitId ?? null;
       const finalizadosFiltrados = circuitoActivo
         ? finished.data.filter((m: any) => m.phase?.circuitId === circuitoActivo)
         : finished.data;
