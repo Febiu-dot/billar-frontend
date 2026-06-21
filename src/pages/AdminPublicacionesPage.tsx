@@ -1094,8 +1094,8 @@ function PlantillaCrucesNacional({ data }: { data: any }) {
         letterSpacing:'0.08em', boxShadow:`0 2px 10px ${CV2.goldDeep}88`,
       }}>{n}</div>
       <span style={{
-        fontFamily:"'Saira Condensed', sans-serif", fontWeight:900, fontSize:18,
-        color:CV2.goldBright, letterSpacing:'0.18em', textTransform:'uppercase',
+        fontFamily:"'Saira Condensed', sans-serif", fontWeight:900, fontSize:16,
+        color:CV2.goldBright, letterSpacing:'0.10em', textTransform:'uppercase',
         textShadow:`0 0 20px ${CV2.goldDeep}66`, whiteSpace:'nowrap',
       }}>{label}</span>
       <div style={{flex:1,height:1,background:`linear-gradient(90deg,${CV2.goldDeep}55,transparent)`}} />
