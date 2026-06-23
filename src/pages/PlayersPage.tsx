@@ -32,6 +32,7 @@ export default function PlayersPage() {
   const [error, setError]                 = useState('');
   const [filterCat, setFilterCat]         = useState('');
   const [filterDep, setFilterDep]         = useState('');
+  const [filterPais, setFilterPais]       = useState('');
   const [search, setSearch]               = useState('');
   const [importando, setImportando]       = useState(false);
   const [importMsg, setImportMsg]         = useState('');
@@ -191,8 +192,9 @@ export default function PlayersPage() {
   const filtered = players.filter(p => {
     const matchesCat    = filterCat ? p.category?.name === filterCat : true;
     const matchesDep    = filterDep ? p.departamentoId?.toString() === filterDep : true;
+    const matchesPais   = filterPais ? (p.pais ?? 'Uruguay') === filterPais : true;
     const matchesSearch = search ? `${p.firstName} ${p.lastName}`.toLowerCase().includes(search.toLowerCase()) : true;
-    return matchesCat && matchesDep && matchesSearch;
+    return matchesCat && matchesDep && matchesPais && matchesSearch;
   });
 
   const grouped: Record<string, Player[]> = {};
@@ -218,6 +220,9 @@ export default function PlayersPage() {
 
   const clubsDisponibles = getClubsForForm();
   const clubActualNoEnLista = form.club && !clubsDisponibles.includes(form.club);
+
+  // Paises presentes entre los jugadores, para el filtro
+  const paisesPresentes = Array.from(new Set(players.map(p => p.pais ?? 'Uruguay'))).sort();
 
   if (loading) return <LoadingSpinner />;
 
@@ -250,6 +255,10 @@ export default function PlayersPage() {
           <select className="input w-48" value={filterDep} onChange={e => setFilterDep(e.target.value)}>
             <option value="">Todos los departamentos</option>
             {departamentos.map(d => <option key={d.id} value={d.id}>{d.nombre}</option>)}
+          </select>
+          <select className="input w-48" value={filterPais} onChange={e => setFilterPais(e.target.value)}>
+            <option value="">Todos los paises</option>
+            {paisesPresentes.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
           <div className="flex gap-2 flex-wrap">
             <button className={`badge-status cursor-pointer ${!filterCat ? 'bg-orange/20 text-orange' : 'bg-silver-muted/20 text-silver-dark'}`} onClick={() => setFilterCat('')}>Todos</button>
