@@ -245,8 +245,8 @@ export default function ConfigTorneoPage() {
                 <p className="text-chalk/60 text-xs uppercase tracking-widest mb-3">Sistema de puntuación</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
                   {[['Serie 1°','8 pts','text-gold'],['Serie 2°','6 pts','text-gold'],['Serie 3°','4 pts','text-gold'],['Serie 4°','2 pts','text-gold'],
-                    ['Cruce ganador','5 pts','text-blue-400'],['Cruce perdedor','1 pt','text-blue-400'],
-                    ['Final ganador','7 pts','text-purple-400'],['Final perdedor','2 pts','text-purple-400']
+                    ['Cruce ganador','3 pts','text-blue-400'],['Cruce perdedor','1 pt','text-blue-400'],
+                    ['Final ganador','5 pts','text-purple-400'],['Final perdedor','2 pts','text-purple-400']
                   ].map(([label, pts, color]) => (
                     <div key={label} className="text-center">
                       <p className="text-chalk/40">{label}</p>
