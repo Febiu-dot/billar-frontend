@@ -14,8 +14,10 @@ interface RankingEntry {
   categoria:  string;
   puntos:     number;
   setsGanados: number;
-  tantos:     number;
-  promedio:   number;
+  setsJugados:  number;
+  tantosContra: number;
+  tantos:       number;
+  promedio:     number;
 }
 
 const CAT_COLORS: Record<string, string> = {
@@ -343,9 +345,12 @@ export default function RankingFinalPage() {
                     <th className="text-left px-4 py-3 hidden sm:table-cell">Club</th>
                     <th className="text-center px-3 py-3 hidden md:table-cell">Categoría</th>
                     <th className="text-center px-3 py-3">Pts</th>
-                    <th className="text-center px-3 py-3 hidden sm:table-cell">Sets</th>
-                    <th className="text-center px-3 py-3 hidden md:table-cell">Tantos</th>
-                    <th className="text-center px-3 py-3 hidden lg:table-cell">Prom.</th>
+                    <th className="text-center px-3 py-3 hidden sm:table-cell">Sets G</th>
+                    <th className="text-center px-3 py-3 hidden sm:table-cell">Sets P</th>
+                    <th className="text-center px-3 py-3 hidden md:table-cell">Dif. Sets</th>
+                    <th className="text-center px-3 py-3 hidden md:table-cell">Tantos F</th>
+                    <th className="text-center px-3 py-3 hidden md:table-cell">Tantos C</th>
+                    <th className="text-center px-3 py-3 hidden lg:table-cell">Prom. Tantos</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -353,7 +358,7 @@ export default function RankingFinalPage() {
                     <>
                       {corteBracket && filtro === 'general' && entry.posicion === corteBracket + 1 && (
                         <tr key={`corte-${entry.posicion}`}>
-                          <td colSpan={8} className="px-4 py-2">
+                          <td colSpan={11} className="px-4 py-2">
                             <div className="flex items-center gap-3">
                               <div className="flex-1 h-px bg-gold/40"></div>
                               <span className="text-gold/70 text-xs font-mono uppercase tracking-widest font-bold whitespace-nowrap">
@@ -392,8 +397,15 @@ export default function RankingFinalPage() {
                           <span className="text-gold font-bold font-mono">{entry.puntos}</span>
                         </td>
                         <td className="px-3 py-2.5 text-center hidden sm:table-cell text-chalk/70 font-mono">{entry.setsGanados}</td>
+                        <td className="px-3 py-2.5 text-center hidden sm:table-cell text-red-400/70 font-mono">{entry.setsJugados - entry.setsGanados}</td>
+                        <td className="px-3 py-2.5 text-center hidden md:table-cell font-mono font-bold">
+                          <span className={(entry.setsGanados - (entry.setsJugados - entry.setsGanados)) >= 0 ? 'text-green-400' : 'text-red-400'}>
+                            {entry.setsGanados - (entry.setsJugados - entry.setsGanados) >= 0 ? '+' : ''}{entry.setsGanados - (entry.setsJugados - entry.setsGanados)}
+                          </span>
+                        </td>
                         <td className="px-3 py-2.5 text-center hidden md:table-cell text-chalk/70 font-mono">{entry.tantos}</td>
-                        <td className="px-3 py-2.5 text-center hidden lg:table-cell text-chalk/50 font-mono text-xs">{entry.promedio.toFixed(2)}</td>
+                        <td className="px-3 py-2.5 text-center hidden md:table-cell text-red-400/70 font-mono">{entry.tantosContra}</td>
+                        <td className="px-3 py-2.5 text-center hidden lg:table-cell text-cyan-400/70 font-mono text-xs">{entry.tantosContra > 0 ? (entry.tantos / entry.tantosContra).toFixed(2) : '—'}</td>
                       </tr>
                     </>
                   ))}
@@ -402,7 +414,7 @@ export default function RankingFinalPage() {
             </div>
 
             <p className="text-center text-chalk/20 text-xs mt-4">
-              {filtrado.length} jugadores · ordenados por puntos → % sets → % tantos → promedio
+              {filtrado.length} jugadores · ordenados por: Puntos → Diferencia de sets → Promedio de tantos
             </p>
           </>
         )}
