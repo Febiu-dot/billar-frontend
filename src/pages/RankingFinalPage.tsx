@@ -405,7 +405,7 @@ export default function RankingFinalPage() {
                         </td>
                         <td className="px-3 py-2.5 text-center hidden md:table-cell text-chalk/70 font-mono">{entry.tantos}</td>
                         <td className="px-3 py-2.5 text-center hidden md:table-cell text-red-400/70 font-mono">{entry.tantosContra}</td>
-                        <td className="px-3 py-2.5 text-center hidden lg:table-cell text-cyan-400/70 font-mono text-xs">{entry.tantosContra > 0 ? (entry.tantos / entry.tantosContra).toFixed(2) : '—'}</td>
+                        <td className="px-3 py-2.5 text-center hidden lg:table-cell text-cyan-400/70 font-mono text-xs">{entry.tantosContra > 0 ? (entry.tantos / entry.tantosContra).toFixed(4) : '—'}</td>
                       </tr>
                     </>
                   ))}
