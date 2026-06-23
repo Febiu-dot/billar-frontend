@@ -15,6 +15,7 @@ interface ConfigNacional {
   categoriaFederal: 'primera' | 'segunda' | 'tercera';
   ruleSetSeries: number;
   ruleSetCruces: number;
+  formato: '32' | '16';
 }
 
 type ConfigTorneo = ConfigDepartamental | ConfigNacional;
@@ -95,6 +96,7 @@ export default function ConfigTorneoPage() {
   const [tipoConfig, setTipoConfig]             = useState<'departamental' | 'nacional'>('departamental');
   const [configDep, setConfigDep]               = useState<ConfigDepartamental>({ tipo: 'departamental', cantMaster: 8, cantPrimera: 24, cantSegunda: 32, cuposDesdeClasif: 16 });
   const [categoriaFederal, setCategoriaFederal] = useState<'primera' | 'segunda' | 'tercera'>('primera');
+  const [formatoNac, setFormatoNac]             = useState<'32' | '16'>('32');
   const [totalInscriptos, setTotalInscriptos]   = useState(0);
   const [loading, setLoading]                   = useState(true);
   const [saving, setSaving]                     = useState(false);
@@ -125,6 +127,7 @@ export default function ConfigTorneoPage() {
       if (cfg.tipo === 'nacional') {
         setTipoConfig('nacional');
         setCategoriaFederal(cfg.categoriaFederal ?? 'primera');
+        setFormatoNac(cfg.formato === '16' ? '16' : '32');
       } else {
         setTipoConfig('departamental');
         setConfigDep({ tipo: 'departamental', cantMaster: cfg.cantMaster ?? 8, cantPrimera: cfg.cantPrimera ?? 24, cantSegunda: cfg.cantSegunda ?? 32, cuposDesdeClasif: cfg.cuposDesdeClasif ?? 16 });
@@ -137,13 +140,18 @@ export default function ConfigTorneoPage() {
   const val = calcularValidacion(configDep, totalInscriptos);
   const rulesets = getRuleSetsNacional(categoriaFederal);
   const catNac = CATEGORIAS_NAC.find(c => c.value === categoriaFederal)!;
+  const es16 = formatoNac === '16';
+  const jugadoresNac = es16 ? 16 : 32;
+  const seriesNac = es16 ? 4 : 8;
+  const clasificanNac = es16 ? 8 : 16;
+  const partidosBracketNac = es16 ? 7 : 15;
 
   const handleSave = async () => {
     if (!circuitId) return;
     setSaving(true); setError(''); setSaved(false);
     try {
       const payload = tipoConfig === 'nacional'
-        ? { tipo: 'nacional', categoriaFederal }
+        ? { tipo: 'nacional', categoriaFederal, formato: formatoNac }
         : { ...configDep, tipo: 'departamental' };
       await api.put(`/circuits/${circuitId}/config-torneo`, payload);
       setSaved(true);
@@ -189,7 +197,7 @@ export default function ConfigTorneoPage() {
             <button onClick={() => { setTipoConfig('nacional'); setSaved(false); }}
               className={`flex-1 py-3 px-4 rounded-lg border transition-all text-sm font-semibold ${tipoConfig === 'nacional' ? 'border-blue-500/50 bg-blue-900/20 text-blue-400' : 'border-felt-light/20 text-chalk/50 hover:border-chalk/30'}`}>
               🏆 Nacional
-              <p className="text-xs font-normal mt-1 opacity-70">8 series + bracket eliminación directa 16 jugadores</p>
+              <p className="text-xs font-normal mt-1 opacity-70">Series + bracket eliminación directa</p>
             </button>
           </div>
         </div>
@@ -197,6 +205,22 @@ export default function ConfigTorneoPage() {
         {/* ─── NACIONAL ─────────────────────────────────────────────── */}
         {tipoConfig === 'nacional' && (
           <>
+            <div className="card space-y-3">
+              <h2 className="font-display text-lg text-chalk">Formato del torneo</h2>
+              <div className="flex gap-3">
+                <button onClick={() => { setFormatoNac('32'); setSaved(false); }}
+                  className={`flex-1 py-3 px-4 rounded-lg border transition-all text-sm font-semibold ${formatoNac === '32' ? 'border-gold/50 bg-gold/10 text-gold' : 'border-felt-light/20 text-chalk/50 hover:border-chalk/30'}`}>
+                  32 jugadores
+                  <p className="text-xs font-normal mt-1 opacity-70">8 series + bracket de 16</p>
+                </button>
+                <button onClick={() => { setFormatoNac('16'); setSaved(false); }}
+                  className={`flex-1 py-3 px-4 rounded-lg border transition-all text-sm font-semibold ${formatoNac === '16' ? 'border-gold/50 bg-gold/10 text-gold' : 'border-felt-light/20 text-chalk/50 hover:border-chalk/30'}`}>
+                  16 jugadores
+                  <p className="text-xs font-normal mt-1 opacity-70">4 series + bracket de 8</p>
+                </button>
+              </div>
+            </div>
+
             <div className="card space-y-3">
               <h2 className="font-display text-lg text-chalk">Categoría del torneo</h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -217,26 +241,25 @@ export default function ConfigTorneoPage() {
                 <div className="bg-felt-dark/40 rounded-lg p-4 border border-green-700/20">
                   <p className="text-green-400 font-display text-sm uppercase tracking-widest mb-3">Fase de Series</p>
                   <div className="space-y-1 text-sm font-mono">
-                    <div className="flex justify-between"><span className="text-chalk/50">Jugadores</span><span className="text-chalk">32</span></div>
-                    <div className="flex justify-between"><span className="text-chalk/50">Series</span><span className="text-chalk">8 (de 4 jugadores c/u)</span></div>
-                    <div className="flex justify-between"><span className="text-chalk/50">Sistema</span><span className="text-chalk">Doble eliminación</span></div>
+                    <div className="flex justify-between"><span className="text-chalk/50">Jugadores</span><span className="text-chalk">{jugadoresNac}</span></div>
+                    <div className="flex justify-between"><span className="text-chalk/50">Series</span><span className="text-chalk">{seriesNac} (de 4 jugadores c/u)</span></div>
                     <div className="flex justify-between"><span className="text-chalk/50">Partidos/serie</span><span className="text-chalk">5</span></div>
                     <div className="flex justify-between"><span className="text-chalk/50">Formato</span><span className={catNac.color}>{RULESET_LABELS[rulesets.series]}</span></div>
-                    <div className="flex justify-between"><span className="text-chalk/50">Clasifican</span><span className="text-gold">16 (1° y 2° de cada serie)</span></div>
+                    <div className="flex justify-between"><span className="text-chalk/50">Clasifican</span><span className="text-gold">{clasificanNac} (1° y 2° de cada serie)</span></div>
                   </div>
                 </div>
 
                 <div className="bg-felt-dark/40 rounded-lg p-4 border border-purple-700/20">
                   <p className="text-purple-400 font-display text-sm uppercase tracking-widest mb-3">Bracket Final</p>
                   <div className="space-y-1 text-sm font-mono">
-                    <div className="flex justify-between"><span className="text-chalk/50">Jugadores</span><span className="text-chalk">16 (seeded por ranking)</span></div>
+                    <div className="flex justify-between"><span className="text-chalk/50">Jugadores</span><span className="text-chalk">{clasificanNac} (seeded por ranking)</span></div>
                     <div className="flex justify-between"><span className="text-chalk/50">Sistema</span><span className="text-chalk">Eliminación directa</span></div>
-                    <div className="flex justify-between"><span className="text-chalk/50">Octavos</span><span className="text-chalk">8 partidos</span></div>
+                    {!es16 && <div className="flex justify-between"><span className="text-chalk/50">Octavos</span><span className="text-chalk">8 partidos</span></div>}
                     <div className="flex justify-between"><span className="text-chalk/50">Cuartos</span><span className="text-chalk">4 partidos</span></div>
                     <div className="flex justify-between"><span className="text-chalk/50">Semis</span><span className="text-chalk">2 partidos</span></div>
                     <div className="flex justify-between"><span className="text-chalk/50">Final</span><span className="text-chalk">1 partido</span></div>
                     <div className="flex justify-between"><span className="text-chalk/50">Formato</span><span className={catNac.color}>{RULESET_LABELS[rulesets.cruces]}</span></div>
-                    <div className="flex justify-between"><span className="text-chalk/50">Total partidos</span><span className="text-gold">15</span></div>
+                    <div className="flex justify-between"><span className="text-chalk/50">Total partidos</span><span className="text-gold">{partidosBracketNac}</span></div>
                   </div>
                 </div>
               </div>
@@ -256,14 +279,14 @@ export default function ConfigTorneoPage() {
                 </div>
               </div>
 
-              {totalInscriptos > 0 && totalInscriptos !== 32 && (
+              {totalInscriptos > 0 && totalInscriptos !== jugadoresNac && (
                 <div className="bg-yellow-900/20 border border-yellow-700/40 rounded-lg px-4 py-2 text-yellow-400 text-sm">
-                  ⚠️ Este circuito tiene {totalInscriptos} inscriptos — los Torneos Nacionales requieren exactamente 32 jugadores
+                  ⚠️ Este circuito tiene {totalInscriptos} inscriptos — este formato requiere exactamente {jugadoresNac} jugadores
                 </div>
               )}
-              {totalInscriptos === 32 && (
+              {totalInscriptos === jugadoresNac && (
                 <div className="bg-green-900/20 border border-green-700/40 rounded-lg px-4 py-2 text-green-400 text-sm">
-                  ✅ 32 jugadores inscriptos — listo para generar
+                  ✅ {jugadoresNac} jugadores inscriptos — listo para generar
                 </div>
               )}
             </div>
