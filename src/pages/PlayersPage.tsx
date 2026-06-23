@@ -3,6 +3,9 @@ import { api } from '../services/api';
 import { Player, Category, CategoryName, Departamento } from '../types';
 import { PageHeader, CategoryBadge, LoadingSpinner, Modal, EmptyState } from '../components/ui';
 
+// Paises disponibles para el selector — agregar segun se incorporen mas
+const PAISES = ['Uruguay', 'Argentina', 'Brasil', 'Paraguay', 'Chile', 'Bolivia', 'Peru', 'Colombia', 'Ecuador', 'Venezuela', 'Mexico', 'Espana', 'Otro'];
+
 // Clubes por departamento — agregar según se incorporen nuevos departamentos
 const CLUBS_BY_DEPARTAMENTO: Record<string, string[]> = {
   'Montevideo': ['CAPOLAVORO', 'FERIA FRANCA', 'YATAY', 'CABRERA', 'MODEL CENTER', 'NUEVO MALVIN', 'SPORTING UNION', 'CENTENARIO', 'CASA DEL BILLAR', 'PIEDRA HONDA'],
@@ -24,7 +27,7 @@ export default function PlayersPage() {
   const [loading, setLoading]             = useState(true);
   const [showModal, setShowModal]         = useState(false);
   const [editPlayer, setEditPlayer]       = useState<Player | null>(null);
-  const [form, setForm]                   = useState({ firstName: '', lastName: '', dni: '', categoryId: '', club: '', departamentoId: '' });
+  const [form, setForm]                   = useState({ firstName: '', lastName: '', dni: '', categoryId: '', club: '', pais: 'Uruguay', departamentoId: '' });
   const [saving, setSaving]               = useState(false);
   const [error, setError]                 = useState('');
   const [filterCat, setFilterCat]         = useState('');
@@ -136,7 +139,7 @@ export default function PlayersPage() {
 
   const openAdd = () => {
     setEditPlayer(null);
-    setForm({ firstName: '', lastName: '', dni: '', categoryId: categories[0]?.id?.toString() ?? '', club: '', departamentoId: '' });
+    setForm({ firstName: '', lastName: '', dni: '', categoryId: categories[0]?.id?.toString() ?? '', club: '', pais: 'Uruguay', departamentoId: '' });
     setError(''); setShowModal(true);
   };
 
@@ -148,6 +151,7 @@ export default function PlayersPage() {
       dni:            p.dni ?? '',
       categoryId:     p.categoryId.toString(),
       club:           p.club ?? '',
+      pais:           p.pais ?? 'Uruguay',
       departamentoId: p.departamentoId?.toString() ?? '',
     });
     setError(''); setShowModal(true);
@@ -161,6 +165,7 @@ export default function PlayersPage() {
         categoryId:     Number(form.categoryId),
         dni:            form.dni || undefined,
         club:           form.club || undefined,
+        pais:           form.pais || 'Uruguay',
         departamentoId: form.departamentoId ? Number(form.departamentoId) : undefined,
       };
       if (editPlayer) { await api.put(`/players/${editPlayer.id}`, payload); }
@@ -175,7 +180,7 @@ export default function PlayersPage() {
       await api.put(`/players/${p.id}`, {
         firstName: p.firstName, lastName: p.lastName, dni: p.dni,
         categoryId: p.categoryId, active: !p.active, club: p.club,
-        departamentoId: p.departamentoId,
+        pais: p.pais, departamentoId: p.departamentoId,
       });
       fetchPlayers();
     } catch { alert('Error al cambiar el estado del jugador'); }
@@ -275,6 +280,7 @@ export default function PlayersPage() {
                     <tr className="border-b border-silver-muted/10 text-silver-dark text-xs uppercase tracking-widest">
                       <th className="text-left px-4 py-3">Jugador</th>
                       <th className="text-left px-4 py-3">Club</th>
+                      <th className="text-left px-4 py-3">Pais</th>
                       <th className="text-left px-4 py-3">Departamento</th>
                       <th className="text-left px-4 py-3">Categoria</th>
                       <th className="text-left px-4 py-3 hidden sm:table-cell">C.I.</th>
@@ -287,6 +293,7 @@ export default function PlayersPage() {
                       <tr key={p.id} className="table-row">
                         <td className="px-4 py-3 font-medium text-silver-light">{p.lastName}, {p.firstName}</td>
                         <td className="px-4 py-3 text-silver-dark text-xs font-semibold">{p.club ?? '-'}</td>
+                        <td className="px-4 py-3 text-silver-dark text-xs">{p.pais ?? 'Uruguay'}</td>
                         <td className="px-4 py-3 text-silver-dark text-xs">
                           {p.departamento?.nombre
                             ? <span className="badge-status bg-blue-900/20 text-blue-400 text-xs">{p.departamento.nombre}</span>
@@ -344,6 +351,13 @@ export default function PlayersPage() {
               >
                 <option value="">Sin departamento</option>
                 {departamentos.map(d => <option key={d.id} value={d.id}>{d.nombre}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-silver-dark text-xs uppercase tracking-widest mb-1.5">Pais</label>
+              <select className="input" value={form.pais} onChange={e => setForm({ ...form, pais: e.target.value })}>
+                {PAISES.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
 
