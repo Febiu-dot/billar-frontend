@@ -50,6 +50,7 @@ export interface Player {
   categoryId: number;
   category?: Category;
   club?: string;
+  pais?: string;
   departamentoId?: number;
   departamento?: Departamento;
   active: boolean;
