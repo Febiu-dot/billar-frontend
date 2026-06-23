@@ -93,7 +93,7 @@ function calcularValidacion(config: ConfigDepartamental, totalInscriptos: number
 export default function ConfigTorneoPage() {
   const [circuitos, setCircuitos]               = useState<any[]>([]);
   const [circuitId, setCircuitId]               = useState('');
-  const [tipoConfig, setTipoConfig]             = useState<'departamental' | 'nacional'>('departamental');
+  const [tipoConfig, setTipoConfig]             = useState<'departamental' | 'nacional' | 'panamericano'>('departamental');
   const [configDep, setConfigDep]               = useState<ConfigDepartamental>({ tipo: 'departamental', cantMaster: 8, cantPrimera: 24, cantSegunda: 32, cuposDesdeClasif: 16 });
   const [categoriaFederal, setCategoriaFederal] = useState<'primera' | 'segunda' | 'tercera'>('primera');
   const [formatoNac, setFormatoNac]             = useState<'32' | '16'>('32');
@@ -124,8 +124,8 @@ export default function ConfigTorneoPage() {
       api.get(`/circuits/${circuitId}`),
     ]).then(([cfgRes, circRes]) => {
       const cfg = cfgRes.data;
-      if (cfg.tipo === 'nacional') {
-        setTipoConfig('nacional');
+      if (cfg.tipo === 'nacional' || cfg.tipo === 'panamericano') {
+        setTipoConfig(cfg.tipo);
         setCategoriaFederal(cfg.categoriaFederal ?? 'primera');
         setFormatoNac(cfg.formato === '16' ? '16' : '32');
       } else {
@@ -141,6 +141,7 @@ export default function ConfigTorneoPage() {
   const rulesets = getRuleSetsNacional(categoriaFederal);
   const catNac = CATEGORIAS_NAC.find(c => c.value === categoriaFederal)!;
   const es16 = formatoNac === '16';
+  const esFormatoNac = tipoConfig === 'nacional' || tipoConfig === 'panamericano';
   const jugadoresNac = es16 ? 16 : 32;
   const seriesNac = es16 ? 4 : 8;
   const clasificanNac = es16 ? 8 : 16;
@@ -150,8 +151,8 @@ export default function ConfigTorneoPage() {
     if (!circuitId) return;
     setSaving(true); setError(''); setSaved(false);
     try {
-      const payload = tipoConfig === 'nacional'
-        ? { tipo: 'nacional', categoriaFederal, formato: formatoNac }
+      const payload = esFormatoNac
+        ? { tipo: tipoConfig, categoriaFederal, formato: formatoNac }
         : { ...configDep, tipo: 'departamental' };
       await api.put(`/circuits/${circuitId}/config-torneo`, payload);
       setSaved(true);
@@ -161,7 +162,7 @@ export default function ConfigTorneoPage() {
     } finally { setSaving(false); }
   };
 
-  const canSave = tipoConfig === 'nacional' ? true : val.ok;
+  const canSave = esFormatoNac ? true : val.ok;
 
   if (loading) return <LoadingSpinner />;
 
@@ -188,22 +189,27 @@ export default function ConfigTorneoPage() {
         {/* Tipo de torneo */}
         <div className="card space-y-3">
           <h2 className="font-display text-lg text-chalk">Tipo de torneo</h2>
-          <div className="flex gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <button onClick={() => { setTipoConfig('departamental'); setSaved(false); }}
-              className={`flex-1 py-3 px-4 rounded-lg border transition-all text-sm font-semibold ${tipoConfig === 'departamental' ? 'border-gold/50 bg-gold/10 text-gold' : 'border-felt-light/20 text-chalk/50 hover:border-chalk/30'}`}>
+              className={`py-3 px-4 rounded-lg border transition-all text-sm font-semibold ${tipoConfig === 'departamental' ? 'border-gold/50 bg-gold/10 text-gold' : 'border-felt-light/20 text-chalk/50 hover:border-chalk/30'}`}>
               🏠 Departamental
               <p className="text-xs font-normal mt-1 opacity-70">Clasificatorio → Segunda → Primera → Máster</p>
             </button>
             <button onClick={() => { setTipoConfig('nacional'); setSaved(false); }}
-              className={`flex-1 py-3 px-4 rounded-lg border transition-all text-sm font-semibold ${tipoConfig === 'nacional' ? 'border-blue-500/50 bg-blue-900/20 text-blue-400' : 'border-felt-light/20 text-chalk/50 hover:border-chalk/30'}`}>
+              className={`py-3 px-4 rounded-lg border transition-all text-sm font-semibold ${tipoConfig === 'nacional' ? 'border-blue-500/50 bg-blue-900/20 text-blue-400' : 'border-felt-light/20 text-chalk/50 hover:border-chalk/30'}`}>
               🏆 Nacional
               <p className="text-xs font-normal mt-1 opacity-70">Series + bracket eliminación directa</p>
+            </button>
+            <button onClick={() => { setTipoConfig('panamericano'); setSaved(false); }}
+              className={`py-3 px-4 rounded-lg border transition-all text-sm font-semibold ${tipoConfig === 'panamericano' ? 'border-emerald-500/50 bg-emerald-900/20 text-emerald-400' : 'border-felt-light/20 text-chalk/50 hover:border-chalk/30'}`}>
+              🌎 Panamericano
+              <p className="text-xs font-normal mt-1 opacity-70">Regional — mismo formato que el Nacional</p>
             </button>
           </div>
         </div>
 
-        {/* ─── NACIONAL ─────────────────────────────────────────────── */}
-        {tipoConfig === 'nacional' && (
+        {/* ─── NACIONAL / PANAMERICANO ──────────────────────────────── */}
+        {esFormatoNac && (
           <>
             <div className="card space-y-3">
               <h2 className="font-display text-lg text-chalk">Formato del torneo</h2>
