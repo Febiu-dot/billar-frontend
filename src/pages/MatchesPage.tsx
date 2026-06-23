@@ -115,16 +115,17 @@ export default function MatchesPage() {
   // ── Abrir modal resultado ─────────────────────────────────────────
   const openResultModal = (match: Match) => {
     setResultModal(match);
+    const esFinalizado = match.status === 'finalizado' || match.status === 'wo';
     if (match.sets && match.sets.length > 0) {
       const loadedSets: SetScore[] = match.sets.map(s => ({
         a: s.pointsA.toString(),
         b: s.pointsB.toString(),
-        saved: true,
+        saved: !esFinalizado, // Si es edición, dejar editable (saved=false)
       }));
       const setsToWin = (match as any).ruleSet?.setsToWin ?? 3;
       const winsA = loadedSets.filter(s => Number(s.a) > Number(s.b)).length;
       const winsB = loadedSets.filter(s => Number(s.b) > Number(s.a)).length;
-      if (winsA < setsToWin && winsB < setsToWin) {
+      if (!esFinalizado && winsA < setsToWin && winsB < setsToWin) {
         loadedSets.push({ a: '', b: '', saved: false });
       }
       setSets(loadedSets);
