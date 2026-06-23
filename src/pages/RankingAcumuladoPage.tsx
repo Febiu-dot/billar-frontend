@@ -245,7 +245,7 @@ export default function RankingAcumuladoPage() {
                         {entry.pointsAgainst}
                       </td>
                       <td className="px-3 py-2.5 text-center hidden lg:table-cell text-cyan-400/60 font-mono text-xs">
-                        {entry.pointsAgainst > 0 ? (entry.pointsFor / entry.pointsAgainst).toFixed(2) : '—'}
+                        {entry.pointsAgainst > 0 ? (entry.pointsFor / entry.pointsAgainst).toFixed(4) : '—'}
                       </td>
                     </tr>
                   ))}
