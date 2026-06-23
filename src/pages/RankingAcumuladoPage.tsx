@@ -179,12 +179,12 @@ export default function RankingAcumuladoPage() {
                     <th className="text-left px-4 py-3 hidden sm:table-cell">Club</th>
                     <th className="text-center px-3 py-3 hidden md:table-cell">Categoría</th>
                     <th className="text-center px-3 py-3">Pts</th>
-                    <th className="text-center px-3 py-3 hidden sm:table-cell">PJ</th>
-                    <th className="text-center px-3 py-3 hidden sm:table-cell">PG</th>
                     <th className="text-center px-3 py-3 hidden md:table-cell">Sets G</th>
                     <th className="text-center px-3 py-3 hidden md:table-cell">Sets P</th>
-                    <th className="text-center px-3 py-3 hidden lg:table-cell">Prom.</th>
-                    <th className="text-center px-3 py-3 hidden lg:table-cell">Tantos</th>
+                    <th className="text-center px-3 py-3 hidden md:table-cell">Dif. Sets</th>
+                    <th className="text-center px-3 py-3 hidden lg:table-cell">Tantos F</th>
+                    <th className="text-center px-3 py-3 hidden lg:table-cell">Tantos C</th>
+                    <th className="text-center px-3 py-3 hidden lg:table-cell">Prom. Tantos</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -227,23 +227,25 @@ export default function RankingAcumuladoPage() {
                       <td className="px-3 py-2.5 text-center">
                         <span className="text-gold font-bold font-mono text-base">{entry.points}</span>
                       </td>
-                      <td className="px-3 py-2.5 text-center hidden sm:table-cell text-chalk/50 font-mono text-xs">
-                        {entry.matchesPlayed}
-                      </td>
-                      <td className="px-3 py-2.5 text-center hidden sm:table-cell text-chalk/50 font-mono text-xs">
-                        {entry.matchesWon}
-                      </td>
-                      <td className="px-3 py-2.5 text-center hidden md:table-cell text-chalk/50 font-mono text-xs">
+                      <td className="px-3 py-2.5 text-center hidden md:table-cell text-chalk/70 font-mono text-xs">
                         {entry.setsWon}
                       </td>
                       <td className="px-3 py-2.5 text-center hidden md:table-cell text-red-400/60 font-mono text-xs">
                         {entry.setsLost}
                       </td>
-                      <td className="px-3 py-2.5 text-center hidden lg:table-cell text-cyan-400/60 font-mono text-xs">
-                        {entry.matchesPlayed > 0 ? (entry.pointsFor / entry.matchesPlayed).toFixed(2) : '—'}
+                      <td className="px-3 py-2.5 text-center hidden md:table-cell font-mono text-xs font-bold">
+                        <span className={entry.setsWon - entry.setsLost >= 0 ? 'text-green-400' : 'text-red-400'}>
+                          {entry.setsWon - entry.setsLost >= 0 ? '+' : ''}{entry.setsWon - entry.setsLost}
+                        </span>
                       </td>
-                      <td className="px-3 py-2.5 text-center hidden lg:table-cell text-chalk/50 font-mono text-xs">
+                      <td className="px-3 py-2.5 text-center hidden lg:table-cell text-chalk/70 font-mono text-xs">
                         {entry.pointsFor}
+                      </td>
+                      <td className="px-3 py-2.5 text-center hidden lg:table-cell text-red-400/60 font-mono text-xs">
+                        {entry.pointsAgainst}
+                      </td>
+                      <td className="px-3 py-2.5 text-center hidden lg:table-cell text-cyan-400/60 font-mono text-xs">
+                        {entry.pointsAgainst > 0 ? (entry.pointsFor / entry.pointsAgainst).toFixed(2) : '—'}
                       </td>
                     </tr>
                   ))}
@@ -252,7 +254,7 @@ export default function RankingAcumuladoPage() {
             </div>
 
             <p className="text-center text-chalk/20 text-xs">
-              {filtrado.length} jugadores · ordenados por puntos acumulados
+              {filtrado.length} jugadores · ordenados por: Puntos → Diferencia de sets → Promedio de tantos
             </p>
           </>
         )}
