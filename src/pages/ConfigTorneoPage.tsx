@@ -45,9 +45,9 @@ const PLANTILLAS_DEP: { nombre: string; config: ConfigDepartamental }[] = [
 ];
 
 const CATEGORIAS_NAC = [
-  { value: 'primera', label: 'Primera Nacional', color: 'text-blue-400', descripcion: '5 sets en series y cruces' },
-  { value: 'segunda', label: 'Segunda Nacional', color: 'text-orange-400', descripcion: '3 sets en series, 5 sets en cruces' },
-  { value: 'tercera', label: 'Tercera Nacional', color: 'text-green-400', descripcion: '3 sets en series y cruces' },
+  { value: 'primera', label: 'Primera', color: 'text-blue-400', descripcion: '5 sets en series y cruces' },
+  { value: 'segunda', label: 'Segunda', color: 'text-orange-light', descripcion: '3 sets en series, 5 sets en cruces' },
+  { value: 'tercera', label: 'Tercera', color: 'text-green-400', descripcion: '3 sets en series y cruces' },
 ];
 
 const RULESET_LABELS: Record<number, string> = {
@@ -142,6 +142,7 @@ export default function ConfigTorneoPage() {
   const catNac = CATEGORIAS_NAC.find(c => c.value === categoriaFederal)!;
   const es16 = formatoNac === '16';
   const esFormatoNac = tipoConfig === 'nacional' || tipoConfig === 'panamericano';
+  const sufijoCategoria = tipoConfig === 'panamericano' ? 'Panamericana' : 'Nacional';
   const jugadoresNac = es16 ? 16 : 32;
   const seriesNac = es16 ? 4 : 8;
   const clasificanNac = es16 ? 8 : 16;
@@ -168,40 +169,40 @@ export default function ConfigTorneoPage() {
 
   return (
     <div>
-      <div className="px-6 pt-6 pb-4 border-b border-felt-light/20">
-        <h1 className="font-display text-4xl text-gold">CONFIGURACIÓN DE TORNEO</h1>
-        <p className="text-chalk/50 text-sm mt-1">Define la estructura del torneo antes de generar los partidos</p>
+      <div className="px-6 pt-6 pb-4 border-b border-silver-muted/20">
+        <h1 className="font-display text-4xl text-orange">CONFIGURACIÓN DE TORNEO</h1>
+        <p className="text-silver-light/50 text-sm mt-1">Define la estructura del torneo antes de generar los partidos</p>
       </div>
 
       <div className="p-6 space-y-6">
 
         {/* Selector de circuito */}
         <div className="card">
-          <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Circuito</label>
+          <label className="block text-silver-light/60 text-xs uppercase tracking-widest mb-1.5">Circuito</label>
           <select className="input" value={circuitId} onChange={e => setCircuitId(e.target.value)}>
             {circuitos.map(c => <option key={c.id} value={c.id}>{c.torneoNombre} — {c.name}</option>)}
           </select>
           {totalInscriptos > 0 && (
-            <p className="text-chalk/40 text-xs mt-2 font-mono">{totalInscriptos} jugadores inscriptos en este circuito</p>
+            <p className="text-silver-light/40 text-xs mt-2 font-mono">{totalInscriptos} jugadores inscriptos en este circuito</p>
           )}
         </div>
 
         {/* Tipo de torneo */}
         <div className="card space-y-3">
-          <h2 className="font-display text-lg text-chalk">Tipo de torneo</h2>
+          <h2 className="font-display text-lg text-silver-light">Tipo de torneo</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <button onClick={() => { setTipoConfig('departamental'); setSaved(false); }}
-              className={`py-3 px-4 rounded-lg border transition-all text-sm font-semibold ${tipoConfig === 'departamental' ? 'border-gold/50 bg-gold/10 text-gold' : 'border-felt-light/20 text-chalk/50 hover:border-chalk/30'}`}>
+              className={`py-3 px-4 rounded-lg border transition-all text-sm font-semibold ${tipoConfig === 'departamental' ? 'border-orange/50 bg-orange/10 text-orange' : 'border-silver-muted/20 text-silver-light/50 hover:border-silver/30'}`}>
               🏠 Departamental
               <p className="text-xs font-normal mt-1 opacity-70">Clasificatorio → Segunda → Primera → Máster</p>
             </button>
             <button onClick={() => { setTipoConfig('nacional'); setSaved(false); }}
-              className={`py-3 px-4 rounded-lg border transition-all text-sm font-semibold ${tipoConfig === 'nacional' ? 'border-blue-500/50 bg-blue-900/20 text-blue-400' : 'border-felt-light/20 text-chalk/50 hover:border-chalk/30'}`}>
+              className={`py-3 px-4 rounded-lg border transition-all text-sm font-semibold ${tipoConfig === 'nacional' ? 'border-blue-500/50 bg-blue-900/20 text-blue-400' : 'border-silver-muted/20 text-silver-light/50 hover:border-silver/30'}`}>
               🏆 Nacional
               <p className="text-xs font-normal mt-1 opacity-70">Series + bracket eliminación directa</p>
             </button>
             <button onClick={() => { setTipoConfig('panamericano'); setSaved(false); }}
-              className={`py-3 px-4 rounded-lg border transition-all text-sm font-semibold ${tipoConfig === 'panamericano' ? 'border-emerald-500/50 bg-emerald-900/20 text-emerald-400' : 'border-felt-light/20 text-chalk/50 hover:border-chalk/30'}`}>
+              className={`py-3 px-4 rounded-lg border transition-all text-sm font-semibold ${tipoConfig === 'panamericano' ? 'border-emerald-500/50 bg-emerald-900/20 text-emerald-400' : 'border-silver-muted/20 text-silver-light/50 hover:border-silver/30'}`}>
               🌎 Panamericano
               <p className="text-xs font-normal mt-1 opacity-70">Regional — mismo formato que el Nacional</p>
             </button>
@@ -212,15 +213,15 @@ export default function ConfigTorneoPage() {
         {esFormatoNac && (
           <>
             <div className="card space-y-3">
-              <h2 className="font-display text-lg text-chalk">Formato del torneo</h2>
+              <h2 className="font-display text-lg text-silver-light">Formato del torneo</h2>
               <div className="flex gap-3">
                 <button onClick={() => { setFormatoNac('32'); setSaved(false); }}
-                  className={`flex-1 py-3 px-4 rounded-lg border transition-all text-sm font-semibold ${formatoNac === '32' ? 'border-gold/50 bg-gold/10 text-gold' : 'border-felt-light/20 text-chalk/50 hover:border-chalk/30'}`}>
+                  className={`flex-1 py-3 px-4 rounded-lg border transition-all text-sm font-semibold ${formatoNac === '32' ? 'border-orange/50 bg-orange/10 text-orange' : 'border-silver-muted/20 text-silver-light/50 hover:border-silver/30'}`}>
                   32 jugadores
                   <p className="text-xs font-normal mt-1 opacity-70">8 series + bracket de 16</p>
                 </button>
                 <button onClick={() => { setFormatoNac('16'); setSaved(false); }}
-                  className={`flex-1 py-3 px-4 rounded-lg border transition-all text-sm font-semibold ${formatoNac === '16' ? 'border-gold/50 bg-gold/10 text-gold' : 'border-felt-light/20 text-chalk/50 hover:border-chalk/30'}`}>
+                  className={`flex-1 py-3 px-4 rounded-lg border transition-all text-sm font-semibold ${formatoNac === '16' ? 'border-orange/50 bg-orange/10 text-orange' : 'border-silver-muted/20 text-silver-light/50 hover:border-silver/30'}`}>
                   16 jugadores
                   <p className="text-xs font-normal mt-1 opacity-70">4 series + bracket de 8</p>
                 </button>
@@ -228,57 +229,57 @@ export default function ConfigTorneoPage() {
             </div>
 
             <div className="card space-y-3">
-              <h2 className="font-display text-lg text-chalk">Categoría del torneo</h2>
+              <h2 className="font-display text-lg text-silver-light">Categoría del torneo</h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {CATEGORIAS_NAC.map(cat => (
                   <button key={cat.value} onClick={() => { setCategoriaFederal(cat.value as any); setSaved(false); }}
-                    className={`text-left p-4 rounded-lg border transition-all ${categoriaFederal === cat.value ? 'border-blue-500/50 bg-blue-900/20' : 'border-felt-light/20 hover:border-chalk/30'}`}>
-                    <p className={`font-semibold text-sm ${cat.color}`}>{cat.label}</p>
-                    <p className="text-chalk/40 text-xs mt-1">{cat.descripcion}</p>
+                    className={`text-left p-4 rounded-lg border transition-all ${categoriaFederal === cat.value ? 'border-blue-500/50 bg-blue-900/20' : 'border-silver-muted/20 hover:border-silver/30'}`}>
+                    <p className={`font-semibold text-sm ${cat.color}`}>{cat.label} {sufijoCategoria}</p>
+                    <p className="text-silver-light/40 text-xs mt-1">{cat.descripcion}</p>
                   </button>
                 ))}
               </div>
             </div>
 
             <div className="card space-y-4">
-              <h2 className="font-display text-lg text-chalk">Estructura del torneo</h2>
+              <h2 className="font-display text-lg text-silver-light">Estructura del torneo</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                <div className="bg-felt-dark/40 rounded-lg p-4 border border-green-700/20">
+                <div className="bg-carbon-100/40 rounded-lg p-4 border border-green-700/20">
                   <p className="text-green-400 font-display text-sm uppercase tracking-widest mb-3">Fase de Series</p>
                   <div className="space-y-1 text-sm font-mono">
-                    <div className="flex justify-between"><span className="text-chalk/50">Jugadores</span><span className="text-chalk">{jugadoresNac}</span></div>
-                    <div className="flex justify-between"><span className="text-chalk/50">Series</span><span className="text-chalk">{seriesNac} (de 4 jugadores c/u)</span></div>
-                    <div className="flex justify-between"><span className="text-chalk/50">Partidos/serie</span><span className="text-chalk">5</span></div>
-                    <div className="flex justify-between"><span className="text-chalk/50">Formato</span><span className={catNac.color}>{RULESET_LABELS[rulesets.series]}</span></div>
-                    <div className="flex justify-between"><span className="text-chalk/50">Clasifican</span><span className="text-gold">{clasificanNac} (1° y 2° de cada serie)</span></div>
+                    <div className="flex justify-between"><span className="text-silver-light/50">Jugadores</span><span className="text-silver-light">{jugadoresNac}</span></div>
+                    <div className="flex justify-between"><span className="text-silver-light/50">Series</span><span className="text-silver-light">{seriesNac} (de 4 jugadores c/u)</span></div>
+                    <div className="flex justify-between"><span className="text-silver-light/50">Partidos/serie</span><span className="text-silver-light">5</span></div>
+                    <div className="flex justify-between"><span className="text-silver-light/50">Formato</span><span className={catNac.color}>{RULESET_LABELS[rulesets.series]}</span></div>
+                    <div className="flex justify-between"><span className="text-silver-light/50">Clasifican</span><span className="text-orange">{clasificanNac} (1° y 2° de cada serie)</span></div>
                   </div>
                 </div>
 
-                <div className="bg-felt-dark/40 rounded-lg p-4 border border-purple-700/20">
+                <div className="bg-carbon-100/40 rounded-lg p-4 border border-purple-700/20">
                   <p className="text-purple-400 font-display text-sm uppercase tracking-widest mb-3">Bracket Final</p>
                   <div className="space-y-1 text-sm font-mono">
-                    <div className="flex justify-between"><span className="text-chalk/50">Jugadores</span><span className="text-chalk">{clasificanNac} (seeded por ranking)</span></div>
-                    <div className="flex justify-between"><span className="text-chalk/50">Sistema</span><span className="text-chalk">Eliminación directa</span></div>
-                    {!es16 && <div className="flex justify-between"><span className="text-chalk/50">Octavos</span><span className="text-chalk">8 partidos</span></div>}
-                    <div className="flex justify-between"><span className="text-chalk/50">Cuartos</span><span className="text-chalk">4 partidos</span></div>
-                    <div className="flex justify-between"><span className="text-chalk/50">Semis</span><span className="text-chalk">2 partidos</span></div>
-                    <div className="flex justify-between"><span className="text-chalk/50">Final</span><span className="text-chalk">1 partido</span></div>
-                    <div className="flex justify-between"><span className="text-chalk/50">Formato</span><span className={catNac.color}>{RULESET_LABELS[rulesets.cruces]}</span></div>
-                    <div className="flex justify-between"><span className="text-chalk/50">Total partidos</span><span className="text-gold">{partidosBracketNac}</span></div>
+                    <div className="flex justify-between"><span className="text-silver-light/50">Jugadores</span><span className="text-silver-light">{clasificanNac} (seeded por ranking)</span></div>
+                    <div className="flex justify-between"><span className="text-silver-light/50">Sistema</span><span className="text-silver-light">Eliminación directa</span></div>
+                    {!es16 && <div className="flex justify-between"><span className="text-silver-light/50">Octavos</span><span className="text-silver-light">8 partidos</span></div>}
+                    <div className="flex justify-between"><span className="text-silver-light/50">Cuartos</span><span className="text-silver-light">4 partidos</span></div>
+                    <div className="flex justify-between"><span className="text-silver-light/50">Semis</span><span className="text-silver-light">2 partidos</span></div>
+                    <div className="flex justify-between"><span className="text-silver-light/50">Final</span><span className="text-silver-light">1 partido</span></div>
+                    <div className="flex justify-between"><span className="text-silver-light/50">Formato</span><span className={catNac.color}>{RULESET_LABELS[rulesets.cruces]}</span></div>
+                    <div className="flex justify-between"><span className="text-silver-light/50">Total partidos</span><span className="text-orange">{partidosBracketNac}</span></div>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-felt-dark/20 rounded-lg p-4 border border-felt-light/10">
-                <p className="text-chalk/60 text-xs uppercase tracking-widest mb-3">Sistema de puntuación</p>
+              <div className="bg-carbon-100/20 rounded-lg p-4 border border-silver-muted/10">
+                <p className="text-silver-light/60 text-xs uppercase tracking-widest mb-3">Sistema de puntuación</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
-                  {[['Serie 1°','8 pts','text-gold'],['Serie 2°','6 pts','text-gold'],['Serie 3°','4 pts','text-gold'],['Serie 4°','2 pts','text-gold'],
+                  {[['Serie 1°','8 pts','text-orange'],['Serie 2°','6 pts','text-orange'],['Serie 3°','4 pts','text-orange'],['Serie 4°','2 pts','text-orange'],
                     ['Cruce ganador','3 pts','text-blue-400'],['Cruce perdedor','1 pt','text-blue-400'],
                     ['Final ganador','5 pts','text-purple-400'],['Final perdedor','2 pts','text-purple-400']
                   ].map(([label, pts, color]) => (
                     <div key={label} className="text-center">
-                      <p className="text-chalk/40">{label}</p>
+                      <p className="text-silver-light/40">{label}</p>
                       <p className={`${color} text-lg font-bold`}>{pts}</p>
                     </div>
                   ))}
@@ -303,20 +304,20 @@ export default function ConfigTorneoPage() {
         {tipoConfig === 'departamental' && (
           <>
             <div className="card space-y-3">
-              <h2 className="font-display text-lg text-chalk">Plantillas predefinidas</h2>
+              <h2 className="font-display text-lg text-silver-light">Plantillas predefinidas</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {PLANTILLAS_DEP.map(p => (
                   <button key={p.nombre} onClick={() => { setConfigDep(p.config); setSaved(false); setError(''); }}
-                    className="text-left p-3 rounded-lg border border-felt-light/20 hover:border-gold/40 transition-all space-y-1">
-                    <p className="text-chalk/80 text-sm font-semibold">{p.nombre}</p>
-                    <p className="text-chalk/40 text-xs font-mono">M:{p.config.cantMaster} P:{p.config.cantPrimera} S:{p.config.cantSegunda} C:{p.config.cuposDesdeClasif}</p>
+                    className="text-left p-3 rounded-lg border border-silver-muted/20 hover:border-orange/40 transition-all space-y-1">
+                    <p className="text-silver-light/80 text-sm font-semibold">{p.nombre}</p>
+                    <p className="text-silver-light/40 text-xs font-mono">M:{p.config.cantMaster} P:{p.config.cantPrimera} S:{p.config.cantSegunda} C:{p.config.cuposDesdeClasif}</p>
                   </button>
                 ))}
               </div>
             </div>
 
             <div className="card space-y-4">
-              <h2 className="font-display text-lg text-chalk">Parámetros del torneo</h2>
+              <h2 className="font-display text-lg text-silver-light">Parámetros del torneo</h2>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
                   { key: 'cantMaster', label: 'Máster', pos: `1-${configDep.cantMaster}`, hint: 'Entran directo a la Final' },
@@ -325,20 +326,20 @@ export default function ConfigTorneoPage() {
                   { key: 'cuposDesdeClasif', label: 'Cupos desde Clasif.', pos: '', hint: 'Pasan a Segunda tras la Reducción' },
                 ].map(({ key, label, pos, hint }) => (
                   <div key={key}>
-                    <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">
-                      {label} {pos && <span className="ml-1 text-gold/50">(pos {pos})</span>}
+                    <label className="block text-silver-light/60 text-xs uppercase tracking-widest mb-1.5">
+                      {label} {pos && <span className="ml-1 text-orange/50">(pos {pos})</span>}
                     </label>
                     <input type="number" min="4" max="64" step="4" className="input"
                       value={(configDep as any)[key]}
                       onChange={e => { setConfigDep({ ...configDep, [key]: Number(e.target.value) }); setSaved(false); }} />
-                    <p className="text-chalk/30 text-xs mt-1">{hint}</p>
+                    <p className="text-silver-light/30 text-xs mt-1">{hint}</p>
                   </div>
                 ))}
               </div>
             </div>
 
             <div className="card space-y-4">
-              <h2 className="font-display text-lg text-chalk">Vista previa de la estructura</h2>
+              <h2 className="font-display text-lg text-silver-light">Vista previa de la estructura</h2>
               {val.alertas.length > 0 && (
                 <div className="space-y-2">
                   {val.alertas.map((a, i) => (
@@ -349,27 +350,27 @@ export default function ConfigTorneoPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
                   { label: 'Clasificatorio', color: 'text-green-400', border: 'border-green-700/20', rows: [['Jugadores', val.jugClasif],['Series', val.seriesClasif],['Clasificados', val.clasifTotal],['Reducción', val.necesitaReduccion ? '⚠️ Sí' : '✓ No'],['Pasan', configDep.cuposDesdeClasif]] },
-                  { label: 'Segunda', color: 'text-orange-400', border: val.segundaValida ? 'border-orange-700/20' : 'border-red-700/40', rows: [['Directos', configDep.cantSegunda],['Del Clasif.', configDep.cuposDesdeClasif],['Total', `${val.jugSegunda} ${val.segundaValida ? '✓' : '✗'}`],['Series', val.seriesSegunda],['Pasan', val.clasifSegunda]] },
+                  { label: 'Segunda', color: 'text-orange-light', border: val.segundaValida ? 'border-orange-dark/20' : 'border-red-700/40', rows: [['Directos', configDep.cantSegunda],['Del Clasif.', configDep.cuposDesdeClasif],['Total', `${val.jugSegunda} ${val.segundaValida ? '✓' : '✗'}`],['Series', val.seriesSegunda],['Pasan', val.clasifSegunda]] },
                   { label: 'Primera', color: 'text-blue-400', border: 'border-blue-700/20', rows: [['Directos', configDep.cantPrimera],['De Segunda', val.clasifSegunda],['Total', val.jugPrimera],['Cruces', val.crucesPrimera],['Pasan', val.clasifPrimera]] },
                   { label: 'Máster', color: 'text-purple-400', border: 'border-purple-700/20', rows: [['Directos', configDep.cantMaster],['De Primera', val.clasifPrimera],['Total bracket', val.jugMaster],['Primer round', `${Math.floor(val.jugMaster/2)} cruces`]] },
                 ].map(({ label, color, border, rows }) => (
-                  <div key={label} className={`bg-felt-dark/40 rounded-lg p-4 border ${border}`}>
+                  <div key={label} className={`bg-carbon-100/40 rounded-lg p-4 border ${border}`}>
                     <p className={`${color} font-display text-sm uppercase tracking-widest mb-3`}>{label}</p>
                     <div className="space-y-1 text-sm font-mono">
                       {rows.map(([k, v]) => (
                         <div key={String(k)} className="flex justify-between">
-                          <span className="text-chalk/50">{k}</span>
-                          <span className="text-chalk">{v}</span>
+                          <span className="text-silver-light/50">{k}</span>
+                          <span className="text-silver-light">{v}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="flex items-center justify-between bg-felt-dark/20 rounded-lg px-4 py-3">
+              <div className="flex items-center justify-between bg-carbon-100/20 rounded-lg px-4 py-3">
                 <div className="flex gap-6 text-sm font-mono">
-                  <span className="text-chalk/50">Total configurado: <span className="text-chalk">{configDep.cantMaster + configDep.cantPrimera + configDep.cantSegunda + val.jugClasif}</span></span>
-                  {totalInscriptos > 0 && <span className="text-chalk/50">Inscriptos: <span className="text-chalk">{totalInscriptos}</span></span>}
+                  <span className="text-silver-light/50">Total configurado: <span className="text-silver-light">{configDep.cantMaster + configDep.cantPrimera + configDep.cantSegunda + val.jugClasif}</span></span>
+                  {totalInscriptos > 0 && <span className="text-silver-light/50">Inscriptos: <span className="text-silver-light">{totalInscriptos}</span></span>}
                 </div>
                 <div className={`text-sm font-semibold ${val.ok ? 'text-green-400' : 'text-red-400'}`}>
                   {val.ok ? '✅ Configuración válida' : '❌ Hay errores'}
@@ -385,7 +386,7 @@ export default function ConfigTorneoPage() {
           <button className="btn-primary px-10" disabled={saving || !canSave || !circuitId} onClick={handleSave}>
             {saving ? 'Guardando...' : saved ? '✅ Guardado' : '💾 Guardar configuración'}
           </button>
-          {tipoConfig === 'departamental' && !val.ok && <p className="text-chalk/40 text-sm">Corregí los errores antes de guardar</p>}
+          {tipoConfig === 'departamental' && !val.ok && <p className="text-silver-light/40 text-sm">Corregí los errores antes de guardar</p>}
           {saved && <p className="text-green-400 text-sm">La configuración se aplicará al generar los partidos</p>}
         </div>
 
