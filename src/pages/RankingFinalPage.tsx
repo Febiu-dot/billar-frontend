@@ -103,7 +103,7 @@ export default function RankingFinalPage() {
 
   const handleRecalcular = async () => {
     if (!selectedCircuit) return;
-    if (!confirm(`¿Recalcular el ranking del ${circuitName} con el nuevo sistema de desempate?\n\nEsto aplica el criterio de porcentaje de sets y tantos en lugar de acumulados absolutos.`)) return;
+    if (!confirm(`¿Aplicar el Criterio Oficial al ranking del ${circuitName}?\n\nOrdena por: Puntos → Diferencia de sets → Promedio de tantos.`)) return;
     setRecalculando(true); setRecalcularMsg('');
     try {
       const res = await api.post(`/rankings/recalcular-stats/${selectedCircuit}`);
@@ -247,7 +247,7 @@ export default function RankingFinalPage() {
                     disabled={recalculando}
                     onClick={handleRecalcular}
                   >
-                    {recalculando ? 'Recalculando...' : '🔄 Recalcular ranking (nuevo criterio)'}
+                    {recalculando ? 'Aplicando...' : '🔄 Aplicar Criterio Oficial'}
                   </button>
                   {recalcularMsg && (
                     <span className={`text-sm ${recalcularMsg.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>
@@ -255,12 +255,12 @@ export default function RankingFinalPage() {
                     </span>
                   )}
                   <p className="text-chalk/30 text-xs text-center">
-                    Aplica el desempate por % de sets y tantos (Alternativa 4)
+                    Ordena por: Puntos → Diferencia de sets → Promedio de tantos
                   </p>
                 </div>
 
-                {/* Botón generar bracket — solo para Nacional */}
-                {esNacional && (
+                {/* Botón generar bracket — oculto, se genera automático */}
+                {false && esNacional && (
                   <div className="flex flex-col items-center gap-1 w-full max-w-sm">
                     <button className="btn-primary px-6 w-full" disabled={generandoBracket} onClick={handleGenerarBracket}>
                       {generandoBracket ? 'Generando...' : '🏆 Generar bracket de cruces (top 16)'}
@@ -276,8 +276,8 @@ export default function RankingFinalPage() {
                   </div>
                 )}
 
-                {/* Botón Iniciar Circuito 2 — solo para Nacional */}
-                {esNacional && (
+                {/* Botón Iniciar Circuito 2 — oculto, se carga por CSV */}
+                {false && esNacional && (
                   <div className="flex flex-col items-center gap-1 w-full max-w-sm">
                     <button className="btn-primary px-6 w-full" style={{background:'linear-gradient(90deg,#014f86,#0277bd)'}} disabled={iniciandoC2} onClick={handleIniciarC2}>
                       {iniciandoC2 ? 'Iniciando...' : '🚀 Iniciar Circuito 2 con este ranking'}
