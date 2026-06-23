@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
 import { Match, Table, MatchStatus } from '../types';
@@ -9,6 +10,7 @@ interface Circuit    { id: number; name: string; tournamentId: number; }
 interface SetScore   { a: string; b: string; saved: boolean; }
 
 export default function MatchesPage() {
+  const { user } = useAuth();
   const [matches, setMatches]         = useState<Match[]>([]);
   const [tables, setTables]           = useState<Table[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -339,9 +341,19 @@ export default function MatchesPage() {
                       </button>
                     )}
                     {(m.status === 'finalizado' || m.status === 'wo') && m.result?.winnerId && (
-                      <span className="text-xs text-green-400 font-semibold">
-                        🏆 {playerName(m.result.winnerId === m.playerAId ? m.playerA : m.playerB)}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-green-400 font-semibold">
+                          🏆 {playerName(m.result.winnerId === m.playerAId ? m.playerA : m.playerB)}
+                        </span>
+                        {user?.role === 'admin' && (
+                          <button
+                            className="py-0.5 px-2 text-xs rounded border border-orange/40 text-orange hover:bg-orange/10 transition-all font-semibold"
+                            onClick={() => { openResultModal(m); }}
+                          >
+                            ✏️ Editar
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
