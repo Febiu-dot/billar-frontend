@@ -38,6 +38,33 @@ const CAT_LABEL: Record<string, string> = {
   tercera: 'Tercera',
 };
 
+const exportarExcel = (ranking: any[], torneoNombre: string) => {
+  const headers = ['#','Apellido','Nombre','Club','Categoría','Pts','Sets G','Sets P','Dif Sets','Tantos F','Tantos C','Prom Tantos'];
+  const rows = ranking.map(e => [
+    e.position,
+    e.player?.lastName ?? '',
+    e.player?.firstName ?? '',
+    e.player?.club ?? '',
+    e.player?.category?.name ?? '',
+    e.points,
+    e.setsWon,
+    e.setsLost,
+    e.setsWon - e.setsLost,
+    e.pointsFor,
+    e.pointsAgainst,
+    e.pointsAgainst > 0 ? (e.pointsFor / e.pointsAgainst).toFixed(4) : '—',
+  ]);
+  const csv = [headers, ...rows].map(r => r.join(',')).join('
+');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ranking-acumulado-${torneoNombre.toLowerCase().replace(/\s+/g,'-')}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
 export default function RankingAcumuladoPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [selectedTournament, setSelectedTournament] = useState('');
@@ -140,6 +167,12 @@ export default function RankingAcumuladoPage() {
                 Incluye: {info.circuitos || `Circuito ${info.lastOrder}`}
               </span>
               <span className="text-chalk/30 text-xs ml-auto">{ranking.length} jugadores</span>
+              <button
+                onClick={() => exportarExcel(ranking, torneoNombre)}
+                className="ml-2 px-3 py-1 rounded-lg text-xs font-semibold border border-green-700/40 text-green-400 hover:bg-green-900/20 transition-all"
+              >
+                ⬇ Excel
+              </button>
             </div>
 
             {/* Filtros por categoría */}
