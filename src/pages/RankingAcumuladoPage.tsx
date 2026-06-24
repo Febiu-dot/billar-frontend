@@ -54,8 +54,7 @@ const exportarExcel = (ranking: any[], torneoNombre: string) => {
     e.pointsAgainst,
     e.pointsAgainst > 0 ? (e.pointsFor / e.pointsAgainst).toFixed(4) : '—',
   ]);
-  const csv = [headers, ...rows].map(r => r.join(',')).join('
-');
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
