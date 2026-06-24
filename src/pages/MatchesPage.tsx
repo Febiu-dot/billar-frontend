@@ -162,6 +162,17 @@ export default function MatchesPage() {
       setResError(`Set ${index + 1}: el ganador debe llegar a ${pointsPerSet} tantos y tener más que el rival`);
       return;
     }
+
+    const eraFinalizado = resultModal.status === 'finalizado' || resultModal.status === 'wo';
+
+    if (eraFinalizado) {
+      // Para partidos finalizados: solo actualizar estado local, sin llamar al backend
+      const newSets = sets.map((set, i) => i === index ? { ...set, saved: true } : set);
+      setSets(newSets);
+      setResError('');
+      return;
+    }
+
     setSavingSet(index);
     setResError('');
     try {
@@ -497,7 +508,7 @@ export default function MatchesPage() {
 
               <div className="flex gap-3 pt-2">
                 <button type="submit" className="btn-primary flex-1" disabled={resSaving || (!isWO && !matchHasWinner)}>
-                  {resSaving ? 'Cerrando...' : matchHasWinner || isWO ? '✓ Cerrar Partido' : 'Partido en curso...'}
+                  {resSaving ? 'Guardando...' : (resultModal?.status === 'finalizado' || resultModal?.status === 'wo') ? (matchHasWinner ? '✓ Guardar cambios' : 'Confirmar sets primero...') : matchHasWinner || isWO ? '✓ Cerrar Partido' : 'Partido en curso...'}
                 </button>
                 <button type="button" className="btn-secondary flex-1" onClick={() => setResultModal(null)}>Cerrar</button>
               </div>
