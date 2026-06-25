@@ -769,7 +769,7 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
           ? <span style={{color:'rgba(255,255,255,0.22)',fontStyle:'italic'}}>{jugador.nombre}</span>
           : jugador.nombre}
       </div>
-      {jugador.club && !jugador.esSlot && (
+      {badgeJugador(jugador) && !jugador.esSlot && (
         <div style={{
           background: isWinner ? 'rgba(255,255,255,0.13)' : 'rgba(255,255,255,0.06)',
           color: isWinner ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.32)',
@@ -777,7 +777,7 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
           fontFamily:"'Saira Condensed', sans-serif", letterSpacing:'0.07em',
           border:`1px solid ${isWinner?'rgba(255,255,255,0.22)':'rgba(255,255,255,0.07)'}`,
           position:'relative', zIndex:1,
-        }}>{jugador.club}</div>
+        }}>{badgeJugador(jugador)}</div>
       )}
     </div>
   );
