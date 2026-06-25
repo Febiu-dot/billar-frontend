@@ -898,7 +898,7 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
                       fontSize:22, fontWeight:900, letterSpacing:'0.08em',
                       fontFamily:"'Saira Condensed', sans-serif",
                       background:`linear-gradient(90deg, ${GOLDB}, ${CYAN})`,
-                      WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
+                      color: GOLDB,
                       textTransform:'uppercase',
                     }}>SERIE {s.numero}</span>
                   </div>
