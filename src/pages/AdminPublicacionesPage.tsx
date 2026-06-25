@@ -1865,7 +1865,7 @@ export default function AdminPublicacionesPage() {
               <select className="input" value={tipoFase} onChange={e => { setTipoFase(e.target.value); setPubData(null); }}>
                 {(() => {
                   const circSelec = circuitos.find((c: any) => String(c.id) === String(circuitId));
-                  const esNac = (circSelec?.esNacional ?? false) || /panamericano/i.test(circSelec?.torneoNombre ?? '');
+                  const esNac = (circSelec?.esNacional ?? false) || /panamericano/i.test(circSelec?.torneoNombre ?? ''); || /panamericano/i.test(circSelec?.torneoNombre ?? '');
                   const fasesNacional = ['inicial-nacional', 'series-nacional', 'ranking', 'cruces-nacional', 'bracket-nacional', 'ranking-acumulado-nacional'];
                   const fasesDep = FASES.filter(f => !['series-nacional','cruces-nacional','bracket-nacional','inicial-nacional'].includes(f.value));
                   const fasesNac = [
