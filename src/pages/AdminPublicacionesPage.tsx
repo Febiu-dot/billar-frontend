@@ -259,7 +259,7 @@ function PlantillaSeries({ data, tema }: { data: any; tema: any }) {
         <div key={i} style={{ display: 'flex', gap: 14, marginBottom: 14 }}>
           {par.map((s, si) => s ? (
             <div key={si} style={{ flex: 1, border: `2px solid ${tema.accent}`, borderRadius: 8, background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
-              <div style={{ background: tema.accent, color: '#fff', padding: '8px 16px', fontSize: 18, fontWeight: 900, letterSpacing: 3, borderRadius: '6px 6px 0 0' }}>SERIE {s.numero}</div>
+              <div style={{ background: tema.accent, color: '#fff', padding: '8px 16px', fontSize: 18, fontWeight: 900, letterSpacing: 3, borderRadius: '6px 6px 0 0' }}>}}>SERIE {s.numero}</span></div>
               {s.p1 && (<><div style={{ background: tema.light }}><JRow j={s.p1.jugadorA} tema={tema} border /><JRow j={s.p1.jugadorB} tema={tema} /></div><InfoPartido p={s.p1} tema={tema} label="P1" /></>)}
               {s.p2 && (<><div style={{ background: '#fff', borderTop: `2px solid ${tema.light}` }}><JRow j={s.p2.jugadorA} tema={tema} border /><JRow j={s.p2.jugadorB} tema={tema} /></div><InfoPartido p={s.p2} tema={tema} label="P2" /></>)}
             </div>
