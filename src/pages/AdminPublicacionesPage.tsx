@@ -715,7 +715,17 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
   const INK    = CV2 ? CV2.ink        : '#0a1a2e';
 
   /* ── jugador row ── */
-  const mkRow = (jugador: any, isWinner: boolean) => (
+  const PAIS_APOCOPE_FE: Record<string, string> = {
+    'Uruguay': 'URU', 'Argentina': 'ARG', 'Brasil': 'BRA', 'Brazil': 'BRA',
+    'Paraguay': 'PAR', 'Chile': 'CHI', 'Bolivia': 'BOL', 'Peru': 'PER',
+    'Perú': 'PER', 'Colombia': 'COL', 'Venezuela': 'VEN', 'Ecuador': 'ECU',
+  };
+  const apocPaisFE = (pais?: string | null): string =>
+    pais ? (PAIS_APOCOPE_FE[pais] ?? pais.slice(0, 3).toUpperCase()) : 'URU';
+  const badgeJugador = (jugador: any): string | null => {
+    if (data.esPanamericano) return apocPaisFE(jugador.pais);
+    return jugador.club ?? null;
+  };const mkRow = (jugador: any, isWinner: boolean) => (
     <div style={{
       display:'flex', alignItems:'center', padding:'9px 14px', gap:10,
       background: isWinner && !ocultarResultados
