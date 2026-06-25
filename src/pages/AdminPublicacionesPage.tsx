@@ -1851,7 +1851,7 @@ export default function AdminPublicacionesPage() {
               <select className="input" value={circuitId} onChange={e => {
                 const cId = e.target.value;
                 const circ = circuitos.find((c: any) => String(c.id) === String(cId));
-                const esNac = /nacional/i.test(circ?.torneoNombre ?? '');
+                const esNac = /nacional/i.test(circ?.torneoNombre ?? '') || /panamericano/i.test(circ?.torneoNombre ?? '');
                 setCircuitId(cId);
                 setTipoFase(esNac ? 'inicial-nacional' : 'clasificatorio');
                 setPubData(null);
