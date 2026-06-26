@@ -176,7 +176,7 @@ function PubHeader({ data, tema }: { data: any; tema: any }) {
               overflow: 'hidden', position: 'relative', zIndex: 2, padding: 6,
               boxShadow: `0 6px 24px rgba(0,0,0,0.5)`,
             }}>
-              <img src={LOGO_CPB_B64} alt="CPB" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              <img src={`data:image/png;base64,${LOGO_CPB_B64}`} alt="CPB" crossOrigin="anonymous" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
           </div>
         )}
