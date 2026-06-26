@@ -934,6 +934,7 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
                       padding:'3px 14px', borderRadius:6,
                       boxShadow:`0 2px 10px ${GOLDD}66, inset 0 1px 0 rgba(255,255,255,0.4)`,
                       textTransform:'uppercase',
+                      whiteSpace:'nowrap', display:'inline-block', lineHeight:1.1,
                     }}>SERIE {s.numero}</span>
                   </div>
                   {s.completa && !ocultarResultados && (
