@@ -223,6 +223,7 @@ function PubHeader({ data, tema }: { data: any; tema: any }) {
               fontSize: 14, fontWeight: 800, letterSpacing: '0.16em',
               color: CV2.goldBright,
               boxShadow: `0 0 16px ${CV2.goldDeep}44`,
+              whiteSpace: 'nowrap',
             }}>PARTIDAS A {data.formato.toUpperCase()}</div>
           )}
         </div>
@@ -247,7 +248,7 @@ function PubHeader({ data, tema }: { data: any; tema: any }) {
         <div style={{ fontSize: 22, fontWeight: 600, marginTop: 6, letterSpacing: 2, opacity: 0.9 }}>{data.esPanamericano ? `CONFEDERACIÓN PANAMERICANA DE BILLAR ${data.temporada}` : `FEBIU · TEMPORADA ${data.temporada}`}</div>
         <div style={{ fontSize: 32, fontWeight: 900, marginTop: 16, letterSpacing: 4, textTransform: 'uppercase', lineHeight: 1.1 }}>{faseMostrar}</div>
         {data.fechaPrincipal && <div style={{ fontSize: 20, marginTop: 8, opacity: 0.9, textTransform: 'uppercase', letterSpacing: 1 }}>{data.fechaPrincipal}</div>}
-        {data.formato && <div style={{ marginTop: 14, background: 'rgba(255,255,255,0.2)', borderRadius: 6, padding: '8px 24px', display: 'inline-block', fontSize: 20, fontWeight: 700, letterSpacing: 2 }}>PARTIDAS A {data.formato.toUpperCase()}</div>}
+        {data.formato && <div style={{ marginTop: 14, background: 'rgba(255,255,255,0.2)', borderRadius: 6, padding: '8px 24px', display: 'inline-block', fontSize: 20, fontWeight: 700, letterSpacing: 2, whiteSpace: 'nowrap' }}>PARTIDAS A {data.formato.toUpperCase()}</div>}
       </div>
     </div>
   );
