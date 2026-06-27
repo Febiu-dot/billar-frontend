@@ -863,6 +863,7 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
             fontWeight:800, fontSize:10.5,
             fontFamily:"'Saira Condensed', sans-serif",
             letterSpacing:'0.16em', color:CYANSOFT, flexShrink:0,
+            whiteSpace:'nowrap',
           }}>{label}</span>
           {(p.hora||p.sede) && (
             <span style={{
@@ -947,11 +948,11 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
                 }}>
                   <div style={{display:'flex', alignItems:'center', gap:10}}>
                     <span style={{
-                      fontSize:16, fontWeight:900, letterSpacing:'0.06em',
+                      fontSize:16, fontWeight:900, letterSpacing:'0.04em',
                       fontFamily:"'Saira Condensed', sans-serif",
                       background:`linear-gradient(135deg, ${GOLDB}, ${GOLDD})`,
                       color: INK,
-                      padding:'4px 18px', borderRadius:6,
+                      padding:'4px 24px 4px 18px', borderRadius:6,
                       boxShadow:`0 2px 10px ${GOLDD}66, inset 0 1px 0 rgba(255,255,255,0.4)`,
                       textTransform:'uppercase',
                       whiteSpace:'nowrap', display:'inline-block', lineHeight:1.3,
