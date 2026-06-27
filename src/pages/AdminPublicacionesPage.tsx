@@ -88,6 +88,11 @@ const cargarHtmlToImage = (): Promise<any> =>
 
 // ── Componentes base ──────────────────────────────────────────────────
 function PubHeader({ data, tema }: { data: any; tema: any }) {
+  // En Panamericano, el subtítulo no debe repetir "TORNEO PANAMERICANO"
+  // (ya figura arriba). Se reemplaza por "CATEGORÍA MÁXIMA".
+  const faseMostrar: string = data.esPanamericano && typeof data.fase === 'string'
+    ? data.fase.replace(/TORNEO\s+PANAMERICANO/gi, 'CATEGORÍA MÁXIMA')
+    : data.fase;
   // Si es torneo nacional, usar paleta V2 premium
   if (data.categoriaFederal) {
     const CV2 = getCatV2(data.categoriaFederal);
@@ -200,7 +205,7 @@ function PubHeader({ data, tema }: { data: any; tema: any }) {
             fontWeight: 700, fontSize: 20, marginTop: 10,
             letterSpacing: '0.28em', textTransform: 'uppercase',
             color: 'rgba(255,255,255,0.88)', textIndent: '0.28em',
-          }}>{data.fase}</div>
+          }}>{faseMostrar}</div>
           {data.fechaPrincipal && (
             <div style={{
               fontFamily: "'Rajdhani', sans-serif",
@@ -240,7 +245,7 @@ function PubHeader({ data, tema }: { data: any; tema: any }) {
       <div style={{ flex: 1, textAlign: 'center', color: '#fff' }}>
         <div style={{ fontSize: 38, fontWeight: 900, letterSpacing: 3, textTransform: 'uppercase', lineHeight: 1.1 }}>{data.torneo}</div>
         <div style={{ fontSize: 22, fontWeight: 600, marginTop: 6, letterSpacing: 2, opacity: 0.9 }}>{data.esPanamericano ? `CONFEDERACIÓN PANAMERICANA DE BILLAR ${data.temporada}` : `FEBIU · TEMPORADA ${data.temporada}`}</div>
-        <div style={{ fontSize: 32, fontWeight: 900, marginTop: 16, letterSpacing: 4, textTransform: 'uppercase', lineHeight: 1.1 }}>{data.fase}</div>
+        <div style={{ fontSize: 32, fontWeight: 900, marginTop: 16, letterSpacing: 4, textTransform: 'uppercase', lineHeight: 1.1 }}>{faseMostrar}</div>
         {data.fechaPrincipal && <div style={{ fontSize: 20, marginTop: 8, opacity: 0.9, textTransform: 'uppercase', letterSpacing: 1 }}>{data.fechaPrincipal}</div>}
         {data.formato && <div style={{ marginTop: 14, background: 'rgba(255,255,255,0.2)', borderRadius: 6, padding: '8px 24px', display: 'inline-block', fontSize: 20, fontWeight: 700, letterSpacing: 2 }}>PARTIDAS A {data.formato.toUpperCase()}</div>}
       </div>
@@ -940,25 +945,17 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
                   display:'flex', justifyContent:'space-between', alignItems:'center',
                 }}>
                   <div style={{display:'flex', alignItems:'center', gap:10}}>
-                    <div style={{
-                      width:36, height:36, borderRadius:8, flexShrink:0,
-                      background:`linear-gradient(135deg, ${GOLDB}, ${GOLD}, ${GOLDD})`,
-                      color:INK, display:'flex', alignItems:'center', justifyContent:'center',
-                      fontSize:18, fontWeight:900,
-                      fontFamily:"'Saira Condensed', sans-serif",
-                      boxShadow:`0 3px 12px ${GOLDD}88, inset 0 1px 0 rgba(255,255,255,0.45)`,
-                      letterSpacing:'0.02em',
-                    }}>{s.numero}</div>
                     <span style={{
                       fontSize:20, fontWeight:900, letterSpacing:'0.10em',
                       fontFamily:"'Saira Condensed', sans-serif",
                       background:`linear-gradient(135deg, ${GOLDB}, ${GOLDD})`,
                       color: INK,
-                      padding:'3px 14px', borderRadius:6,
+                      padding:'4px 22px', borderRadius:6,
                       boxShadow:`0 2px 10px ${GOLDD}66, inset 0 1px 0 rgba(255,255,255,0.4)`,
                       textTransform:'uppercase',
-                      whiteSpace:'nowrap', display:'inline-block', lineHeight:1.1,
-                    }}>SERIE</span>
+                      whiteSpace:'nowrap', display:'inline-block', lineHeight:1.2,
+                      overflow:'visible',
+                    }}>SERIE {s.numero}</span>
                   </div>
                   {s.completa && !ocultarResultados && (
                     <span style={{
