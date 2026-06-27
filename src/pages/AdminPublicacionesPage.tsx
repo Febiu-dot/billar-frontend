@@ -947,14 +947,14 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
                 }}>
                   <div style={{display:'flex', alignItems:'center', gap:10}}>
                     <span style={{
-                      fontSize:20, fontWeight:900, letterSpacing:'0.10em',
+                      fontSize:16, fontWeight:900, letterSpacing:'0.06em',
                       fontFamily:"'Saira Condensed', sans-serif",
                       background:`linear-gradient(135deg, ${GOLDB}, ${GOLDD})`,
                       color: INK,
-                      padding:'4px 22px', borderRadius:6,
+                      padding:'4px 18px', borderRadius:6,
                       boxShadow:`0 2px 10px ${GOLDD}66, inset 0 1px 0 rgba(255,255,255,0.4)`,
                       textTransform:'uppercase',
-                      whiteSpace:'nowrap', display:'inline-block', lineHeight:1.2,
+                      whiteSpace:'nowrap', display:'inline-block', lineHeight:1.3,
                       overflow:'visible',
                     }}>SERIE {s.numero}</span>
                   </div>
@@ -972,8 +972,8 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
                 </div>
 
                 {/* Partidos */}
-                <PartidoRow p={s.p1} label="P1 · PARTIDO 1" />
-                <PartidoRow p={s.p2} label="P2 · PARTIDO 2" />
+                <PartidoRow p={s.p1} label="PARTIDO 1" />
+                <PartidoRow p={s.p2} label="PARTIDO 2" />
 
                 {/* Clasificación final */}
                 {s.completa && !ocultarResultados && (
