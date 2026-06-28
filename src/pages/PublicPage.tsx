@@ -25,7 +25,7 @@ function SeccionNacional() {
 
   useEffect(() => {
     api.get('/publicaciones/circuitos').then(r => {
-      const nac = (r.data as any[]).filter(t => /nacional/i.test(t.name));
+      const nac = (r.data as any[]).filter(t => /nacional/i.test(t.name) || /panamericano/i.test(t.name));
       setTorneos(nac);
     }).catch(() => {});
   }, []);
