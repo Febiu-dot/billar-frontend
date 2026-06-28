@@ -1215,16 +1215,61 @@ function PlantillaCrucesNacional({ data }: { data: any }) {
 
 
       <div style={{position:'relative',zIndex:1}}>
-        {/* OCTAVOS */}
-        <RondaHeader label="OCTAVOS DE FINAL" n={8} />
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-          {octavos.map((p,i) => <PartidoCard key={i} p={p} rondaLabel={`OCT · PARTIDO ${i+1}`} />)}
-        </div>
+        {/* Bracket de 16 muestra octavos; el de 8 (panamericano) arranca en cuartos */}
+        {data.tamano !== 8 && (
+          <>
+            <RondaHeader label="OCTAVOS DE FINAL" n={8} />
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              {octavos.map((p,i) => <PartidoCard key={`oct${i}`} p={p} rondaLabel={`OCT · PARTIDO ${i+1}`} />)}
+            </div>
+          </>
+        )}
+
+        {/* CUARTOS */}
+        {cuartos.some((p:any) => p) && (
+          <>
+            <RondaHeader label="CUARTOS DE FINAL" n={4} />
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              {cuartos.map((p,i) => <PartidoCard key={`cua${i}`} p={p} rondaLabel={`CUA · PARTIDO ${i+1}`} />)}
+            </div>
+          </>
+        )}
+
+        {/* SEMIFINALES */}
+        {semis.some((p:any) => p) && (
+          <>
+            <RondaHeader label="SEMIFINALES" n={2} />
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              {semis.map((p,i) => <PartidoCard key={`sem${i}`} p={p} rondaLabel={`SEMI · PARTIDO ${i+1}`} />)}
+            </div>
+          </>
+        )}
+
+        {/* FINAL */}
+        {final && (
+          <>
+            <RondaHeader label="FINAL" n={1} />
+            <div style={{display:'grid',gridTemplateColumns:'1fr',gap:10}}>
+              <PartidoCard p={final} rondaLabel="GRAN FINAL" />
+            </div>
+          </>
+        )}
+
+        {/* CAMPEÓN */}
+        {campeon && (
+          <div style={{
+            marginTop:20, padding:'16px 20px', borderRadius:12, textAlign:'center',
+            background:`linear-gradient(135deg, ${CV2.goldDeep}22, ${CV2.goldBright}11)`,
+            border:`1.5px solid ${CV2.goldBright}66`,
+          }}>
+            <div style={{fontSize:11,letterSpacing:'0.28em',color:CV2.cyanSoft,fontFamily:"'Saira Condensed', sans-serif",textTransform:'uppercase',marginBottom:4}}>CAMPEÓN</div>
+            <div style={{fontSize:22,fontWeight:900,color:'#fff',fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.04em'}}>🏆 {campeon.nombre}</div>
+          </div>
+        )}
 
         {/* Footer */}
         <div style={{display:'flex',alignItems:'center',gap:12,marginTop:20}}>
           <div style={{flex:1,height:1,background:`linear-gradient(90deg,transparent,${CV2.cyanSoft}44,transparent)`}} />
-          <span style={{fontSize:11,color:CV2.cyanSoft,fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.28em',opacity:0.6,textTransform:'uppercase'}}>FEBIU · TORNEO NACIONAL</span>
           <div style={{flex:1,height:1,background:`linear-gradient(90deg,transparent,${CV2.cyanSoft}44,transparent)`}} />
         </div>
       </div>
@@ -1661,7 +1706,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
-const BUILD_TAG = 'pub-2026-06-28-footer';
+const BUILD_TAG = 'pub-2026-06-28-cruces';
 
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
