@@ -1162,6 +1162,7 @@ function PlantillaCrucesNacional({ data }: { data: any }) {
           <span style={{
             fontFamily:"'Saira Condensed', sans-serif", fontWeight:800, fontSize:12,
             color:CV2.cyanSoft, letterSpacing:'0.16em', textTransform:'uppercase', textAlign:'center',
+            whiteSpace:'nowrap',
           }}>{rondaLabel}</span>
         </div>
         <JugRow jug={jugA} isWinner={winA} />
@@ -1665,7 +1666,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
-const BUILD_TAG = 'pub-2026-06-28-cuartos2';
+const BUILD_TAG = 'pub-2026-06-28-nowrap';
 
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
