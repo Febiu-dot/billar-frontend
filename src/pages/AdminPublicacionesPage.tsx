@@ -1108,15 +1108,26 @@ function PlantillaCrucesNacional({ data }: { data: any }) {
           fontFamily:"'Rajdhani', sans-serif", letterSpacing:'0.01em',
           wordBreak:'break-word', lineHeight:1.2, position:'relative', zIndex:1,
         }}>{jug.nombre}</div>
-        {jug.club && (
+        {jug.pais && (
           <div style={{
-            background: isWinner ? 'rgba(255,255,255,0.13)' : 'rgba(255,255,255,0.06)',
-            color: isWinner ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)',
-            padding:'2px 7px', borderRadius:4, fontSize:10, fontWeight:800, flexShrink:0,
-            fontFamily:"'Saira Condensed', sans-serif", letterSpacing:'0.07em',
-            border:`1px solid ${isWinner?'rgba(255,255,255,0.20)':'rgba(255,255,255,0.06)'}`,
+            display:'flex', alignItems:'center', gap:5, flexShrink:0,
             position:'relative', zIndex:1,
-          }}>{jug.club}</div>
+          }}>
+            {banderaPaisG(jug.pais) && (
+              <img
+                src={`data:image/png;base64,${banderaPaisG(jug.pais)}`}
+                alt={apocPaisG(jug.pais)}
+                style={{ width:22, height:14, objectFit:'cover', borderRadius:2, display:'block' }}
+              />
+            )}
+            <span style={{
+              background: isWinner ? 'rgba(255,255,255,0.13)' : 'rgba(255,255,255,0.06)',
+              color: isWinner ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.45)',
+              padding:'2px 7px', borderRadius:4, fontSize:10, fontWeight:800,
+              fontFamily:"'Saira Condensed', sans-serif", letterSpacing:'0.07em',
+              border:`1px solid ${isWinner?'rgba(255,255,255,0.20)':'rgba(255,255,255,0.06)'}`,
+            }}>{apocPaisG(jug.pais)}</span>
+          </div>
         )}
         {jugado && (
           <div style={{
@@ -1146,29 +1157,12 @@ function PlantillaCrucesNacional({ data }: { data: any }) {
           background:`linear-gradient(90deg,${CV2.navy2}f0,${CV2.petrol}cc,${CV2.navy}aa)`,
           borderBottom:`1.5px solid ${CV2.goldDeep}77`,
           padding:'8px 14px',
-          display:'flex', justifyContent:'space-between', alignItems:'center',
+          display:'flex', justifyContent:'center', alignItems:'center', gap:8,
         }}>
           <span style={{
-            fontFamily:"'Saira Condensed', sans-serif", fontWeight:800, fontSize:11,
-            color:CV2.cyanSoft, letterSpacing:'0.16em', textTransform:'uppercase',
+            fontFamily:"'Saira Condensed', sans-serif", fontWeight:800, fontSize:12,
+            color:CV2.cyanSoft, letterSpacing:'0.16em', textTransform:'uppercase', textAlign:'center',
           }}>{rondaLabel}</span>
-          <div style={{display:'flex', alignItems:'center', gap:8}}>
-            {p.hora && (
-              <span style={{fontSize:11,color:'rgba(255,255,255,0.45)',fontFamily:"'Rajdhani', sans-serif",display:'flex',alignItems:'center',gap:4}}>
-<span style={{fontSize:10,opacity:0.7}}>⏱</span>
-                {p.hora}
-              </span>
-            )}
-            {p.sede && <span style={{fontSize:10,color:'rgba(255,255,255,0.35)',fontFamily:"'Rajdhani', sans-serif",letterSpacing:'0.03em'}}>{p.sede}{p.mesa ? ` · M${p.mesa}` : ''}</span>}
-            {jugado && (
-              <span style={{
-                fontFamily:"'Saira Condensed', sans-serif", fontWeight:900, fontSize:16,
-                background:`linear-gradient(135deg,${CV2.goldBright},${CV2.gold},${CV2.goldDeep})`,
-                color:CV2.ink, padding:'2px 10px', borderRadius:5,
-                boxShadow:`0 2px 8px ${CV2.goldDeep}77`,letterSpacing:'0.04em',
-              }}>{p.resultado}</span>
-            )}
-          </div>
         </div>
         <JugRow jug={jugA} isWinner={winA} />
         <div style={{height:1,background:'rgba(255,255,255,0.04)',marginLeft:14}} />
@@ -1227,7 +1221,7 @@ function PlantillaCrucesNacional({ data }: { data: any }) {
           <>
             <RondaHeader label="CUARTOS DE FINAL" n={4} />
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-              {cuartos.map((p,i) => <PartidoCard key={`cua${i}`} p={p} rondaLabel={`CUA · PARTIDO ${i+1}`} />)}
+              {cuartos.map((p,i) => <PartidoCard key={`cua${i}`} p={p} rondaLabel={`PARTIDO ${i+1}`} />)}
             </div>
           </>
         )}
@@ -1671,7 +1665,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
-const BUILD_TAG = 'pub-2026-06-28-cuartos';
+const BUILD_TAG = 'pub-2026-06-28-cuartos2';
 
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
