@@ -1285,6 +1285,20 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
   const C    = getCatV2(data.categoriaFederal);
   const es8  = data.tamano === 8; // ← bracket arranca en cuartos (8 jugadores)
 
+  // Subtítulo dinámico del header: se deriva de la categoría del torneo.
+  // categoriaFederal del backend solo distingue primera/segunda/tercera (Máster/Juvenil/Femenino caen en "primera"),
+  // por eso usamos data.torneo (nombre completo del torneo) para detectar la categoría real del Panamericano.
+  const subtituloBracket: string = (() => {
+    const t = (data.torneo ?? '').toLowerCase();
+    if (/m[áa]ster|m[áa]xima/.test(t)) return 'Categoría Máster';
+    if (/femenin/.test(t))             return 'Categoría Femenino';
+    if (/juvenil/.test(t))             return 'Categoría Juvenil';
+    if (/segunda/.test(t))             return 'Categoría Segunda';
+    if (/tercera/.test(t))             return 'Categoría Tercera';
+    if (/primera/.test(t))             return 'Categoría Primera';
+    return 'Bracket Final';
+  })();
+
   const getName = (m: any, side: 'A' | 'B'): string => {
     if (!m) return '';
     const p = side === 'A' ? m.playerA : m.playerB;
@@ -1407,13 +1421,24 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
   const clockSvg = `<svg class="clock" viewBox="0 0 24 24" fill="none" stroke="${C.ink}" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`;
   const clockSvgLight = `<svg class="clock" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2.2" style="width:14px;height:14px"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`;
 
+  const getPais = (m: any, side: 'A' | 'B'): string | null => {
+    if (!m) return null;
+    const p = side === 'A' ? m.playerA : m.playerB;
+    return p?.pais ?? null;
+  };
+
   const Seat = ({ m, side, isPlaceholder }: { m: any; side: 'A'|'B'; isPlaceholder?: boolean }) => {
     const name = getName(m, side);
     const win  = isWin(m, side);
     const empty = !name;
+    const pais  = getPais(m, side);
+    const flag  = data.esPanamericano && !empty ? banderaPaisG(pais) : null;
     return (
       <div className={`bk-seat${isPlaceholder||empty ? ' bk-placeholder' : ''}${win ? ' bk-winner' : ''}`}>
         <span className="dot"></span>
+        {flag && (
+          <img className="bk-flag" src={`data:image/png;base64,${flag}`} alt={apocPaisG(pais)} />
+        )}
         <span className="nm">{name || (isPlaceholder ? (side==='A'?m?.slotA:m?.slotB)||'—' : '—')}</span>
       </div>
     );
@@ -1485,6 +1510,8 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
         .bk-match::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:3px;background:linear-gradient(180deg,${C.cyan},${C.goldBright});box-shadow:0 0 8px rgba(95,212,255,.55);}
         .bk-seat{display:flex;align-items:center;gap:8px;background:linear-gradient(180deg,rgba(255,255,255,0.97),rgba(238,245,252,0.93));border:1px solid rgba(255,255,255,0.6);border-radius:8px;padding:8px 10px 8px 9px;box-shadow:0 2px 7px rgba(0,0,0,.18);min-height:36px;}
         .bk-seat .dot{width:6px;height:18px;border-radius:2px;flex:none;background:linear-gradient(180deg,${C.navy2},${C.petrol});box-shadow:inset 0 1px 0 rgba(255,255,255,.25);}
+        .bk-seat .bk-flag{width:20px;height:14px;flex:none;border-radius:2px;object-fit:cover;display:inline-block;box-shadow:0 0 0 1px rgba(0,0,0,.18),0 1px 2px rgba(0,0,0,.25);vertical-align:middle;}
+        .bk-champ-name .bk-flag-champ{width:22px;height:15px;border-radius:2px;margin-right:8px;box-shadow:0 0 0 1px rgba(0,0,0,.25),0 1px 3px rgba(0,0,0,.35);vertical-align:middle;}
         .bk-seat.bk-placeholder{background:linear-gradient(180deg,rgba(20,52,90,0.55),rgba(13,38,70,0.5));border:1px dashed rgba(143,227,255,0.35);box-shadow:none;}
         .bk-seat.bk-placeholder .dot{background:linear-gradient(180deg,${C.gold},${C.goldDeep});}
         .bk-seat .nm{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:.01em;color:${C.ink};line-height:1.1;flex:1;min-width:0;white-space:normal;word-break:break-word;}
@@ -1514,7 +1541,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
         .bk-champ-card::before{content:"";position:absolute;inset:0;border-radius:12px;padding:1.5px;background:linear-gradient(135deg,${C.goldBright},${C.cyan},${C.goldDeep});-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;}
         .bk-champ-card .shine{position:absolute;top:0;left:-60%;width:50%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.22),transparent);transform:skewX(-18deg);animation:shine 5s ease-in-out infinite;}
         @keyframes shine{0%{left:-60%}55%{left:130%}100%{left:130%}}
-        .bk-champ-name{font-family:'Saira Condensed',sans-serif;font-weight:800;font-size:15px;color:${C.goldBright};letter-spacing:.06em;z-index:1;}
+        .bk-champ-name{font-family:'Saira Condensed',sans-serif;font-weight:800;font-size:15px;color:${C.goldBright};letter-spacing:.06em;z-index:1;display:inline-flex;align-items:center;}
         .bk-foot{position:relative;z-index:4;text-align:center;margin-top:20px;font-family:'Saira Condensed',sans-serif;letter-spacing:.5em;font-size:11px;color:rgba(143,227,255,.5);text-indent:.5em;}
         #bk-wires{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;}
       `}</style>
@@ -1532,7 +1559,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
               <div className="bk-headtext">
                 <div className="bk-kicker">Confederación Panamericana de Billar 2026</div>
                 <h1 className="bk-h1">Torneo Panamericano</h1>
-                <div className="bk-subtitle">Bracket Final</div>
+                <div className="bk-subtitle">{subtituloBracket}</div>
               </div>
               <img className="bk-hl" alt="CPB" src={`data:image/png;base64,${LOGO_CPB_B64}`} />
             </div>
@@ -1598,7 +1625,14 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
             <div className="bk-champ-label">Campeón</div>
             <div className="bk-champ-card">
               <div className="shine"></div>
-              {camp ? <span className="bk-champ-name">{camp.nombre}</span> : null}
+              {camp ? (
+                <span className="bk-champ-name">
+                  {data.esPanamericano && banderaPaisG(camp.pais) && (
+                    <img className="bk-flag bk-flag-champ" src={`data:image/png;base64,${banderaPaisG(camp.pais)}`} alt={apocPaisG(camp.pais)} />
+                  )}
+                  {camp.nombre}
+                </span>
+              ) : null}
             </div>
           </div>
         </div>
