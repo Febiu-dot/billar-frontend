@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { apocPais, banderaPais } from '../utils/banderas';
 
 interface Tournament { id: number; name: string; }
 interface Circuit    { id: number; name: string; tournamentId: number; order: number; }
@@ -35,16 +36,25 @@ const CAT_LABEL: Record<string, string> = {
   tercera: 'Tercera',
 };
 
-// Apócope de país (igual que en publicaciones)
-const APOC_PAIS: Record<string, string> = {
-  Uruguay: 'URU', Argentina: 'ARG', Brasil: 'BRA', Paraguay: 'PAR',
-  Chile: 'CHI', Bolivia: 'BOL', Peru: 'PER', Colombia: 'COL',
-  Venezuela: 'VEN', Ecuador: 'ECU', Mexico: 'MEX', Espana: 'ESP',
-};
-const apocPais = (pais?: string) => {
-  if (!pais) return '—';
-  return APOC_PAIS[pais] ?? pais.slice(0, 3).toUpperCase();
-};
+// Celda País: bandera + apócope (reusa utils/banderas)
+function CeldaPais({ pais }: { pais?: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <img
+        src={banderaPais(pais)}
+        alt={apocPais(pais)}
+        width={20}
+        height={13}
+        style={{
+          width: 20, height: 13, objectFit: 'cover',
+          borderRadius: 2, border: '1px solid rgba(255,255,255,0.15)',
+          flexShrink: 0,
+        }}
+      />
+      <span className="font-mono">{apocPais(pais)}</span>
+    </span>
+  );
+}
 
 export default function RankingFinalPage() {
   const { user } = useAuth();
@@ -409,7 +419,7 @@ export default function RankingFinalPage() {
                           <span className="text-chalk font-semibold">{entry.lastName}, {entry.firstName}</span>
                         </td>
                         <td className="px-4 py-2.5 hidden sm:table-cell text-chalk/50 text-xs">
-                          {esPanamericano ? apocPais(entry.pais) : (entry.club || '—')}
+                          {esPanamericano ? <CeldaPais pais={entry.pais} /> : (entry.club || '—')}
                         </td>
                         {!esPanamericano && (
                           <td className="px-3 py-2.5 hidden md:table-cell text-center">
