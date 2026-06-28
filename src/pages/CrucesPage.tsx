@@ -99,7 +99,7 @@ export default function CrucesPage() {
         api.get(`/circuits/${circuitId}`),
       ]);
       const cfg = cRes.data.configTorneo ?? {};
-      const esNac = cfg.tipo === 'nacional';
+      const esNac = cfg.tipo === 'nacional' || cfg.tipo === 'panamericano';
       setEsNacional(esNac);
 
       // Departamento para filtrar sedes (null para Nacional)
