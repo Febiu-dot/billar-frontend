@@ -52,6 +52,22 @@ const getColoresCategoria = (cat?: string) => {
   return COLORES_CATEGORIA[c] ?? COLORES_CATEGORIA.tercera;
 };
 
+// Deriva la categoría REAL (para elegir paleta) desde el nombre de torneo + circuito,
+// normalizando acentos. Master/Máxima/Primera → 'primera' (navy/gold), igual que el
+// subtítulo dinámico del bracket. Se usa porque data.categoriaFederal del backend solo
+// distingue primera/segunda/tercera y Máster/Máxima cae en 'primera' o 'tercera' por defecto.
+const catPaletaFE = (data: any): 'primera' | 'segunda' | 'tercera' => {
+  const norm = (s?: string | null) =>
+    (s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const t = `${norm(data?.torneo)} ${norm(data?.circuito)}`;
+  if (/master|maxima|primera/.test(t)) return 'primera';
+  if (/segunda/.test(t))              return 'segunda';
+  if (/tercera/.test(t))              return 'tercera';
+  const cf = (data?.categoriaFederal ?? '').toLowerCase();
+  if (cf === 'segunda' || cf === 'tercera') return cf as 'segunda' | 'tercera';
+  return 'primera';
+};
+
 const SECCION_COLORES: Record<string, { bg: string; badge: string; light: string }> = {
   'MÁSTER':  { bg: '#4a1070', badge: '#7b1fa2', light: '#f5eef8' },
   'PRIMERA': { bg: '#014f86', badge: '#0277bd', light: '#e8f4fd' },
@@ -109,7 +125,7 @@ function PubHeader({ data, tema }: { data: any; tema: any }) {
     : data.fase;
   // Si es torneo nacional, usar paleta V2 premium
   if (data.categoriaFederal) {
-    const CV2 = getCatV2(data.categoriaFederal);
+    const CV2 = getCatV2(catPaletaFE(data));
     return (
       <div style={{
         position: 'relative', overflow: 'hidden',
@@ -388,7 +404,7 @@ function PlantillaCruces({ data, tema }: { data: any; tema: any }) {
 
 function PlantillaRankingNacional({ data }: { data: any }) {
   const jugadores: any[] = [...(data.jugadores ?? [])].sort((a, b) => a.posicion - b.posicion);
-  const CV2 = getCatV2(data.categoriaFederal);
+  const CV2 = getCatV2(catPaletaFE(data));
   const CLASIFICAN = 16;
   const mitad = Math.ceil(jugadores.length / 2);
   const col1 = jugadores.slice(0, mitad);
@@ -765,7 +781,7 @@ function PlantillaRanking({ data, tema }: { data: any; tema: any }) {
 function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
   const ocultarResultados = data.ocultarResultados ?? false;
   const series: any[] = data.series ?? [];
-  const CV2 = data.categoriaFederal ? getCatV2(data.categoriaFederal) : null;
+  const CV2 = data.categoriaFederal ? getCatV2(catPaletaFE(data)) : null;
   const NAVY   = CV2 ? CV2.navy     : tema.header;
   const NAVY2  = CV2 ? CV2.navy2    : tema.accent;
   const NAVYD  = CV2 ? CV2.navyDeep : '#06182f';
@@ -1064,7 +1080,7 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
 
 // ── Plantilla Cruces Nacional ────────────────────────────────────────
 function PlantillaCrucesNacional({ data }: { data: any }) {
-  const CV2 = getCatV2(data.categoriaFederal ?? 'primera');
+  const CV2 = getCatV2(catPaletaFE(data));
 
   const octavos: any[] = data.octavos ?? [];
   const cuartos: any[] = data.cuartos ?? [];
@@ -1282,7 +1298,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
   const sem  = data.semis   ?? Array(2).fill(null);
   const fin  = data.final;
   const camp = data.campeon;
-  const C    = getCatV2(data.categoriaFederal);
+  const C    = getCatV2(catPaletaFE(data));
   const es8  = data.tamano === 8; // ← bracket arranca en cuartos (8 jugadores)
 
   // Subtítulo dinámico del header: "Bracket Final · Categoría X".
@@ -1560,11 +1576,13 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
             <div className="bk-headlogos">
               <img className="bk-hl" alt="FEBIU" src={`data:image/png;base64,${LOGO_FEBIU_B64}`} />
               <div className="bk-headtext">
-                <div className="bk-kicker">Confederación Panamericana de Billar 2026</div>
-                <h1 className="bk-h1">Torneo Panamericano</h1>
+                <div className="bk-kicker">{data.esPanamericano ? `Confederación Panamericana de Billar ${data.temporada}` : `FEBIU · Temporada ${data.temporada}`}</div>
+                <h1 className="bk-h1">{data.esPanamericano ? 'Torneo Panamericano' : data.torneo}</h1>
                 <div className="bk-subtitle">{subtituloBracket}</div>
               </div>
-              <img className="bk-hl" alt="CPB" src={`data:image/png;base64,${LOGO_CPB_B64}`} />
+              {data.esPanamericano && (
+                <img className="bk-hl" alt="CPB" src={`data:image/png;base64,${LOGO_CPB_B64}`} />
+              )}
             </div>
           </div>
           <div className="bk-meta-chip right">
@@ -1688,7 +1706,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
     ? { ...data, categoriaFederal: data.categoriaFederal || "primera" }
     : data;
   const temaUsado = (data.tipo === 'ranking' && data.categoriaFederal)
-    ? (() => { const c = getColoresCategoria(data.categoriaFederal); return { ...tema, header: c.bg, accent: c.bg2, light: c.bg }; })()
+    ? (() => { const c = getColoresCategoria(catPaletaFE(data)); return { ...tema, header: c.bg, accent: c.bg2, light: c.bg }; })()
     : tema;
   return (
     <>
@@ -1707,7 +1725,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
-const BUILD_TAG = 'pub-2026-06-28-nowrap';
+const BUILD_TAG = 'pub-2026-06-28-paleta';
 
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
