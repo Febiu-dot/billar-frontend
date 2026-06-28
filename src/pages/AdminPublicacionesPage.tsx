@@ -1452,18 +1452,19 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
   );
 
   return (
-    <div className="bk-stage" ref={stageRef} style={{ ...cssVars, width: 1180, fontFamily: "'Rajdhani', sans-serif" } as React.CSSProperties}>
+    <div className="bk-stage" ref={stageRef} style={{ ...cssVars, width: '100%', maxWidth: 1180, margin: '0 auto', fontFamily: "'Rajdhani', sans-serif" } as React.CSSProperties}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Condensed:wght@600;700;800&family=Oswald:wght@500;600;700&display=swap');
-        .bk-stage{position:relative;padding:24px 28px 24px;background:radial-gradient(120% 90% at 50% 8%,rgba(95,212,255,.10),rgba(95,212,255,0) 55%),radial-gradient(150% 120% at 50% 42%,${C.navy2} 0%,${C.navy} 38%,${C.navyDeep} 70%,#03101f 100%);overflow:hidden;color:#fff;-webkit-font-smoothing:antialiased;}
+        .bk-stage{position:relative;padding:20px 28px 22px;background:radial-gradient(120% 90% at 50% 8%,rgba(95,212,255,.10),rgba(95,212,255,0) 55%),radial-gradient(150% 120% at 50% 42%,${C.navy2} 0%,${C.navy} 38%,${C.navyDeep} 70%,#03101f 100%);overflow:hidden;color:#fff;-webkit-font-smoothing:antialiased;}
         .bk-stage::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.022) 1px,transparent 1px);background-size:32px 32px;mask-image:radial-gradient(80% 70% at 50% 45%,#000 30%,transparent 85%);pointer-events:none;}
         .bk-stage::after{content:"";position:absolute;inset:0;background:radial-gradient(120% 100% at 50% 50%,transparent 55%,rgba(0,0,0,.55) 100%);pointer-events:none;}
         .bk-header{position:relative;z-index:5;margin-bottom:18px;}
         .bk-header-bar{position:relative;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 18px 14px;}
         .bk-title-wrap{flex:1;text-align:center;}
-        .bk-headlogo{display:flex;justify-content:center;margin-bottom:8px;}
-        .bk-headlogo img{width:74px;height:74px;border-radius:50%;background:rgba(255,255,255,0.96);padding:4px;box-shadow:0 6px 20px rgba(0,0,0,.45),0 0 18px rgba(95,212,255,.25);border:1.5px solid rgba(244,196,48,.5);}
-        .bk-kicker{font-family:'Saira Condensed',sans-serif;letter-spacing:.34em;font-size:13px;font-weight:700;color:${C.cyanSoft};text-indent:.34em;margin-bottom:6px;text-transform:uppercase;opacity:.9;}
+        .bk-headlogos{display:flex;align-items:center;justify-content:center;gap:22px;}
+        .bk-headtext{text-align:center;}
+        .bk-hl{width:78px;height:78px;border-radius:50%;background:rgba(255,255,255,0.96);padding:5px;flex:none;box-shadow:0 6px 20px rgba(0,0,0,.45),0 0 18px rgba(95,212,255,.25);border:1.5px solid rgba(244,196,48,.5);object-fit:contain;}
+        .bk-kicker{font-family:'Saira Condensed',sans-serif;letter-spacing:.30em;font-size:12px;font-weight:700;color:${C.cyanSoft};text-indent:.30em;margin-bottom:5px;text-transform:uppercase;opacity:.9;}
         .bk-h1{font-family:'Saira Condensed',sans-serif;font-weight:800;font-size:46px;line-height:.9;letter-spacing:.04em;text-transform:uppercase;color:${C.gold};}
         .bk-subtitle{font-family:'Rajdhani',sans-serif;font-weight:600;letter-spacing:.35em;font-size:12px;color:rgba(255,255,255,.78);margin-top:8px;text-indent:.35em;text-transform:uppercase;}
         .bk-gold-rule{height:2px;width:100%;margin-top:12px;background:linear-gradient(90deg,transparent,${C.goldDeep} 12%,${C.goldBright} 50%,${C.goldDeep} 88%,transparent);box-shadow:0 0 12px rgba(244,196,48,.5);border-radius:2px;}
@@ -1471,7 +1472,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
         .bk-meta-chip .lab{font-family:'Saira Condensed',sans-serif;letter-spacing:.34em;font-weight:700;font-size:11px;color:${C.goldBright};text-transform:uppercase;}
         .bk-meta-chip .val{margin-top:6px;height:20px;border-bottom:2px dashed rgba(255,255,255,.32);font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;color:#fff;}
         .bk-meta-chip.right{text-align:right;}
-        .bk-bracket{position:relative;z-index:4;display:grid;grid-template-columns:1.4fr 0.4fr 1fr 0.4fr 0.9fr 1.2fr 0.9fr 0.4fr 1fr 0.4fr 1.4fr;align-items:stretch;column-gap:0;row-gap:0;min-height:360px;}
+        .bk-bracket{position:relative;z-index:4;display:grid;grid-template-columns:1.4fr 0.4fr 1fr 0.4fr 0.9fr 1.2fr 0.9fr 0.4fr 1fr 0.4fr 1.4fr;align-items:stretch;column-gap:0;row-gap:0;min-height:300px;}
         .bk-col{display:flex;flex-direction:column;justify-content:center;gap:14px;padding:0 8px;}
         .bk-col.bk-rail{padding:0;}
         .bk-round-head{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:5px 10px 5px 9px;border-radius:8px;background:linear-gradient(160deg,${C.goldBright},${C.gold} 55%,${C.goldDeep});box-shadow:0 4px 12px rgba(201,150,42,.45),inset 0 1px 0 rgba(255,255,255,.55);margin-bottom:-8px;position:relative;z-index:3;}
@@ -1490,7 +1491,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
         .bk-seat.bk-placeholder .nm{color:rgba(220,238,255,0.82);font-weight:600;font-size:12px;font-style:italic;letter-spacing:.02em;}
         .bk-seat.bk-winner .nm{font-weight:800;color:${C.navyDeep};}
         .bk-group{display:flex;flex-direction:column;}
-        .bk-center{display:flex;flex-direction:column;align-items:center;gap:12px;padding:0 4px;}
+        .bk-center{display:flex;flex-direction:column;align-items:center;gap:18px;padding:0 4px;}
         .bk-logo-halo{position:relative;width:120px;height:120px;display:flex;align-items:center;justify-content:center;margin-bottom:2px;}
         .bk-logo-halo::before{content:"";position:absolute;inset:-18px;border-radius:50%;background:radial-gradient(circle,rgba(95,212,255,.30),rgba(95,212,255,0) 68%);filter:blur(3px);}
         .bk-logo-halo::after{content:"";position:absolute;inset:-4px;border-radius:50%;background:conic-gradient(from 0deg,${C.goldBright},${C.cyan},${C.goldBright},${C.cyan},${C.goldBright});opacity:.6;filter:blur(1px);-webkit-mask:radial-gradient(circle,transparent 56px,#000 57px);mask:radial-gradient(circle,transparent 56px,#000 57px);}
@@ -1526,12 +1527,15 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
             <div className="val">{sala || '___________'}</div>
           </div>
           <div className="bk-title-wrap">
-            <div className="bk-headlogo">
-              <img alt="CPB" src={`data:image/png;base64,${LOGO_CPB_B64}`} />
+            <div className="bk-headlogos">
+              <img className="bk-hl" alt="FEBIU" src={`data:image/png;base64,${LOGO_FEBIU_B64}`} />
+              <div className="bk-headtext">
+                <div className="bk-kicker">Confederación Panamericana de Billar 2026</div>
+                <h1 className="bk-h1">Torneo Panamericano</h1>
+                <div className="bk-subtitle">Bracket Final</div>
+              </div>
+              <img className="bk-hl" alt="CPB" src={`data:image/png;base64,${LOGO_CPB_B64}`} />
             </div>
-            <div className="bk-kicker">Confederación Panamericana de Billar 2026</div>
-            <h1 className="bk-h1">Bracket Final</h1>
-            <div className="bk-subtitle">Torneo Panamericano</div>
           </div>
           <div className="bk-meta-chip right">
             <div className="lab">Fecha</div>
@@ -1573,10 +1577,6 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
 
         {/* COL 5 — CENTER */}
         <div className="bk-col bk-center" data-bk="center">
-          <div className="bk-logo-halo">
-            <div className="ring"></div>
-            <img alt="CPB" src={`data:image/png;base64,${LOGO_CPB_B64}`} />
-          </div>
           <div className="bk-final-block">
             <div className="bk-final-label">Final</div>
             <div className="bk-final-card bk-match">
