@@ -11,6 +11,7 @@ interface RankingEntry {
   firstName:  string;
   lastName:   string;
   club:       string;
+  pais:       string;
   categoria:  string;
   puntos:     number;
   setsGanados: number;
@@ -34,6 +35,17 @@ const CAT_LABEL: Record<string, string> = {
   tercera: 'Tercera',
 };
 
+// Apócope de país (igual que en publicaciones)
+const APOC_PAIS: Record<string, string> = {
+  Uruguay: 'URU', Argentina: 'ARG', Brasil: 'BRA', Paraguay: 'PAR',
+  Chile: 'CHI', Bolivia: 'BOL', Peru: 'PER', Colombia: 'COL',
+  Venezuela: 'VEN', Ecuador: 'ECU', Mexico: 'MEX', Espana: 'ESP',
+};
+const apocPais = (pais?: string) => {
+  if (!pais) return '—';
+  return APOC_PAIS[pais] ?? pais.slice(0, 3).toUpperCase();
+};
+
 export default function RankingFinalPage() {
   const { user } = useAuth();
 
@@ -44,6 +56,7 @@ export default function RankingFinalPage() {
   const [tournamentName, setTournamentName]         = useState('');
   const [circuitName, setCircuitName]               = useState('');
   const [esNacional, setEsNacional]                 = useState(false);
+  const [esPanamericano, setEsPanamericano]         = useState(false);
 
   const [ranking, setRanking]             = useState<RankingEntry[]>([]);
   const [loading, setLoading]             = useState(false);
@@ -97,8 +110,10 @@ export default function RankingFinalPage() {
 
     try {
       const cfgRes = await api.get(`/circuits/${circuitId}/config-torneo`);
-      setEsNacional(cfgRes.data?.tipo === 'nacional');
-    } catch { setEsNacional(false); }
+      const tipo = cfgRes.data?.tipo;
+      setEsNacional(tipo === 'nacional' || tipo === 'panamericano');
+      setEsPanamericano(tipo === 'panamericano');
+    } catch { setEsNacional(false); setEsPanamericano(false); }
 
     cargarRanking(circuitId);
   };
@@ -175,7 +190,8 @@ export default function RankingFinalPage() {
     .filter(e =>
       busqueda === '' ||
       `${e.lastName} ${e.firstName}`.toLowerCase().includes(busqueda.toLowerCase()) ||
-      e.club.toLowerCase().includes(busqueda.toLowerCase())
+      (e.club ?? '').toLowerCase().includes(busqueda.toLowerCase()) ||
+      (e.pais ?? '').toLowerCase().includes(busqueda.toLowerCase())
     );
 
   const counts = {
@@ -187,6 +203,9 @@ export default function RankingFinalPage() {
   };
 
   const corteBracket = esNacional ? 16 : null;
+
+  // En panamericano: columna País en vez de Club, sin columna Categoría
+  const colSpanCorte = esPanamericano ? 10 : 11;
 
   return (
     <div className="min-h-screen bg-carbon-100">
@@ -232,7 +251,7 @@ export default function RankingFinalPage() {
             {esNacional && (
               <div className="flex justify-center mb-4">
                 <span className="bg-blue-900/30 border border-blue-700/40 text-blue-400 text-xs px-3 py-1 rounded-lg font-mono">
-                  🏆 Nacional — Top 16 clasifican al bracket
+                  🏆 {esPanamericano ? 'Panamericano' : 'Nacional'} — Top 16 clasifican al bracket
                 </span>
               </div>
             )}
@@ -330,7 +349,7 @@ export default function RankingFinalPage() {
 
             {/* Buscador */}
             <div className="mb-4">
-              <input type="text" placeholder="Buscar jugador o club..."
+              <input type="text" placeholder={esPanamericano ? 'Buscar jugador o país...' : 'Buscar jugador o club...'}
                 className="input w-full max-w-sm mx-auto block"
                 value={busqueda} onChange={e => setBusqueda(e.target.value)} />
             </div>
@@ -342,8 +361,10 @@ export default function RankingFinalPage() {
                   <tr className="border-b border-felt-light/10 text-chalk/40 text-xs uppercase tracking-widest">
                     <th className="text-center px-3 py-3 w-12">#</th>
                     <th className="text-left px-4 py-3">Jugador</th>
-                    <th className="text-left px-4 py-3 hidden sm:table-cell">Club</th>
-                    <th className="text-center px-3 py-3 hidden md:table-cell">Categoría</th>
+                    <th className="text-left px-4 py-3 hidden sm:table-cell">{esPanamericano ? 'País' : 'Club'}</th>
+                    {!esPanamericano && (
+                      <th className="text-center px-3 py-3 hidden md:table-cell">Categoría</th>
+                    )}
                     <th className="text-center px-3 py-3">Pts</th>
                     <th className="text-center px-3 py-3 hidden sm:table-cell">Sets G</th>
                     <th className="text-center px-3 py-3 hidden sm:table-cell">Sets P</th>
@@ -358,7 +379,7 @@ export default function RankingFinalPage() {
                     <>
                       {corteBracket && filtro === 'general' && entry.posicion === corteBracket + 1 && (
                         <tr key={`corte-${entry.posicion}`}>
-                          <td colSpan={11} className="px-4 py-2">
+                          <td colSpan={colSpanCorte} className="px-4 py-2">
                             <div className="flex items-center gap-3">
                               <div className="flex-1 h-px bg-gold/40"></div>
                               <span className="text-gold/70 text-xs font-mono uppercase tracking-widest font-bold whitespace-nowrap">
@@ -387,12 +408,16 @@ export default function RankingFinalPage() {
                         <td className="px-4 py-2.5">
                           <span className="text-chalk font-semibold">{entry.lastName}, {entry.firstName}</span>
                         </td>
-                        <td className="px-4 py-2.5 hidden sm:table-cell text-chalk/50 text-xs">{entry.club || '—'}</td>
-                        <td className="px-3 py-2.5 hidden md:table-cell text-center">
-                          <span className={`text-xs px-2 py-0.5 rounded ${CAT_COLORS[entry.categoria] ?? ''}`}>
-                            {CAT_LABEL[entry.categoria] ?? entry.categoria}
-                          </span>
+                        <td className="px-4 py-2.5 hidden sm:table-cell text-chalk/50 text-xs">
+                          {esPanamericano ? apocPais(entry.pais) : (entry.club || '—')}
                         </td>
+                        {!esPanamericano && (
+                          <td className="px-3 py-2.5 hidden md:table-cell text-center">
+                            <span className={`text-xs px-2 py-0.5 rounded ${CAT_COLORS[entry.categoria] ?? ''}`}>
+                              {CAT_LABEL[entry.categoria] ?? entry.categoria}
+                            </span>
+                          </td>
+                        )}
                         <td className="px-3 py-2.5 text-center">
                           <span className="text-gold font-bold font-mono">{entry.puntos}</span>
                         </td>
