@@ -882,9 +882,11 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
               fontWeight:900, fontSize:15,
               fontFamily:"'Saira Condensed', sans-serif",
               background:`linear-gradient(135deg, ${GOLDB}, ${GOLD}, ${GOLDD})`,
-              color:INK, padding:'2px 10px', borderRadius:5, flexShrink:0,
+              color:INK, padding:'2px 12px', borderRadius:5, flexShrink:0,
               boxShadow:`0 2px 8px ${GOLDD}77, inset 0 1px 0 rgba(255,255,255,0.45)`,
-              letterSpacing:'0.04em',
+              letterSpacing:'0.02em',
+              whiteSpace:'nowrap', display:'inline-block',
+              textAlign:'center', boxSizing:'border-box', minWidth:54,
             }}>{p.resultado}</span>
           )}
         </div>
@@ -964,11 +966,14 @@ function PlantillaSeriesNacional({ data, tema }: { data: any; tema: any }) {
                     <span style={{
                       background:`linear-gradient(135deg, ${GOLDD}44, ${GOLD}22)`,
                       border:`1.5px solid ${GOLDB}66`,
-                      color:GOLDB, padding:'3px 12px', borderRadius:20,
+                      color:GOLDB, padding:'3px 14px', borderRadius:20,
                       fontSize:10, fontWeight:900,
                       fontFamily:"'Saira Condensed', sans-serif",
-                      letterSpacing:'0.14em',
+                      letterSpacing:'0.10em',
                       boxShadow:`0 0 12px ${GOLDD}44`,
+                      whiteSpace:'nowrap', display:'inline-block',
+                      textAlign:'center', boxSizing:'border-box',
+                      minWidth:96, flexShrink:0, lineHeight:1.4, overflow:'visible',
                     }}>✓ COMPLETA</span>
                   )}
                 </div>
