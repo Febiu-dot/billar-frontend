@@ -12,6 +12,20 @@ const CLUB_ABREV: Record<string, string> = {
 const abrevClub = (club?: string) =>
   club ? (CLUB_ABREV[club.toUpperCase()] ?? club.slice(0, 3).toUpperCase()) : '';
 
+// ── País / bandera (reutilizable en todas las plantillas panamericano) ──
+const PAIS_APOCOPE_GLOBAL: Record<string, string> = {
+  'Uruguay': 'URU', 'Argentina': 'ARG', 'Brasil': 'BRA', 'Brazil': 'BRA',
+  'Paraguay': 'PAR', 'Chile': 'CHI', 'Bolivia': 'BOL', 'Peru': 'PER',
+  'Perú': 'PER', 'Colombia': 'COL', 'Venezuela': 'VEN', 'Ecuador': 'ECU',
+};
+const apocPaisG = (pais?: string | null): string =>
+  pais ? (PAIS_APOCOPE_GLOBAL[pais] ?? pais.slice(0, 3).toUpperCase()) : 'URU';
+const banderaPaisG = (pais?: string | null): string | null => {
+  const apoc = apocPaisG(pais);
+  const M: Record<string, string> = { 'URU': FLAG_URU_B64, 'ARG': FLAG_ARG_B64, 'BRA': FLAG_BRA_B64 };
+  return M[apoc] ?? null;
+};
+
 const TEMAS: Record<string, { header: string; accent: string; light: string; badge: string }> = {
   clasificatorio:   { header: '#1a5c2a', accent: '#2d8a3e', light: '#edf7ef', badge: '#1a5c2a' },
   reduccion:        { header: '#1a5c2a', accent: '#388e3c', light: '#f1f8e9', badge: '#1a5c2a' },
@@ -428,8 +442,23 @@ function PlantillaRankingNacional({ data }: { data: any }) {
           letterSpacing:'0.01em', position:'relative', zIndex:1,
         }}>{j.nombre}</div>
 
-        {/* Club badge */}
-        {j.club && (
+        {/* País+bandera (panamericano) ó Club badge (nacional) */}
+        {data.esPanamericano ? (
+          <div style={{
+            display:'flex', alignItems:'center', gap:5, flexShrink:0,
+            background: clasifica ? 'rgba(255,255,255,0.13)' : 'rgba(255,255,255,0.05)',
+            color: clasifica ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)',
+            padding:'2px 8px', borderRadius:4,
+            border:`1px solid ${clasifica?'rgba(255,255,255,0.22)':'rgba(255,255,255,0.07)'}`,
+            position:'relative', zIndex:1,
+          }}>
+            {banderaPaisG(j.pais) && (
+              <img src={`data:image/png;base64,${banderaPaisG(j.pais)}`} alt={apocPaisG(j.pais)}
+                style={{ width:18, height:12, borderRadius:1, display:'block', flexShrink:0 }} />
+            )}
+            <span style={{ fontSize:11, fontWeight:800, fontFamily:"'Saira Condensed', sans-serif", letterSpacing:'0.08em' }}>{apocPaisG(j.pais)}</span>
+          </div>
+        ) : j.club ? (
           <div style={{
             background: clasifica ? 'rgba(255,255,255,0.13)' : 'rgba(255,255,255,0.05)',
             color: clasifica ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)',
@@ -439,7 +468,7 @@ function PlantillaRankingNacional({ data }: { data: any }) {
             border:`1px solid ${clasifica?'rgba(255,255,255,0.22)':'rgba(255,255,255,0.07)'}`,
             position:'relative', zIndex:1,
           }}>{j.club}</div>
-        )}
+        ) : null}
 
         {/* Sets ganados */}
         <div style={{
@@ -489,7 +518,7 @@ function PlantillaRankingNacional({ data }: { data: any }) {
     }}>
       <span style={{width:38,fontSize:11,fontWeight:800,color:CV2.goldBright,textAlign:'center',fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.12em'}}>#</span>
       <span style={{flex:1,fontSize:11,fontWeight:800,color:CV2.goldBright,fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.12em'}}>JUGADOR</span>
-      <span style={{fontSize:11,fontWeight:800,color:CV2.cyanSoft,fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.08em',marginRight:6}}>CLUB</span>
+      <span style={{fontSize:11,fontWeight:800,color:CV2.cyanSoft,fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.08em',marginRight:6}}>{data.esPanamericano ? 'PAÍS' : 'CLUB'}</span>
       <span style={{width:38,fontSize:11,fontWeight:800,color:CV2.goldBright,textAlign:'right',fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.10em'}}>SETS</span>
       <span style={{width:44,fontSize:11,fontWeight:800,color:'rgba(255,160,160,0.8)',textAlign:'right',fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.08em'}}>PERD.</span>
       <span style={{width:46,fontSize:11,fontWeight:800,color:CV2.cyanSoft,textAlign:'right',fontFamily:"'Saira Condensed', sans-serif",letterSpacing:'0.08em'}}>PROM.</span>
@@ -1254,6 +1283,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
   const fin  = data.final;
   const camp = data.campeon;
   const C    = getCatV2(data.categoriaFederal);
+  const es8  = data.tamano === 8; // ← bracket arranca en cuartos (8 jugadores)
 
   const getName = (m: any, side: 'A' | 'B'): string => {
     if (!m) return '';
@@ -1312,15 +1342,18 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
       svg.appendChild(p);
     };
 
-    const cols = stage.querySelectorAll('.bk-col');
-    if (cols.length < 11) return;
-    const Loct = cols[0].querySelectorAll('.bk-match');
-    const Lcua = cols[2].querySelectorAll('.bk-match');
-    const Lsem = cols[4].querySelectorAll('.bk-match');
-    const finCard = cols[5].querySelector('.bk-final-card');
-    const Rsem = cols[6].querySelectorAll('.bk-match');
-    const Rcua = cols[8].querySelectorAll('.bk-match');
-    const Roct = cols[10].querySelectorAll('.bk-match');
+    const colBy = (k: string) => stage.querySelector(`.bk-col[data-bk="${k}"]`);
+    const cLcua = colBy('Lcua'), cLsem = colBy('Lsem'), cFin = colBy('center');
+    const cRsem = colBy('Rsem'), cRcua = colBy('Rcua');
+    if (!cLcua || !cLsem || !cFin || !cRsem || !cRcua) return;
+    const cLoct = colBy('Loct'), cRoct = colBy('Roct');
+    const Loct = cLoct ? cLoct.querySelectorAll('.bk-match') : [];
+    const Lcua = cLcua.querySelectorAll('.bk-match');
+    const Lsem = cLsem.querySelectorAll('.bk-match');
+    const finCard = cFin.querySelector('.bk-final-card');
+    const Rsem = cRsem.querySelectorAll('.bk-match');
+    const Rcua = cRcua.querySelectorAll('.bk-match');
+    const Roct = cRoct ? cRoct.querySelectorAll('.bk-match') : [];
 
     if (Loct.length>=2 && Lcua.length>=1) {
       const a=rect(Loct[0]),b=rect(Loct[1]),t=rect(Lcua[0]);
@@ -1504,21 +1537,23 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
       </header>
 
       {/* BRACKET */}
-      <div className="bk-bracket">
+      <div className="bk-bracket" style={es8 ? { gridTemplateColumns: '1fr 0.4fr 0.9fr 1.2fr 0.9fr 0.4fr 1fr' } : undefined}>
 
-        {/* COL 0 — LEFT OCTAVOS */}
-        <div className="bk-col">
+        {/* COL 0 — LEFT OCTAVOS (solo bracket de 16) */}
+        {!es8 && (
+        <div className="bk-col" data-bk="Loct">
           <OctGroup m={oct[0]} hora={horas.oct[0]} />
           <OctGroup m={oct[1]} hora={horas.oct[1]} />
           <OctGroup m={oct[2]} hora={horas.oct[2]} />
           <OctGroup m={oct[3]} hora={horas.oct[3]} />
         </div>
+        )}
 
         {/* COL 1 — rail */}
-        <div className="bk-col bk-rail"></div>
+        {!es8 && <div className="bk-col bk-rail"></div>}
 
         {/* COL 2 — LEFT CUARTOS */}
-        <div className="bk-col">
+        <div className="bk-col" data-bk="Lcua">
           <StageGroup m={cua[0]} label="Cuartos" hora={horas.cua[0]} placeholder={!cua[0]?.playerAId} />
           <StageGroup m={cua[1]} label="Cuartos" hora={horas.cua[1]} placeholder={!cua[1]?.playerAId} />
         </div>
@@ -1527,12 +1562,12 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
         <div className="bk-col bk-rail"></div>
 
         {/* COL 4 — LEFT SEMIFINAL */}
-        <div className="bk-col">
+        <div className="bk-col" data-bk="Lsem">
           <StageGroup m={sem[0]} label="Semifinal" hora={horas.sem[0]} placeholder={!sem[0]?.playerAId} />
         </div>
 
         {/* COL 5 — CENTER */}
-        <div className="bk-col bk-center">
+        <div className="bk-col bk-center" data-bk="center">
           <div className="bk-logo-halo">
             <div className="ring"></div>
             <img alt="FEBIU" src={`data:image/png;base64,${LOGO_FEBIU_B64}`} />
@@ -1564,7 +1599,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
         </div>
 
         {/* COL 6 — RIGHT SEMIFINAL */}
-        <div className="bk-col">
+        <div className="bk-col" data-bk="Rsem">
           <StageGroup m={sem[1]} label="Semifinal" hora={horas.sem[1]} right placeholder={!sem[1]?.playerAId} />
         </div>
 
@@ -1572,21 +1607,23 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
         <div className="bk-col bk-rail"></div>
 
         {/* COL 8 — RIGHT CUARTOS */}
-        <div className="bk-col">
+        <div className="bk-col" data-bk="Rcua">
           <StageGroup m={cua[2]} label="Cuartos" hora={horas.cua[2]} right placeholder={!cua[2]?.playerAId} />
           <StageGroup m={cua[3]} label="Cuartos" hora={horas.cua[3]} right placeholder={!cua[3]?.playerAId} />
         </div>
 
-        {/* COL 9 — rail */}
-        <div className="bk-col bk-rail"></div>
+        {/* COL 9 — rail (solo bracket de 16) */}
+        {!es8 && <div className="bk-col bk-rail"></div>}
 
-        {/* COL 10 — RIGHT OCTAVOS */}
-        <div className="bk-col">
+        {/* COL 10 — RIGHT OCTAVOS (solo bracket de 16) */}
+        {!es8 && (
+        <div className="bk-col" data-bk="Roct">
           <OctGroup m={oct[4]} hora={horas.oct[4]} right />
           <OctGroup m={oct[5]} hora={horas.oct[5]} right />
           <OctGroup m={oct[6]} hora={horas.oct[6]} right />
           <OctGroup m={oct[7]} hora={horas.oct[7]} right />
         </div>
+        )}
 
       </div>
 
@@ -1629,7 +1666,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
-const BUILD_TAG = 'pub-2026-06-12-a';
+const BUILD_TAG = 'pub-2026-06-28-pana';
 
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
@@ -2072,7 +2109,7 @@ export default function AdminPublicacionesPage() {
               {pubData.tipo === 'ranking'         ? `${pubData.jugadores?.length ?? 0} jugadores`
                : pubData.tipo === 'series'        ? `${pubData.series?.length ?? 0} series`
                : pubData.tipo === 'series-nacional'? `${pubData.series?.length ?? 0} series`
-               : pubData.tipo === 'bracket-nacional'? `Bracket 16 jugadores`
+               : pubData.tipo === 'bracket-nacional'? `Bracket ${pubData.tamano ?? 16} jugadores`
                : `${pubData.cruces?.length ?? 0} cruces`}
             </p>
             <div ref={wrapperRef} style={{ overflow: 'hidden', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 4px 20px rgba(0,0,0,0.3)', display: 'inline-block' }}>
