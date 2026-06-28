@@ -1286,17 +1286,19 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
   const es8  = data.tamano === 8; // ← bracket arranca en cuartos (8 jugadores)
 
   // Subtítulo dinámico del header: "Bracket Final · Categoría X".
-  // categoriaFederal del backend solo distingue primera/segunda/tercera (Máster/Juvenil/Femenino caen en "primera"),
-  // por eso usamos data.torneo (nombre completo del torneo) para detectar la categoría real del Panamericano.
+  // Detectamos la categoría desde data.torneo y/o data.circuito (nombre del circuito),
+  // normalizando para quitar acentos y así matchear máster/máxima/maxima/master indistintamente.
   const subtituloBracket: string = (() => {
-    const t = (data.torneo ?? '').toLowerCase();
+    const norm = (s?: string | null) =>
+      (s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const t = `${norm(data.torneo)} ${norm(data.circuito)}`;
     let cat = '';
-    if (/m[áa]ster|m[áa]xima/.test(t)) cat = 'Categoría Máxima';
-    else if (/femenin/.test(t))        cat = 'Categoría Femenino';
-    else if (/juvenil/.test(t))        cat = 'Categoría Juvenil';
-    else if (/segunda/.test(t))        cat = 'Categoría Segunda';
-    else if (/tercera/.test(t))        cat = 'Categoría Tercera';
-    else if (/primera/.test(t))        cat = 'Categoría Primera';
+    if (/master|maxima/.test(t))   cat = 'Categoría Máxima';
+    else if (/femenin/.test(t))    cat = 'Categoría Femenino';
+    else if (/juvenil/.test(t))    cat = 'Categoría Juvenil';
+    else if (/segunda/.test(t))    cat = 'Categoría Segunda';
+    else if (/tercera/.test(t))    cat = 'Categoría Tercera';
+    else if (/primera/.test(t))    cat = 'Categoría Primera';
     return cat ? `Bracket Final · ${cat}` : 'Bracket Final';
   })();
 
