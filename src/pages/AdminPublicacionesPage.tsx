@@ -700,10 +700,6 @@ function PlantillaRankingNacional({ data }: { data: any }) {
       {/* Footer rule */}
       <div style={{position:'relative', zIndex:2, display:'flex', alignItems:'center', gap:12, marginTop:16}}>
         <div style={{flex:1, height:1, background:`linear-gradient(90deg, transparent, ${CV2.cyanSoft}44, transparent)`}} />
-        <span style={{
-          fontSize:11, color:CV2.cyanSoft, fontFamily:"'Saira Condensed', sans-serif",
-          letterSpacing:'0.28em', opacity:0.6, textTransform:'uppercase',
-        }}>FEBIU · TORNEO NACIONAL</span>
         <div style={{flex:1, height:1, background:`linear-gradient(90deg, transparent, ${CV2.cyanSoft}44, transparent)`}} />
       </div>
     </div>
@@ -1665,7 +1661,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
-const BUILD_TAG = 'pub-2026-06-28-pana';
+const BUILD_TAG = 'pub-2026-06-28-footer';
 
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
