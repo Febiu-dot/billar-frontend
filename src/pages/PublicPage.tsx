@@ -6,6 +6,15 @@ import { MatchStatusBadge, playerName, LoadingSpinner } from '../components/ui';
 
 // ── Sección Nacional ──────────────────────────────────────────────────
 
+// Apócopes de país (mismo dict que backend/publicaciones)
+const PAIS_APOCOPE: Record<string, string> = {
+  Uruguay: 'URU', Argentina: 'ARG', Brasil: 'BRA', Paraguay: 'PAR',
+  Chile: 'CHI', Bolivia: 'BOL', Peru: 'PER', Colombia: 'COL',
+  Venezuela: 'VEN', Ecuador: 'ECU', Mexico: 'MEX', Espana: 'ESP',
+};
+const apocPais = (pais?: string | null): string =>
+  pais ? (PAIS_APOCOPE[pais] ?? pais.slice(0, 3).toUpperCase()) : 'URU';
+
 function SeccionNacional() {
   const [torneos, setTorneos]         = useState<any[]>([]);
   const [circuitId, setCircuitId]     = useState('');
@@ -112,6 +121,7 @@ function SeccionNacional() {
   })();
 
   const hayCruces = cruces && (cruces.octavos?.length > 0 || cruces.cuartos?.length > 0 || cruces.semi1 || cruces.final);
+  const esPana = /panamericano/i.test(torneoNombre);
 
   return (
     <section>
@@ -197,7 +207,9 @@ function SeccionNacional() {
                             <div key={lbl} className="flex items-center gap-2 text-xs">
                               <span className="w-6">{lbl}</span>
                               <span className="text-silver-light font-semibold">{jug.nombre}</span>
-                              {jug.club && <span className="text-silver-dark">{jug.club}</span>}
+                              {esPana
+                                ? <span className="text-silver-dark">{apocPais(jug.pais)}</span>
+                                : (jug.club && <span className="text-silver-dark">{jug.club}</span>)}
                             </div>
                           ) : null
                         )}
@@ -241,9 +253,11 @@ function SeccionNacional() {
                             {j.nombre}
                           </p>
                         </div>
-                        {j.club && (
+                        {esPana
+                          ? <span className="text-xs text-silver-dark shrink-0">{apocPais(j.pais)}</span>
+                          : (j.club && (
                           <span className="text-xs text-silver-dark shrink-0">{j.club}</span>
-                        )}
+                        ))}
                         <span className={`text-sm font-mono font-bold shrink-0 ${clasifica ? 'text-orange' : 'text-silver-dark'}`}>
                           {j.puntos} pts
                         </span>
@@ -282,7 +296,9 @@ function SeccionNacional() {
                   <div className="card border border-orange/30 bg-orange/5 text-center py-4">
                     <p className="text-silver-dark text-xs uppercase tracking-widest mb-1">🏆 Campeón</p>
                     <p className="text-orange font-bold text-lg font-display">{cruces.campeon.nombre}</p>
-                    {cruces.campeon.club && <p className="text-silver-dark text-sm">{cruces.campeon.club}</p>}
+                    {esPana
+                      ? <p className="text-silver-dark text-sm">{apocPais(cruces.campeon.pais)}</p>
+                      : (cruces.campeon.club && <p className="text-silver-dark text-sm">{cruces.campeon.club}</p>)}
                   </div>
                 )}
               </div>
@@ -318,9 +334,11 @@ function SeccionNacional() {
                           <p className={`text-sm font-semibold truncate ${pos <= 16 ? 'text-silver-light' : 'text-silver-dark'}`}>
                             {e.player?.lastName}, {e.player?.firstName}
                           </p>
-                          {e.player?.club && (
+                          {esPana
+                            ? <p className="text-silver-dark text-xs truncate">{apocPais(e.player?.pais)}</p>
+                            : (e.player?.club && (
                             <p className="text-silver-dark text-xs truncate">{e.player.club}</p>
-                          )}
+                          ))}
                         </div>
                         <span className={`text-sm font-mono font-bold shrink-0 ${top3 ? 'text-orange' : pos <= 16 ? 'text-silver-light' : 'text-silver-dark'}`}>
                           {e.points} pts
