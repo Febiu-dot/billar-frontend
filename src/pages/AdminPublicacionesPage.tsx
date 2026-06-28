@@ -1452,7 +1452,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
   );
 
   return (
-    <div className="bk-stage" ref={stageRef} style={{ ...cssVars, width: 1440, fontFamily: "'Rajdhani', sans-serif" } as React.CSSProperties}>
+    <div className="bk-stage" ref={stageRef} style={{ ...cssVars, width: 1180, fontFamily: "'Rajdhani', sans-serif" } as React.CSSProperties}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Condensed:wght@600;700;800&family=Oswald:wght@500;600;700&display=swap');
         .bk-stage{position:relative;padding:24px 28px 24px;background:radial-gradient(120% 90% at 50% 8%,rgba(95,212,255,.10),rgba(95,212,255,0) 55%),radial-gradient(150% 120% at 50% 42%,${C.navy2} 0%,${C.navy} 38%,${C.navyDeep} 70%,#03101f 100%);overflow:hidden;color:#fff;-webkit-font-smoothing:antialiased;}
@@ -1461,7 +1461,9 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
         .bk-header{position:relative;z-index:5;margin-bottom:18px;}
         .bk-header-bar{position:relative;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 18px 14px;}
         .bk-title-wrap{flex:1;text-align:center;}
-        .bk-kicker{font-family:'Saira Condensed',sans-serif;letter-spacing:.62em;font-size:11px;font-weight:600;color:${C.cyanSoft};text-indent:.62em;margin-bottom:4px;text-transform:uppercase;opacity:.85;}
+        .bk-headlogo{display:flex;justify-content:center;margin-bottom:8px;}
+        .bk-headlogo img{width:74px;height:74px;border-radius:50%;background:rgba(255,255,255,0.96);padding:4px;box-shadow:0 6px 20px rgba(0,0,0,.45),0 0 18px rgba(95,212,255,.25);border:1.5px solid rgba(244,196,48,.5);}
+        .bk-kicker{font-family:'Saira Condensed',sans-serif;letter-spacing:.34em;font-size:13px;font-weight:700;color:${C.cyanSoft};text-indent:.34em;margin-bottom:6px;text-transform:uppercase;opacity:.9;}
         .bk-h1{font-family:'Saira Condensed',sans-serif;font-weight:800;font-size:46px;line-height:.9;letter-spacing:.04em;text-transform:uppercase;color:${C.gold};}
         .bk-subtitle{font-family:'Rajdhani',sans-serif;font-weight:600;letter-spacing:.35em;font-size:12px;color:rgba(255,255,255,.78);margin-top:8px;text-indent:.35em;text-transform:uppercase;}
         .bk-gold-rule{height:2px;width:100%;margin-top:12px;background:linear-gradient(90deg,transparent,${C.goldDeep} 12%,${C.goldBright} 50%,${C.goldDeep} 88%,transparent);box-shadow:0 0 12px rgba(244,196,48,.5);border-radius:2px;}
@@ -1469,8 +1471,8 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
         .bk-meta-chip .lab{font-family:'Saira Condensed',sans-serif;letter-spacing:.34em;font-weight:700;font-size:11px;color:${C.goldBright};text-transform:uppercase;}
         .bk-meta-chip .val{margin-top:6px;height:20px;border-bottom:2px dashed rgba(255,255,255,.32);font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;color:#fff;}
         .bk-meta-chip.right{text-align:right;}
-        .bk-bracket{position:relative;z-index:4;display:grid;grid-template-columns:1.4fr 0.4fr 1fr 0.4fr 0.9fr 1.2fr 0.9fr 0.4fr 1fr 0.4fr 1.4fr;align-items:stretch;column-gap:0;row-gap:0;min-height:480px;}
-        .bk-col{display:flex;flex-direction:column;justify-content:center;gap:18px;padding:0 8px;}
+        .bk-bracket{position:relative;z-index:4;display:grid;grid-template-columns:1.4fr 0.4fr 1fr 0.4fr 0.9fr 1.2fr 0.9fr 0.4fr 1fr 0.4fr 1.4fr;align-items:stretch;column-gap:0;row-gap:0;min-height:360px;}
+        .bk-col{display:flex;flex-direction:column;justify-content:center;gap:14px;padding:0 8px;}
         .bk-col.bk-rail{padding:0;}
         .bk-round-head{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:5px 10px 5px 9px;border-radius:8px;background:linear-gradient(160deg,${C.goldBright},${C.gold} 55%,${C.goldDeep});box-shadow:0 4px 12px rgba(201,150,42,.45),inset 0 1px 0 rgba(255,255,255,.55);margin-bottom:-8px;position:relative;z-index:3;}
         .bk-round-head .rname{font-family:'Saira Condensed',sans-serif;font-weight:800;letter-spacing:.1em;font-size:12px;color:${C.ink};text-transform:uppercase;line-height:1;}
@@ -1524,9 +1526,12 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
             <div className="val">{sala || '___________'}</div>
           </div>
           <div className="bk-title-wrap">
-            <div className="bk-kicker">FEBIU · Uruguay</div>
-            <h1 className="bk-h1">{data.torneo}</h1>
-            <div className="bk-subtitle">{data.fase}</div>
+            <div className="bk-headlogo">
+              <img alt="CPB" src={`data:image/png;base64,${LOGO_CPB_B64}`} />
+            </div>
+            <div className="bk-kicker">Confederación Panamericana de Billar 2026</div>
+            <h1 className="bk-h1">Bracket Final</h1>
+            <div className="bk-subtitle">Torneo Panamericano</div>
           </div>
           <div className="bk-meta-chip right">
             <div className="lab">Fecha</div>
@@ -1570,7 +1575,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
         <div className="bk-col bk-center" data-bk="center">
           <div className="bk-logo-halo">
             <div className="ring"></div>
-            <img alt="FEBIU" src={`data:image/png;base64,${LOGO_FEBIU_B64}`} />
+            <img alt="CPB" src={`data:image/png;base64,${LOGO_CPB_B64}`} />
           </div>
           <div className="bk-final-block">
             <div className="bk-final-label">Final</div>
@@ -1630,7 +1635,6 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
       {/* WIRES SVG OVERLAY */}
       <svg id="bk-wires" ref={svgRef}></svg>
 
-      <div className="bk-foot">FEBIU · {data.temporada}</div>
     </div>
   );
 }
