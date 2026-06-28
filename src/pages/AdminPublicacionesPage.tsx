@@ -1487,7 +1487,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
         .bk-stage::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.022) 1px,transparent 1px);background-size:32px 32px;mask-image:radial-gradient(80% 70% at 50% 45%,#000 30%,transparent 85%);pointer-events:none;}
         .bk-stage::after{content:"";position:absolute;inset:0;background:radial-gradient(120% 100% at 50% 50%,transparent 55%,rgba(0,0,0,.55) 100%);pointer-events:none;}
         .bk-header{position:relative;z-index:5;margin-bottom:18px;max-width:1180px;margin-left:auto;margin-right:auto;}
-        .bk-header-bar{position:relative;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 18px 14px;}
+        .bk-header-bar{position:relative;display:grid;grid-template-columns:200px 1fr 200px;align-items:center;gap:16px;padding:12px 18px 14px;}
         .bk-title-wrap{flex:1;text-align:center;}
         .bk-headlogos{display:flex;align-items:center;justify-content:center;gap:22px;}
         .bk-headtext{text-align:center;}
