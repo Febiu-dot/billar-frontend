@@ -1285,18 +1285,19 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
   const C    = getCatV2(data.categoriaFederal);
   const es8  = data.tamano === 8; // ← bracket arranca en cuartos (8 jugadores)
 
-  // Subtítulo dinámico del header: se deriva de la categoría del torneo.
+  // Subtítulo dinámico del header: "Bracket Final · Categoría X".
   // categoriaFederal del backend solo distingue primera/segunda/tercera (Máster/Juvenil/Femenino caen en "primera"),
   // por eso usamos data.torneo (nombre completo del torneo) para detectar la categoría real del Panamericano.
   const subtituloBracket: string = (() => {
     const t = (data.torneo ?? '').toLowerCase();
-    if (/m[áa]ster|m[áa]xima/.test(t)) return 'Categoría Máster';
-    if (/femenin/.test(t))             return 'Categoría Femenino';
-    if (/juvenil/.test(t))             return 'Categoría Juvenil';
-    if (/segunda/.test(t))             return 'Categoría Segunda';
-    if (/tercera/.test(t))             return 'Categoría Tercera';
-    if (/primera/.test(t))             return 'Categoría Primera';
-    return 'Bracket Final';
+    let cat = '';
+    if (/m[áa]ster|m[áa]xima/.test(t)) cat = 'Categoría Máxima';
+    else if (/femenin/.test(t))        cat = 'Categoría Femenino';
+    else if (/juvenil/.test(t))        cat = 'Categoría Juvenil';
+    else if (/segunda/.test(t))        cat = 'Categoría Segunda';
+    else if (/tercera/.test(t))        cat = 'Categoría Tercera';
+    else if (/primera/.test(t))        cat = 'Categoría Primera';
+    return cat ? `Bracket Final · ${cat}` : 'Bracket Final';
   })();
 
   const getName = (m: any, side: 'A' | 'B'): string => {
@@ -1477,13 +1478,13 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
   );
 
   return (
-    <div className="bk-stage" ref={stageRef} style={{ ...cssVars, width: '100%', maxWidth: 1180, margin: '0 auto', fontFamily: "'Rajdhani', sans-serif" } as React.CSSProperties}>
+    <div className="bk-stage" ref={stageRef} style={{ ...cssVars, width: '100%', maxWidth: 1440, margin: '0 auto', fontFamily: "'Rajdhani', sans-serif" } as React.CSSProperties}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Condensed:wght@600;700;800&family=Oswald:wght@500;600;700&display=swap');
         .bk-stage{position:relative;padding:20px 28px 22px;background:radial-gradient(120% 90% at 50% 8%,rgba(95,212,255,.10),rgba(95,212,255,0) 55%),radial-gradient(150% 120% at 50% 42%,${C.navy2} 0%,${C.navy} 38%,${C.navyDeep} 70%,#03101f 100%);overflow:hidden;color:#fff;-webkit-font-smoothing:antialiased;}
         .bk-stage::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.022) 1px,transparent 1px);background-size:32px 32px;mask-image:radial-gradient(80% 70% at 50% 45%,#000 30%,transparent 85%);pointer-events:none;}
         .bk-stage::after{content:"";position:absolute;inset:0;background:radial-gradient(120% 100% at 50% 50%,transparent 55%,rgba(0,0,0,.55) 100%);pointer-events:none;}
-        .bk-header{position:relative;z-index:5;margin-bottom:18px;}
+        .bk-header{position:relative;z-index:5;margin-bottom:18px;max-width:1180px;margin-left:auto;margin-right:auto;}
         .bk-header-bar{position:relative;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 18px 14px;}
         .bk-title-wrap{flex:1;text-align:center;}
         .bk-headlogos{display:flex;align-items:center;justify-content:center;gap:22px;}
@@ -1497,7 +1498,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
         .bk-meta-chip .lab{font-family:'Saira Condensed',sans-serif;letter-spacing:.34em;font-weight:700;font-size:11px;color:${C.goldBright};text-transform:uppercase;}
         .bk-meta-chip .val{margin-top:6px;height:20px;border-bottom:2px dashed rgba(255,255,255,.32);font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;color:#fff;}
         .bk-meta-chip.right{text-align:right;}
-        .bk-bracket{position:relative;z-index:4;display:grid;grid-template-columns:1.4fr 0.4fr 1fr 0.4fr 0.9fr 1.2fr 0.9fr 0.4fr 1fr 0.4fr 1.4fr;align-items:stretch;column-gap:0;row-gap:0;min-height:300px;}
+        .bk-bracket{position:relative;z-index:4;display:grid;grid-template-columns:1.4fr 0.4fr 1fr 0.4fr 0.9fr 1.2fr 0.9fr 0.4fr 1fr 0.4fr 1.4fr;align-items:stretch;column-gap:0;row-gap:0;min-height:300px;max-width:1180px;margin-left:auto;margin-right:auto;}
         .bk-col{display:flex;flex-direction:column;justify-content:center;gap:14px;padding:0 8px;}
         .bk-col.bk-rail{padding:0;}
         .bk-round-head{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:5px 10px 5px 9px;border-radius:8px;background:linear-gradient(160deg,${C.goldBright},${C.gold} 55%,${C.goldDeep});box-shadow:0 4px 12px rgba(201,150,42,.45),inset 0 1px 0 rgba(255,255,255,.55);margin-bottom:-8px;position:relative;z-index:3;}
