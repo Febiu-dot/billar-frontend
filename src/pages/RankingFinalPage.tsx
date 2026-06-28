@@ -81,6 +81,8 @@ export default function RankingFinalPage() {
   const [allCircuits, setAllCircuits]     = useState<Circuit[]>([]);
   const [recalculando, setRecalculando]   = useState(false);
   const [recalcularMsg, setRecalcularMsg] = useState('');
+  const [recalcPuntos, setRecalcPuntos]   = useState(false);
+  const [recalcPuntosMsg, setRecalcPuntosMsg] = useState('');
 
   useEffect(() => {
     api.get('/tournaments').then(r => setTournaments(r.data));
@@ -142,6 +144,19 @@ export default function RankingFinalPage() {
     } catch (e: any) {
       setRecalcularMsg(`❌ ${e?.response?.data?.error ?? 'Error al recalcular'}`);
     } finally { setRecalculando(false); }
+  };
+
+  const handleRecalcularPuntos = async () => {
+    if (!selectedCircuit) return;
+    if (!confirm(`¿Recalcular los PUNTOS de todas las series del ${circuitName}?\n\nPone los puntos en cero y los vuelve a sumar serie por serie (8/6/4/2). Corrige duplicaciones por ediciones de partidos.`)) return;
+    setRecalcPuntos(true); setRecalcPuntosMsg('');
+    try {
+      const res = await api.post(`/matches/recalcular-puntos-series/${selectedCircuit}`);
+      setRecalcPuntosMsg(`✅ ${res.data.message ?? 'Puntos recalculados'}`);
+      cargarRanking(selectedCircuit);
+    } catch (e: any) {
+      setRecalcPuntosMsg(`❌ ${e?.response?.data?.error ?? 'Error al recalcular puntos'}`);
+    } finally { setRecalcPuntos(false); }
   };
 
   const handleGuardar = async () => {
@@ -287,6 +302,26 @@ export default function RankingFinalPage() {
                   )}
                   <p className="text-chalk/30 text-xs text-center">
                     Ordena por: Puntos → Diferencia de sets → Promedio de tantos
+                  </p>
+                </div>
+
+                {/* Botón Recalcular puntos de series */}
+                <div className="flex flex-col items-center gap-1 w-full max-w-sm">
+                  <button
+                    className="btn-secondary px-6 w-full"
+                    style={{ background: 'linear-gradient(90deg,#3a2a1a,#5a452d)', borderColor: '#e0b15a' }}
+                    disabled={recalcPuntos}
+                    onClick={handleRecalcularPuntos}
+                  >
+                    {recalcPuntos ? 'Recalculando...' : '🧮 Recalcular puntos de series'}
+                  </button>
+                  {recalcPuntosMsg && (
+                    <span className={`text-sm ${recalcPuntosMsg.startsWith('✅') ? 'text-green-400' : 'text-red-400'}`}>
+                      {recalcPuntosMsg}
+                    </span>
+                  )}
+                  <p className="text-chalk/30 text-xs text-center">
+                    Usar si el ranking muestra más puntos que los que da la serie (corrige duplicaciones)
                   </p>
                 </div>
 
