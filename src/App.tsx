@@ -42,11 +42,9 @@ function AppRoutes() {
       <Route path="/publicaciones" element={<AdminPublicacionesPage />} />
 
       <Route path="/" element={
-        <ProtectedRoute>
-          {user?.role === 'admin' ? <Navigate to="/admin" replace /> :
-           user?.role === 'juez_sede' ? <Navigate to="/juez" replace /> :
-           <Navigate to="/publico" replace />}
-        </ProtectedRoute>
+        user?.role === 'admin' ? <Navigate to="/admin" replace /> :
+        user?.role === 'juez_sede' ? <Navigate to="/juez" replace /> :
+        <Navigate to="/publico" replace />
       } />
 
       {/* Admin */}
