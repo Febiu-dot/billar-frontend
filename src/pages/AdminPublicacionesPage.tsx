@@ -29,7 +29,7 @@ const banderaPaisG = (pais?: string | null): string | null => {
 const TEMAS: Record<string, { header: string; accent: string; light: string; badge: string }> = {
   clasificatorio:   { header: '#1a5c2a', accent: '#2d8a3e', light: '#edf7ef', badge: '#1a5c2a' },
   reduccion:        { header: '#1a5c2a', accent: '#388e3c', light: '#f1f8e9', badge: '#1a5c2a' },
-  segunda:          { header: '#b83c00', accent: '#e64a19', light: '#fff4f0', badge: '#b83c00' },
+  segunda:          { header: '#6B2737', accent: '#8a3447', light: '#fbeef1', badge: '#6B2737' },
   primera:          { header: '#014f86', accent: '#0277bd', light: '#e8f4fd', badge: '#014f86' },
   master:           { header: '#4a1070', accent: '#7b1fa2', light: '#f5eef8', badge: '#4a1070' },
   ranking:          { header: '#7c4d00', accent: '#b8860b', light: '#fffbf0', badge: '#7c4d00' },
@@ -44,7 +44,7 @@ const TEMAS: Record<string, { header: string; accent: string; light: string; bad
 // Colores del bracket nacional por categoría federal
 const COLORES_CATEGORIA: Record<string, { bg: string; bg2: string; accent: string; gold: string }> = {
   primera: { bg: '#014f86', bg2: '#0277bd', accent: '#4fc3f7', gold: '#f5d020' },
-  segunda: { bg: '#8b3a00', bg2: '#e64a19', accent: '#ffab91', gold: '#f5d020' },
+  segunda: { bg: '#6B2737', bg2: '#8a3447', accent: '#d98ca0', gold: '#D4AF37' },
   tercera: { bg: '#135c1a', bg2: '#1e8a28', accent: '#81c784', gold: '#f5d020' },
 };
 const getColoresCategoria = (cat?: string) => {
@@ -71,7 +71,7 @@ const catPaletaFE = (data: any): 'primera' | 'segunda' | 'tercera' => {
 const SECCION_COLORES: Record<string, { bg: string; badge: string; light: string }> = {
   'MÁSTER':  { bg: '#4a1070', badge: '#7b1fa2', light: '#f5eef8' },
   'PRIMERA': { bg: '#014f86', badge: '#0277bd', light: '#e8f4fd' },
-  'SEGUNDA': { bg: '#b83c00', badge: '#e64a19', light: '#fff4f0' },
+  'SEGUNDA': { bg: '#6B2737', badge: '#8a3447', light: '#fbeef1' },
   'TERCERA': { bg: '#1a5c2a', badge: '#2d8a3e', light: '#edf7ef' },
 };
 
@@ -79,7 +79,7 @@ const getCatColor = (categoria: string | null): { text: string; badge: string; l
   const c = categoria?.toLowerCase();
   if (c === 'master')  return { text: '#4a1070', badge: '#4a1070', light: '#f5eef8' };
   if (c === 'primera') return { text: '#014f86', badge: '#014f86', light: '#e8f4fd' };
-  if (c === 'segunda') return { text: '#b83c00', badge: '#b83c00', light: '#fff4f0' };
+  if (c === 'segunda') return { text: '#6B2737', badge: '#6B2737', light: '#fbeef1' };
   if (c === 'tercera') return { text: '#1a5c2a', badge: '#1a5c2a', light: '#edf7ef' };
   return { text: '#999', badge: '#aaa', light: '#f5f5f5' };
 };
@@ -120,8 +120,20 @@ const cargarHtmlToImage = (): Promise<any> =>
 function PubHeader({ data, tema }: { data: any; tema: any }) {
   // En Panamericano, el subtítulo no debe repetir "TORNEO PANAMERICANO"
   // (ya figura arriba). Se reemplaza por "CATEGORÍA MÁXIMA".
+  const catSubtitulo: string = (() => {
+    const norm = (s?: string | null) =>
+      (s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const t = `${norm(data?.torneo)} ${norm(data?.circuito)}`;
+    if (/master|maxima/.test(t)) return 'CATEGORÍA MÁXIMA';
+    if (/femenin/.test(t))       return 'CATEGORÍA FEMENINO';
+    if (/juvenil/.test(t))       return 'CATEGORÍA JUVENIL';
+    if (/segunda/.test(t))       return 'CATEGORÍA SEGUNDA';
+    if (/tercera/.test(t))       return 'CATEGORÍA TERCERA';
+    if (/primera/.test(t))       return 'CATEGORÍA PRIMERA';
+    return 'CATEGORÍA MÁXIMA';
+  })();
   const faseMostrar: string = data.esPanamericano && typeof data.fase === 'string'
-    ? data.fase.replace(/TORNEO\s+PANAMERICANO/gi, 'CATEGORÍA MÁXIMA')
+    ? data.fase.replace(/TORNEO\s+PANAMERICANO/gi, catSubtitulo)
     : data.fase;
   // Si es torneo nacional, usar paleta V2 premium
   if (data.categoriaFederal) {
@@ -1274,9 +1286,9 @@ const COLORES_CATEGORIA_V2: Record<string, {
     cyan:'#5fd4ff', cyanSoft:'#8fe3ff', ink:'#0a1a2e',
   },
   segunda: {
-    navyDeep:'#1a0e06', navy:'#2f1a0a', navy2:'#3d2210', petrol:'#5c2f0e',
-    gold:'#f4c430', goldBright:'#ffd95a', goldDeep:'#c9962a',
-    cyan:'#ff9d5f', cyanSoft:'#ffbf8f', ink:'#1a0a0a',
+    navyDeep:'#2a0e16', navy:'#4a1626', navy2:'#6B2737', petrol:'#8a3447',
+    gold:'#D4AF37', goldBright:'#e8c75a', goldDeep:'#b08d22',
+    cyan:'#e09aac', cyanSoft:'#eab9c6', ink:'#1f0a10',
   },
   tercera: {
     navyDeep:'#061a0e', navy:'#0a2f1a', navy2:'#0d3d22', petrol:'#0e5c30',
@@ -1725,7 +1737,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
-const BUILD_TAG = 'pub-2026-06-28-paleta';
+const BUILD_TAG = 'pub-2026-06-28-segunda';
 
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
