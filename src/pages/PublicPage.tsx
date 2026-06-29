@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-06-29-header
+// PUBLIC_BUILD = pub-public-2026-06-29-activos
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
@@ -52,7 +52,9 @@ function SeccionNacional() {
 
   useEffect(() => {
     api.get('/publicaciones/circuitos').then(r => {
-      const nac = (r.data as any[]).filter(t => /nacional/i.test(t.name) || /panamericano/i.test(t.name));
+      const nac = (r.data as any[]).filter(t =>
+        t.active === true && (/nacional/i.test(t.name) || /panamericano/i.test(t.name))
+      );
       setTorneos(nac);
     }).catch(() => {});
   }, []);
