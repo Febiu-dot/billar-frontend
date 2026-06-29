@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-06-29-selector-torneo
+// PUBLIC_BUILD = pub-public-2026-06-29-header
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
@@ -144,7 +144,7 @@ function SeccionNacional() {
   return (
     <section>
       <h2 className="font-display text-lg font-bold text-silver-light uppercase tracking-wide mb-3 orange-line pl-3">
-        Torneo Nacional
+        Series y Rankings por Torneo
       </h2>
 
       <div className="card mb-4">
