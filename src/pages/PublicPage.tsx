@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-06-29-activos
+// PUBLIC_BUILD = pub-public-2026-06-29-pwa-publico
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
