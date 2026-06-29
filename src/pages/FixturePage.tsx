@@ -104,7 +104,10 @@ export default function FixturePage() {
     api.get('/departamentos').then(r => setDepartamentos(r.data));
     api.get('/tournaments').then(r => {
       setTournaments(r.data);
-      if (r.data.length > 0) loadTournament(r.data[0].id);
+      if (r.data.length > 0) {
+        const activo = r.data.find((t: any) => t.active);
+        loadTournament((activo ?? r.data[0]).id);
+      }
       else setLoading(false);
     });
   }, []);
