@@ -1,13 +1,14 @@
 {
+  "id": "/publico",
   "name": "Federación de Billar del Uruguay",
   "short_name": "FBU Torneos",
   "description": "Sistema de gestión de torneos de billar — Federación de Billar del Uruguay",
-  "start_url": "/",
+  "start_url": "/publico",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#0a0a0a",
   "orientation": "any",
-  "scope": "/",
+  "scope": "/publico",
   "lang": "es",
   "icons": [
     { "src": "/icons/icon-72.png",  "sizes": "72x72",   "type": "image/png", "purpose": "any maskable" },
@@ -20,8 +21,7 @@
     { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ],
   "shortcuts": [
-    { "name": "Ver Torneo", "url": "/publico", "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }] },
-    { "name": "Panel Juez", "url": "/juez",    "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }] }
+    { "name": "Ver Torneo", "url": "/publico", "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }] }
   ],
   "categories": ["sports", "utilities"]
 }
