@@ -1,8 +1,9 @@
+// PUBLIC_BUILD = pub-public-2026-06-29-selector-torneo
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
 import { Match, Table } from '../types';
-import { MatchStatusBadge, playerName, LoadingSpinner } from '../components/ui';
+import { MatchStatusBadge, LoadingSpinner } from '../components/ui';
 
 // ── Sección Nacional ──────────────────────────────────────────────────
 
@@ -14,6 +15,23 @@ const PAIS_APOCOPE: Record<string, string> = {
 };
 const apocPais = (pais?: string | null): string =>
   pais ? (PAIS_APOCOPE[pais] ?? pais.slice(0, 3).toUpperCase()) : 'URU';
+
+// Detecta si un match pertenece a un torneo Panamericano (por nombre del torneo).
+const matchEsPana = (m: any): boolean =>
+  /panamericano/i.test(m?.phase?.circuit?.tournament?.name ?? '');
+
+// Nombre del jugador en la portada pública: agrega apócope de país solo en Panamericano.
+function nombrePublico(jug: any, esPana: boolean) {
+  const nombre = jug ? `${jug.firstName} ${jug.lastName}` : '—';
+  if (esPana && jug?.pais) {
+    return (
+      <>
+        {nombre} <span className="text-silver-dark font-mono text-xs">({apocPais(jug.pais)})</span>
+      </>
+    );
+  }
+  return nombre;
+}
 
 function SeccionNacional() {
   const [torneos, setTorneos]         = useState<any[]>([]);
@@ -400,6 +418,8 @@ export default function PublicPage() {
   const [loading, setLoading]               = useState(true);
   const [lastUpdate, setLastUpdate]         = useState(new Date());
   const [mesaModal, setMesaModal]           = useState<{ table: Table; match: Match | null; serieMatches: Match[] } | null>(null);
+  // Torneo elegido por el espectador para filtrar las 3 columnas. null = aún no eligió.
+  const [torneoSel, setTorneoSel]           = useState<number | null>(null);
 
   const fetchAll = () => {
     Promise.all([
@@ -413,17 +433,11 @@ export default function PublicPage() {
       const activeMerged = active.data; // solo en_juego
       setTables(t.data);
       setActiveMatches(activeMerged);
-      // Asignados van a pendientes, junto con los pendientes reales
-      const pendientesMerged = [...assigned.data, ...pending.data];
-      setPendingMatches(pendientesMerged.slice(0, 8));
-      // Detectar circuito activo por los partidos en juego/asignados
-      const circuitoActivo: number | null = activeMerged.length > 0
-        ? (activeMerged[0] as any)?.phase?.circuitId ?? null
-        : (assigned.data[0] as any)?.phase?.circuitId ?? null;
-      const finalizadosFiltrados = circuitoActivo
-        ? finished.data.filter((m: any) => m.phase?.circuitId === circuitoActivo)
-        : finished.data;
-      setRecentMatches(finalizadosFiltrados.slice(-5).reverse());
+      // Pendientes (asignados + pendientes reales). El filtrado por torneo se hace
+      // al renderizar, según el torneo que elija el espectador.
+      setPendingMatches([...assigned.data, ...pending.data]);
+      // Resultados finalizados, más recientes primero. Filtrado por torneo al renderizar.
+      setRecentMatches([...finished.data].reverse());
       setAllMatches(all.data);
       setLastUpdate(new Date());
       setLoading(false);
@@ -458,6 +472,27 @@ export default function PublicPage() {
     </div>
   );
 
+  // Torneos activos presentes en los partidos cargados (para el selector).
+  const torneosActivos: { id: number; name: string }[] = (() => {
+    const map = new Map<number, string>();
+    [...activeMatches, ...pendingMatches, ...recentMatches].forEach((m: any) => {
+      const to = m?.phase?.circuit?.tournament;
+      if (to && to.active === true) map.set(to.id, to.name);
+    });
+    return [...map.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  })();
+
+  // Filtro por torneo elegido. Si no eligió nada, las columnas quedan vacías.
+  const porTorneo = (m: any) =>
+    torneoSel != null && m?.phase?.circuit?.tournament?.id === torneoSel;
+  const activosF   = torneoSel != null ? activeMatches.filter(porTorneo)  : [];
+  const pendientesF = torneoSel != null ? pendingMatches.filter(porTorneo).slice(0, 8) : [];
+  const recientesF  = torneoSel != null ? recentMatches.filter(porTorneo).slice(0, 5)  : [];
+  const esPanaSel = torneoSel != null &&
+    /panamericano/i.test(torneosActivos.find(t => t.id === torneoSel)?.name ?? '');
+
   return (
     <div className="min-h-screen bg-carbon-100">
       {/* Header */}
@@ -483,6 +518,28 @@ export default function PublicPage() {
       </header>
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-8">
+
+        {/* Selector de torneo */}
+        <section>
+          <label className="block font-display text-lg font-bold text-silver-light uppercase tracking-wide mb-3 orange-line pl-3">
+            Elegí un Torneo
+          </label>
+          <select
+            className="input w-full"
+            value={torneoSel ?? ''}
+            onChange={e => setTorneoSel(e.target.value ? Number(e.target.value) : null)}
+          >
+            <option value="">Seleccionar torneo…</option>
+            {torneosActivos.map(t => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+          {torneoSel == null && (
+            <p className="text-silver-dark text-sm mt-2 pl-3">
+              Elegí un torneo arriba para ver los partidos en curso, próximos y resultados.
+            </p>
+          )}
+        </section>
 
         {/* Estado de mesas */}
         <section>
@@ -518,13 +575,13 @@ export default function PublicPage() {
         <section>
           <h2 className="font-display text-lg font-bold text-silver-light uppercase tracking-wide mb-3 orange-line pl-3">
             Partidos en Curso
-            {activeMatches.length > 0 && <span className="ml-3 text-orange">({activeMatches.length})</span>}
+            {activosF.length > 0 && <span className="ml-3 text-orange">({activosF.length})</span>}
           </h2>
-          {activeMatches.length === 0 ? (
+          {activosF.length === 0 ? (
             <div className="card text-silver-dark text-sm text-center py-10">Sin partidos activos</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {activeMatches.map(m => (
+              {activosF.map(m => (
                 <div key={m.id} className={`card ${m.status === 'en_juego' ? 'border-orange/30' : 'border-blue-700/20'}`}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs text-silver-dark font-mono">Mesa {m.table?.number} — {m.table?.venue?.name}</span>
@@ -534,6 +591,7 @@ export default function PublicPage() {
                     <div>
                       <p className="font-semibold text-silver-light text-sm">{m.playerA?.firstName}</p>
                       <p className="text-silver-dark text-xs">{m.playerA?.lastName}</p>
+                      {esPanaSel && <p className="text-silver-dark text-xs font-mono">{apocPais((m.playerA as any)?.pais)}</p>}
                     </div>
                     <div className="flex flex-col items-center justify-center">
                       {m.result ? (
@@ -548,6 +606,7 @@ export default function PublicPage() {
                     <div>
                       <p className="font-semibold text-silver-light text-sm">{m.playerB?.firstName}</p>
                       <p className="text-silver-dark text-xs">{m.playerB?.lastName}</p>
+                      {esPanaSel && <p className="text-silver-dark text-xs font-mono">{apocPais((m.playerB as any)?.pais)}</p>}
                     </div>
                   </div>
                   {m.sets && m.sets.length > 0 && (
@@ -576,16 +635,16 @@ export default function PublicPage() {
             <h2 className="font-display text-lg font-bold text-silver-light uppercase tracking-wide mb-3 orange-line pl-3">
               Próximos Partidos
             </h2>
-            {pendingMatches.length === 0 ? (
+            {pendientesF.length === 0 ? (
               <div className="card text-silver-dark text-sm text-center py-8">Sin partidos pendientes</div>
             ) : (
               <div className="space-y-2">
-                {pendingMatches.map(m => (
+                {pendientesF.map(m => (
                   <div key={m.id} className="card py-2.5">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <p className="text-silver-light text-sm font-medium truncate">
-                          {playerName(m.playerA)} <span className="text-silver-dark">vs</span> {playerName(m.playerB)}
+                          {nombrePublico(m.playerA, esPanaSel)} <span className="text-silver-dark">vs</span> {nombrePublico(m.playerB, esPanaSel)}
                         </p>
                         <p className="text-silver-dark text-xs font-mono">{m.phase?.name} · R{m.round}</p>
                       </div>
@@ -602,21 +661,21 @@ export default function PublicPage() {
             <h2 className="font-display text-lg font-bold text-silver-light uppercase tracking-wide mb-3 orange-line pl-3">
               Últimos Resultados
             </h2>
-            {recentMatches.length === 0 ? (
+            {recientesF.length === 0 ? (
               <div className="card text-silver-dark text-sm text-center py-8">Sin resultados aún</div>
             ) : (
               <div className="space-y-2">
-                {recentMatches.map(m => (
+                {recientesF.map(m => (
                   <div key={m.id} className="card py-2.5">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className={`text-sm font-semibold ${m.result?.winnerId === m.playerAId ? 'text-orange' : 'text-silver-dark'}`}>
-                            {playerName(m.playerA)}
+                            {nombrePublico(m.playerA, esPanaSel)}
                           </p>
                           <span className="font-mono text-silver font-bold shrink-0">{m.result?.setsA}—{m.result?.setsB}</span>
                           <p className={`text-sm font-semibold ${m.result?.winnerId === m.playerBId ? 'text-orange' : 'text-silver-dark'}`}>
-                            {playerName(m.playerB)}
+                            {nombrePublico(m.playerB, esPanaSel)}
                           </p>
                         </div>
                         {m.sets && m.sets.length > 0 && (
