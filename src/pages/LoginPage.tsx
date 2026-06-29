@@ -124,12 +124,6 @@ export default function LoginPage() {
             {loading ? 'Ingresando...' : 'Ingresar'}
           </button>
         </form>
-
-        <div className="mt-4 text-center">
-          <a href="/publico" className="text-orange/70 hover:text-orange text-xs">
-            Ver torneo sin login →
-          </a>
-        </div>
       </div>
     </div>
   );
