@@ -118,6 +118,16 @@ export default function MatchesPage() {
     fetchMatches(filterCircuit, filterTournament);
   };
 
+  const handleDesasignar = async (matchId: number) => {
+    if (!confirm('¿Quitar la mesa asignada a este partido? Volverá a quedar pendiente.')) return;
+    try {
+      await api.put(`/matches/${matchId}/desasignar`);
+      fetchMatches(filterCircuit, filterTournament);
+    } catch (err: any) {
+      alert(err?.response?.data?.error ?? 'No se pudo quitar la mesa');
+    }
+  };
+
   // Abre el modal para sustituir un jugador provisorio (Qualy) por uno real.
   // Carga todos los jugadores activos ordenados por apellido.
   const openSubModal = (match: Match, lado: 'A' | 'B', slotLabel: string) => {
@@ -405,7 +415,10 @@ export default function MatchesPage() {
                       </>
                     )}
                     {m.status === 'asignado' && (
-                      <button className="btn-primary text-xs py-1" onClick={() => handleStart(m.id)}>▶ Iniciar</button>
+                      <div className="flex gap-2">
+                        <button className="btn-primary text-xs py-1" onClick={() => handleStart(m.id)}>▶ Iniciar</button>
+                        <button className="btn-secondary text-xs py-1" onClick={() => handleDesasignar(m.id)}>Quitar mesa</button>
+                      </div>
                     )}
                     {m.status === 'en_juego' && (
                       <button className="py-1 px-3 text-xs rounded-lg border border-gold/50 text-gold hover:bg-gold/10 transition-all font-semibold" onClick={() => openResultModal(m)}>
@@ -609,4 +622,3 @@ export default function MatchesPage() {
     </div>
   );
 }
-
