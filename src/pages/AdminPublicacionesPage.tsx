@@ -241,7 +241,7 @@ function PubHeader({ data, tema }: { data: any; tema: any }) {
             letterSpacing: '0.04em', textTransform: 'uppercase',
             color: CV2.goldBright,
             textShadow: `0 0 40px ${CV2.goldDeep}88`,
-          }}>{data.torneo}</div>
+          }}>{data.esPanamericano ? 'TORNEO PANAMERICANO' : data.torneo}</div>
           <div style={{
             fontFamily: "'Saira Condensed', sans-serif",
             fontWeight: 700, fontSize: 20, marginTop: 10,
@@ -287,7 +287,7 @@ function PubHeader({ data, tema }: { data: any; tema: any }) {
         <img src="/logo-febiu.png" alt="FEBIU" crossOrigin="anonymous" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%' }} />
       </div>
       <div style={{ flex: 1, textAlign: 'center', color: '#fff' }}>
-        <div style={{ fontSize: 38, fontWeight: 900, letterSpacing: 3, textTransform: 'uppercase', lineHeight: 1.1 }}>{data.torneo}</div>
+        <div style={{ fontSize: 38, fontWeight: 900, letterSpacing: 3, textTransform: 'uppercase', lineHeight: 1.1 }}>{data.esPanamericano ? 'TORNEO PANAMERICANO' : data.torneo}</div>
         <div style={{ fontSize: 22, fontWeight: 600, marginTop: 6, letterSpacing: 2, opacity: 0.9 }}>{data.esPanamericano ? `CONFEDERACIÓN PANAMERICANA DE BILLAR ${data.temporada}` : `FEBIU · TEMPORADA ${data.temporada}`}</div>
         <div style={{ fontSize: 32, fontWeight: 900, marginTop: 16, letterSpacing: 4, textTransform: 'uppercase', lineHeight: 1.1 }}>{faseMostrar}</div>
         {data.fechaPrincipal && <div style={{ fontSize: 20, marginTop: 8, opacity: 0.9, textTransform: 'uppercase', letterSpacing: 1 }}>{data.fechaPrincipal}</div>}
@@ -1737,7 +1737,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
-const BUILD_TAG = 'pub-2026-06-28-segunda';
+const BUILD_TAG = 'pub-2026-06-29-titulo-pana-fijo';
 
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
