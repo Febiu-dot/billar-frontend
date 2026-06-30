@@ -35,6 +35,12 @@ export default function MatchesPage() {
   const [savingSet, setSavingSet]     = useState<number | null>(null);
   const [resError, setResError]       = useState('');
 
+  // Modal sustituir jugador provisorio (Qualy) por jugador real
+  const [subModal, setSubModal]       = useState<{ match: Match; lado: 'A' | 'B'; slotLabel: string } | null>(null);
+  const [subPlayers, setSubPlayers]   = useState<{ id: number; firstName: string; lastName: string }[]>([]);
+  const [subSelected, setSubSelected] = useState('');
+  const [subSaving, setSubSaving]     = useState(false);
+
   const filterCircuitRef    = useRef(filterCircuit);
   const filterTournamentRef = useRef(filterTournament);
   useEffect(() => { filterCircuitRef.current    = filterCircuit; },    [filterCircuit]);
@@ -110,6 +116,35 @@ export default function MatchesPage() {
   const handleStart = async (matchId: number) => {
     await api.put(`/matches/${matchId}/start`);
     fetchMatches(filterCircuit, filterTournament);
+  };
+
+  // Abre el modal para sustituir un jugador provisorio (Qualy) por uno real.
+  // Carga todos los jugadores activos ordenados por apellido.
+  const openSubModal = (match: Match, lado: 'A' | 'B', slotLabel: string) => {
+    setSubModal({ match, lado, slotLabel });
+    setSubSelected('');
+    api.get('/players', { params: { active: true } }).then(r => {
+      const arr = (r.data as any[])
+        .map(p => ({ id: p.id, firstName: p.firstName, lastName: p.lastName }))
+        .sort((a, b) => `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`));
+      setSubPlayers(arr);
+    }).catch(() => setSubPlayers([]));
+  };
+
+  const handleSustituir = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subModal || !subSelected) return;
+    setSubSaving(true);
+    try {
+      await api.put(`/matches/${subModal.match.id}/jugador`, {
+        lado: subModal.lado,
+        playerId: Number(subSelected),
+      });
+      setSubModal(null);
+      fetchMatches(filterCircuit, filterTournament);
+    } catch (err: any) {
+      alert(err?.response?.data?.error ?? 'No se pudo sustituir el jugador');
+    } finally { setSubSaving(false); }
   };
 
   // ── Abrir modal resultado ─────────────────────────────────────────
@@ -313,13 +348,39 @@ export default function MatchesPage() {
                       <span className="text-xs text-chalk/30 font-mono">{m.phase?.circuit?.tournament?.name} · {m.phase?.name} · R{m.round}</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="font-semibold text-chalk truncate">{playerName(m.playerA)}</span>
+                      <span className="font-semibold text-chalk truncate flex items-center gap-1">
+                        {m.playerA
+                          ? playerName(m.playerA)
+                          : <>
+                              <span className="text-orange/80 italic">{(m as any).slotA ?? '—'}</span>
+                              {user?.role === 'admin' && (m as any).slotA && (
+                                <button
+                                  className="text-orange hover:text-orange/70 text-xs"
+                                  title="Sustituir por jugador real"
+                                  onClick={() => openSubModal(m, 'A', (m as any).slotA)}
+                                >✏️</button>
+                              )}
+                            </>}
+                      </span>
                       {m.result ? (
                         <span className="font-mono text-gold font-bold text-lg shrink-0">{m.result.setsA} — {m.result.setsB}</span>
                       ) : (
                         <span className="text-chalk/20 font-mono shrink-0">vs</span>
                       )}
-                      <span className="font-semibold text-chalk truncate">{playerName(m.playerB)}</span>
+                      <span className="font-semibold text-chalk truncate flex items-center gap-1">
+                        {m.playerB
+                          ? playerName(m.playerB)
+                          : <>
+                              <span className="text-orange/80 italic">{(m as any).slotB ?? '—'}</span>
+                              {user?.role === 'admin' && (m as any).slotB && (
+                                <button
+                                  className="text-orange hover:text-orange/70 text-xs"
+                                  title="Sustituir por jugador real"
+                                  onClick={() => openSubModal(m, 'B', (m as any).slotB)}
+                                >✏️</button>
+                              )}
+                            </>}
+                      </span>
                     </div>
                     {m.sets && m.sets.length > 0 && (
                       <div className="mt-2 space-y-0.5">
@@ -516,6 +577,36 @@ export default function MatchesPage() {
           </Modal>
         );
       })()}
+      {subModal && (
+        <Modal onClose={() => setSubModal(null)} title="Sustituir jugador">
+          <p className="text-chalk/60 text-sm mb-1">
+            Lugar provisorio: <span className="text-orange italic">{subModal.slotLabel}</span>
+          </p>
+          <p className="text-chalk/40 text-xs mb-4 font-mono">
+            {subModal.match.phase?.circuit?.tournament?.name} · {subModal.match.phase?.name}
+            {subModal.match.table && ` · Mesa ${subModal.match.table.number}`}
+          </p>
+          <form onSubmit={handleSustituir} className="space-y-4">
+            <div>
+              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Jugador real</label>
+              <select className="input" value={subSelected} onChange={e => setSubSelected(e.target.value)} required>
+                <option value="">Elegir jugador…</option>
+                {subPlayers.map(p => (
+                  <option key={p.id} value={p.id}>{p.lastName}, {p.firstName}</option>
+                ))}
+              </select>
+              <p className="text-chalk/30 text-xs mt-1.5">La mesa y el horario del partido se conservan.</p>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button type="submit" className="btn-primary flex-1" disabled={subSaving || !subSelected}>
+                {subSaving ? 'Sustituyendo…' : '✓ Sustituir'}
+              </button>
+              <button type="button" className="btn-secondary flex-1" onClick={() => setSubModal(null)}>Cancelar</button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
     </div>
   );
 }
