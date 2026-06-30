@@ -132,9 +132,15 @@ function PubHeader({ data, tema }: { data: any; tema: any }) {
     if (/primera/.test(t))       return 'CATEGORÍA PRIMERA';
     return 'CATEGORÍA MÁXIMA';
   })();
-  const faseMostrar: string = data.esPanamericano && typeof data.fase === 'string'
-    ? data.fase.replace(/TORNEO\s+PANAMERICANO/gi, catSubtitulo)
-    : data.fase;
+  const faseMostrar: string = (() => {
+    if (!(data.esPanamericano && typeof data.fase === 'string')) return data.fase;
+    // data.fase viene como "FIXTURE INICIAL — TORNEO PANAMERICANO <lo que sea>".
+    // Tomamos solo el prefijo antes del guion y le pegamos la categoría detectada,
+    // descartando cualquier residuo del nombre del torneo (ej. "Cat. Máx").
+    const partes = data.fase.split('—');
+    const prefijo = partes.length > 1 ? partes[0].trim() : data.fase.trim();
+    return `${prefijo} — ${catSubtitulo}`;
+  })();
   // Si es torneo nacional, usar paleta V2 premium
   if (data.categoriaFederal) {
     const CV2 = getCatV2(catPaletaFE(data));
@@ -1737,7 +1743,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
-const BUILD_TAG = 'pub-2026-06-29-titulo-pana-fijo';
+const BUILD_TAG = 'pub-2026-06-29-subtitulo-limpio';
 
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
