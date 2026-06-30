@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-06-29-pwa-publico
+// PUBLIC_BUILD = pub-public-2026-06-29-selector-allmatches
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
@@ -475,9 +475,12 @@ export default function PublicPage() {
   );
 
   // Torneos activos presentes en los partidos cargados (para el selector).
+  // Se deriva de allMatches (todos los partidos, sin importar estado) para que
+  // aparezca cualquier torneo active=true con al menos un partido, sin depender
+  // del nombre ni del estado de los partidos.
   const torneosActivos: { id: number; name: string }[] = (() => {
     const map = new Map<number, string>();
-    [...activeMatches, ...pendingMatches, ...recentMatches].forEach((m: any) => {
+    allMatches.forEach((m: any) => {
       const to = m?.phase?.circuit?.tournament;
       if (to && to.active === true) map.set(to.id, to.name);
     });
