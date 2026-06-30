@@ -348,39 +348,38 @@ export default function MatchesPage() {
                       <span className="text-xs text-chalk/30 font-mono">{m.phase?.circuit?.tournament?.name} · {m.phase?.name} · R{m.round}</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="font-semibold text-chalk truncate flex items-center gap-1">
-                        {m.playerA
-                          ? playerName(m.playerA)
-                          : <>
-                              <span className="text-orange/80 italic">{(m as any).slotA ?? '—'}</span>
-                              {user?.role === 'admin' && (m as any).slotA && (
+                      {(() => {
+                        const editable = user?.role === 'admin' && (m.status === 'pendiente' || m.status === 'asignado');
+                        const renderLado = (lado: 'A' | 'B') => {
+                          const player = lado === 'A' ? m.playerA : m.playerB;
+                          const slot = lado === 'A' ? (m as any).slotA : (m as any).slotB;
+                          const label = player ? playerName(player) : (slot ?? '—');
+                          const esQualy = !player || /qualy/i.test(label);
+                          return (
+                            <span className="font-semibold text-chalk truncate flex items-center gap-1">
+                              <span className={esQualy ? 'text-orange/80 italic' : ''}>{label}</span>
+                              {editable && (
                                 <button
-                                  className="text-orange hover:text-orange/70 text-xs"
-                                  title="Sustituir por jugador real"
-                                  onClick={() => openSubModal(m, 'A', (m as any).slotA)}
+                                  className="text-orange hover:text-orange/70 text-xs shrink-0"
+                                  title="Sustituir jugador"
+                                  onClick={() => openSubModal(m, lado, label)}
                                 >✏️</button>
                               )}
-                            </>}
-                      </span>
-                      {m.result ? (
-                        <span className="font-mono text-gold font-bold text-lg shrink-0">{m.result.setsA} — {m.result.setsB}</span>
-                      ) : (
-                        <span className="text-chalk/20 font-mono shrink-0">vs</span>
-                      )}
-                      <span className="font-semibold text-chalk truncate flex items-center gap-1">
-                        {m.playerB
-                          ? playerName(m.playerB)
-                          : <>
-                              <span className="text-orange/80 italic">{(m as any).slotB ?? '—'}</span>
-                              {user?.role === 'admin' && (m as any).slotB && (
-                                <button
-                                  className="text-orange hover:text-orange/70 text-xs"
-                                  title="Sustituir por jugador real"
-                                  onClick={() => openSubModal(m, 'B', (m as any).slotB)}
-                                >✏️</button>
-                              )}
-                            </>}
-                      </span>
+                            </span>
+                          );
+                        };
+                        return (
+                          <>
+                            {renderLado('A')}
+                            {m.result ? (
+                              <span className="font-mono text-gold font-bold text-lg shrink-0">{m.result.setsA} — {m.result.setsB}</span>
+                            ) : (
+                              <span className="text-chalk/20 font-mono shrink-0">vs</span>
+                            )}
+                            {renderLado('B')}
+                          </>
+                        );
+                      })()}
                     </div>
                     {m.sets && m.sets.length > 0 && (
                       <div className="mt-2 space-y-0.5">
@@ -610,3 +609,4 @@ export default function MatchesPage() {
     </div>
   );
 }
+
