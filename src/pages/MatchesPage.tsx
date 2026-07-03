@@ -1,3 +1,4 @@
+// BUILD_TAG = matches-2026-07-01-solo-activos
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
@@ -62,7 +63,7 @@ export default function MatchesPage() {
     Promise.all([
       fetchMatches(),
       fetchTables(),
-      api.get('/tournaments').then(r => setTournaments(r.data)),
+      api.get('/tournaments').then(r => setTournaments((r.data as any[]).filter(t => t.active))),
       api.get('/circuits').then(r => setCircuits(r.data)),
     ]).finally(() => setLoading(false));
 
