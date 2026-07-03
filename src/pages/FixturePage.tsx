@@ -1,3 +1,4 @@
+// BUILD_TAG = fixture-2026-07-01-solo-activos
 import { useEffect, useState, useRef } from 'react';
 import { api } from '../services/api';
 import { Tournament, Match, Phase, Circuit, Player, Departamento } from '../types';
@@ -98,15 +99,15 @@ export default function FixturePage() {
   const rankingFileRef = useRef<HTMLInputElement>(null);
 
   const fetchTournaments = () =>
-    api.get('/tournaments').then(r => { setTournaments(r.data); setLoading(false); });
+    api.get('/tournaments').then(r => { setTournaments((r.data as any[]).filter(t => t.active)); setLoading(false); });
 
   useEffect(() => {
     api.get('/departamentos').then(r => setDepartamentos(r.data));
     api.get('/tournaments').then(r => {
-      setTournaments(r.data);
-      if (r.data.length > 0) {
-        const activo = r.data.find((t: any) => t.active);
-        loadTournament((activo ?? r.data[0]).id);
+      const activos = (r.data as any[]).filter(t => t.active);
+      setTournaments(activos);
+      if (activos.length > 0) {
+        loadTournament(activos[0].id);
       }
       else setLoading(false);
     });
