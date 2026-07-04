@@ -1191,13 +1191,21 @@ function PlantillaCrucesNacional({ data }: { data: any }) {
           background:`linear-gradient(90deg,${CV2.navy2}f0,${CV2.petrol}cc,${CV2.navy}aa)`,
           borderBottom:`1.5px solid ${CV2.goldDeep}77`,
           padding:'8px 14px',
-          display:'flex', justifyContent:'center', alignItems:'center', gap:8,
+          display:'flex', justifyContent:'center', alignItems:'center', gap:10,
         }}>
           <span style={{
             fontFamily:"'Saira Condensed', sans-serif", fontWeight:800, fontSize:12,
             color:CV2.cyanSoft, letterSpacing:'0.16em', textTransform:'uppercase', textAlign:'center',
             whiteSpace:'nowrap',
           }}>{rondaLabel}</span>
+          {(p.hora || p.mesa) && (
+            <span style={{
+              fontFamily:"'Saira Condensed', sans-serif", fontWeight:700, fontSize:12,
+              color:CV2.goldBright, letterSpacing:'0.06em', whiteSpace:'nowrap',
+            }}>
+              {p.hora ? `🕐 ${p.hora}` : ''}{p.hora && p.mesa ? '  ' : ''}{p.mesa ? `M.${p.mesa}` : ''}
+            </span>
+          )}
         </div>
         <JugRow jug={jugA} isWinner={winA} />
         <div style={{height:1,background:'rgba(255,255,255,0.04)',marginLeft:14}} />
@@ -1743,7 +1751,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
-const BUILD_TAG = 'pub-2026-06-29-subtitulo-limpio';
+const BUILD_TAG = 'pub-2026-07-04-hora-cruces-nacional';
 
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
