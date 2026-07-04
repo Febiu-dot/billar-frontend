@@ -1,4 +1,4 @@
-// BUILD_TAG = matches-2026-07-01-solo-activos
+// BUILD_TAG = matches-2026-07-01-set-fresh-fetch
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
@@ -159,7 +159,17 @@ export default function MatchesPage() {
   };
 
   // ── Abrir modal resultado ─────────────────────────────────────────
-  const openResultModal = (match: Match) => {
+  const openResultModal = async (matchArg: Match) => {
+    // Traer el partido FRESCO del backend por ID para evitar abrir con un objeto
+    // stale de la lista (con 2 jueces, los sockets refrescan la lista y el match
+    // de la lista puede no tener el último set guardado → se pisaba el set 1).
+    let match = matchArg;
+    try {
+      const r = await api.get(`/matches/${matchArg.id}`);
+      match = r.data;
+    } catch {
+      // si falla el fetch, seguimos con el objeto de la lista como fallback
+    }
     setResultModal(match);
     const esFinalizado = match.status === 'finalizado' || match.status === 'wo';
     if (match.sets && match.sets.length > 0) {
@@ -222,20 +232,29 @@ export default function MatchesPage() {
     setSavingSet(index);
     setResError('');
     try {
-      await api.put(`/matches/${resultModal.id}/set`, {
+      const resp = await api.put(`/matches/${resultModal.id}/set`, {
         setNumber: index + 1,
         pointsA: Number(s.a),
         pointsB: Number(s.b),
       });
 
-      const newSets = sets.map((set, i) => i === index ? { ...set, saved: true } : set);
-      const setsToWin = (resultModal as any).ruleSet?.setsToWin ?? 3;
-      const winsA = newSets.filter(set => Number(set.a) > Number(set.b) && set.saved).length;
-      const winsB = newSets.filter(set => Number(set.b) > Number(set.a) && set.saved).length;
-      if (winsA < setsToWin && winsB < setsToWin && newSets.length === index + 1) {
-        newSets.push({ a: '', b: '', saved: false });
+      // Fuente de verdad: los sets que devuelve el backend (evita desincronización
+      // con 2 jueces trabajando en paralelo).
+      const fresh = resp.data;
+      setResultModal(fresh);
+      const setsToWin = (fresh as any).ruleSet?.setsToWin ?? 3;
+      const backendSets: SetScore[] = (fresh.sets ?? []).map((set: any) => ({
+        a: set.pointsA.toString(),
+        b: set.pointsB.toString(),
+        saved: true,
+      }));
+      const winsA = backendSets.filter(set => Number(set.a) > Number(set.b)).length;
+      const winsB = backendSets.filter(set => Number(set.b) > Number(set.a)).length;
+      const finalizado = fresh.status === 'finalizado' || fresh.status === 'wo';
+      if (!finalizado && winsA < setsToWin && winsB < setsToWin) {
+        backendSets.push({ a: '', b: '', saved: false });
       }
-      setSets(newSets);
+      setSets(backendSets.length > 0 ? backendSets : [{ a: '', b: '', saved: false }]);
       fetchMatches(filterCircuit, filterTournament);
     } catch {
       setResError('Error al guardar el set');
