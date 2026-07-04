@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-06-30-mesas-por-torneo
+// PUBLIC_BUILD = pub-public-2026-07-01-mesas-sin-modal
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
@@ -419,7 +419,6 @@ export default function PublicPage() {
   const [allMatches, setAllMatches]         = useState<Match[]>([]);
   const [loading, setLoading]               = useState(true);
   const [lastUpdate, setLastUpdate]         = useState(new Date());
-  const [mesaModal, setMesaModal]           = useState<{ table: Table; match: Match | null; serieMatches: Match[] } | null>(null);
   // Torneo elegido por el espectador para filtrar las 3 columnas. null = aún no eligió.
   const [torneoSel, setTorneoSel]           = useState<number | null>(null);
 
@@ -453,20 +452,6 @@ export default function PublicPage() {
     socket.on('table:updated', fetchAll);
     return () => { socket.off('match:updated', fetchAll); socket.off('table:updated', fetchAll); };
   }, []);
-
-  const handleMesaClick = (table: Table) => {
-    if (table.status !== 'ocupada') return;
-    const matchEnMesa = activeMatches.find(m => m.tableId === table.id) ?? null;
-    let serieMatches: Match[] = [];
-    if (matchEnMesa?.serieId) {
-      serieMatches = allMatches.filter(m =>
-        (m as any).serieId === (matchEnMesa as any).serieId &&
-        m.id !== matchEnMesa.id &&
-        (m.status === 'finalizado' || m.status === 'wo')
-      ).sort((a, b) => a.round - b.round);
-    }
-    setMesaModal({ table, match: matchEnMesa, serieMatches });
-  };
 
   if (loading) return (
     <div className="min-h-screen bg-carbon-100 flex items-center justify-center">
@@ -592,10 +577,9 @@ export default function PublicPage() {
                 return (
                   <button
                     key={t.id}
-                    onClick={() => handleMesaClick(t)}
                     className={`rounded-xl border text-left w-full overflow-hidden transition-all ${
                       ocupada
-                        ? 'bg-orange/5 border-orange/30 cursor-pointer hover:bg-orange/10'
+                        ? 'bg-orange/5 border-orange/30 cursor-default'
                         : fuera
                         ? 'bg-red-900/10 border-red-800/20 opacity-50 cursor-default'
                         : 'bg-green-900/5 border-green-800/20 cursor-default'
@@ -653,9 +637,6 @@ export default function PublicPage() {
                 );
               })}
             </div>
-          )}
-          {mesasTorneo.some(t => t.status === 'ocupada') && (
-            <p className="text-silver-dark text-xs mt-2 text-center">Tocá una mesa en juego para ver el detalle del partido</p>
           )}
         </section>
 
@@ -797,101 +778,6 @@ export default function PublicPage() {
           Federación de Billar del Uruguay · Sistema de Torneos · {new Date().getFullYear()}
         </footer>
       </div>
-
-      {/* Modal mesa */}
-      {mesaModal && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setMesaModal(null)}>
-          <div className="bg-carbon-50 border border-silver-muted/20 rounded-2xl w-full max-w-md p-6 space-y-4" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between">
-              <h3 className="font-display text-xl text-orange uppercase">
-                Mesa {mesaModal.table.number} — {mesaModal.table.venue?.name}
-              </h3>
-              <button onClick={() => setMesaModal(null)} className="text-silver-dark hover:text-silver-light text-xl">✕</button>
-            </div>
-
-            {mesaModal.match ? (
-              <>
-                <div className="bg-carbon-100 rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <MatchStatusBadge status={mesaModal.match.status} />
-                    <span className="text-silver-dark text-xs font-mono">{mesaModal.match.phase?.name} · P{mesaModal.match.round % 10 === 0 ? 10 : mesaModal.match.round % 10}</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-center mt-3">
-                    <div>
-                      <p className="font-semibold text-silver-light">{mesaModal.match.playerA?.firstName}</p>
-                      <p className="text-silver-dark text-xs">{mesaModal.match.playerA?.lastName}</p>
-                    </div>
-                    <div className="flex flex-col items-center justify-center">
-                      {mesaModal.match.result ? (
-                        <>
-                          <span className="font-mono text-orange font-bold text-4xl">{mesaModal.match.result.setsA}—{mesaModal.match.result.setsB}</span>
-                          <span className="text-silver-dark text-xs font-mono mt-1">{mesaModal.match.result.pointsA} — {mesaModal.match.result.pointsB} pts</span>
-                        </>
-                      ) : (
-                        <span className="text-silver-muted font-mono text-2xl">vs</span>
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-silver-light">{mesaModal.match.playerB?.firstName}</p>
-                      <p className="text-silver-dark text-xs">{mesaModal.match.playerB?.lastName}</p>
-                    </div>
-                  </div>
-                  {mesaModal.match.sets && mesaModal.match.sets.length > 0 && (
-                    <div className="mt-3 border-t border-silver-muted/10 pt-3 space-y-1">
-                      <p className="text-silver-dark text-xs uppercase tracking-widest mb-2">Sets</p>
-                      {mesaModal.match.sets.map(s => (
-                        <div key={s.setNumber} className="flex items-center justify-center gap-3 font-mono text-sm">
-                          <span className="text-silver-dark w-8">S{s.setNumber}</span>
-                          <span className={s.pointsA > s.pointsB ? 'text-orange font-bold' : 'text-silver-dark'}>{s.pointsA}</span>
-                          <span className="text-silver-muted">—</span>
-                          <span className={s.pointsB > s.pointsA ? 'text-orange font-bold' : 'text-silver-dark'}>{s.pointsB}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {mesaModal.serieMatches.length > 0 && (
-                  <div>
-                    <p className="text-silver-dark text-xs uppercase tracking-widest mb-2">Partidos anteriores de la serie</p>
-                    <div className="space-y-2">
-                      {mesaModal.serieMatches.map(m => (
-                        <div key={m.id} className="bg-carbon-100 rounded-lg px-3 py-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-silver-dark text-xs font-mono">P{m.round % 10 === 0 ? 10 : m.round % 10}</span>
-                            <div className="flex items-center gap-2 text-sm">
-                              <span className={m.result?.winnerId === m.playerAId ? 'text-orange font-semibold' : 'text-silver-dark'}>
-                                {m.playerA?.firstName} {m.playerA?.lastName}
-                              </span>
-                              <span className="font-mono text-silver font-bold">{m.result?.setsA}—{m.result?.setsB}</span>
-                              <span className={m.result?.winnerId === m.playerBId ? 'text-orange font-semibold' : 'text-silver-dark'}>
-                                {m.playerB?.firstName} {m.playerB?.lastName}
-                              </span>
-                            </div>
-                            {m.result?.isWO && <span className="text-red-400 text-xs">W.O.</span>}
-                          </div>
-                          {m.sets && m.sets.length > 0 && (
-                            <div className="flex gap-2 mt-1 flex-wrap">
-                              {m.sets.map(s => (
-                                <span key={s.setNumber} className="font-mono text-xs text-silver-dark">
-                                  S{s.setNumber}: <span className={s.pointsA > s.pointsB ? 'text-orange' : ''}>{s.pointsA}</span>
-                                  —<span className={s.pointsB > s.pointsA ? 'text-orange' : ''}>{s.pointsB}</span>
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : (
-              <p className="text-silver-dark text-center py-4">No hay partido activo en esta mesa</p>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
