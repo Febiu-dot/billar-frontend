@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-07-05-semis-fix
+// PUBLIC_BUILD = pub-public-2026-07-05-sets-vertical
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
@@ -617,10 +617,16 @@ export default function PublicPage() {
                             <span className="font-mono text-orange font-bold text-2xl leading-none">
                               {r ? `${r.setsA}—${r.setsB}` : '0—0'}
                             </span>
-                            {r && (r.pointsA != null || r.pointsB != null) && (
-                              <span className="text-silver-dark text-[10px] font-mono mt-0.5">
-                                {r.pointsA ?? 0} — {r.pointsB ?? 0} pts
-                              </span>
+                            {m.sets && m.sets.length > 0 && (
+                              <div className="flex flex-col items-center gap-0.5 mt-1">
+                                {m.sets.map((s: any, i: number) => (
+                                  <span key={i} className="text-[10px] font-mono">
+                                    <span className={s.pointsA > s.pointsB ? 'text-orange font-bold' : 'text-silver-dark'}>{s.pointsA}</span>
+                                    <span className="text-silver-dark mx-0.5">—</span>
+                                    <span className={s.pointsB > s.pointsA ? 'text-orange font-bold' : 'text-silver-dark'}>{s.pointsB}</span>
+                                  </span>
+                                ))}
+                              </div>
                             )}
                           </div>
                           <p className="font-semibold text-silver-light text-sm leading-tight text-right">
