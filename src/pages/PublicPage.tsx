@@ -1,9 +1,10 @@
-// PUBLIC_BUILD = pub-public-2026-07-05-sets-vertical
+// PUBLIC_BUILD = pub-public-2026-07-05-bracket-tab
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
 import { Match, Table } from '../types';
 import { MatchStatusBadge, LoadingSpinner } from '../components/ui';
+import BracketNacional from '../components/BracketNacional';
 
 // ── Sección Nacional ──────────────────────────────────────────────────
 
@@ -42,13 +43,15 @@ function SeccionNacional() {
   const [cruces, setCruces]           = useState<any | null>(null);
   const [ranking, setRanking]         = useState<any[] | null>(null);
   const [rankingFinal, setRankingFinal] = useState<any[] | null>(null);
-  const [tab, setTab]                 = useState<'fixture'|'clasificados'|'cruces'|'ranking-final'>('fixture');
+  const [tab, setTab]                 = useState<'fixture'|'clasificados'|'cruces'|'ranking-final'|'bracket'>('fixture');
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState('');
   const [errorSeries, setErrorSeries] = useState('');
   const [errorRanking, setErrorRanking] = useState('');
   const [errorCruces, setErrorCruces] = useState('');
   const [errorRankingFinal, setErrorRankingFinal] = useState('');
+  const [bracket, setBracket]                     = useState<any | null>(null);
+  const [errorBracket, setErrorBracket]            = useState('');
 
   useEffect(() => {
     api.get('/publicaciones/circuitos').then(r => {
@@ -67,16 +70,19 @@ function SeccionNacional() {
     setErrorRanking('');
     setErrorCruces('');
     setErrorRankingFinal('');
+    setErrorBracket('');
     setSeries(null);
     setRanking(null);
     setCruces(null);
     setRankingFinal(null);
+    setBracket(null);
     try {
-      const [serRes, rkRes, crucesRes, acumRes] = await Promise.allSettled([
+      const [serRes, rkRes, crucesRes, acumRes, brkRes] = await Promise.allSettled([
         api.get(`/publicaciones/${cid}/series-nacional`),
         api.get(`/publicaciones/${cid}/ranking`),
         api.get(`/publicaciones/${cid}/cruces-nacional`),
         api.get(`/acumulado/${tId}`),
+        api.get(`/publicaciones/${cid}/bracket-nacional`),
       ]);
       if (serRes.status === 'fulfilled') {
         setSeries(serRes.value.data.series ?? []);
@@ -101,6 +107,12 @@ function SeccionNacional() {
       } else {
         setErrorRankingFinal('No hay ranking final disponible aún.');
         setRankingFinal([]);
+      }
+      if (brkRes.status === 'fulfilled') {
+        setBracket(brkRes.value.data);
+      } else {
+        setErrorBracket('No hay bracket disponible aún.');
+        setBracket(null);
       }
     } catch (e: any) {
       setError('Error de conexión.');
@@ -194,6 +206,14 @@ function SeccionNacional() {
                 className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${tab === 'ranking-final' ? 'bg-orange text-carbon-100' : 'bg-carbon-50 text-silver-dark hover:text-silver-light'}`}
               >
                 🏆 Ranking Final
+              </button>
+            )}
+            {bracket && (bracket.cuartos?.length > 0 || bracket.semis?.length > 0 || bracket.final) && (
+              <button
+                onClick={() => setTab('bracket')}
+                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${tab === 'bracket' ? 'bg-orange text-carbon-100' : 'bg-carbon-50 text-silver-dark hover:text-silver-light'}`}
+              >
+                🏟 Bracket
               </button>
             )}
           </div>
@@ -368,6 +388,12 @@ function SeccionNacional() {
                   })}
                 </div>
               </div>
+          )}
+
+          {tab === 'bracket' && bracket && (
+            <div className="mt-2">
+              <BracketNacional data={bracket} />
+            </div>
           )}
         </>
       )}
