@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-07-05-bracket-readonly
+// PUBLIC_BUILD = pub-public-2026-07-05-sala-fecha-publica
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
@@ -392,7 +392,7 @@ function SeccionNacional() {
 
           {tab === 'bracket' && bracket && (
             <div className="mt-2">
-              <BracketNacional data={bracket} />
+              <BracketNacional data={bracket} sala={bracket.salaPublica ?? ''} fechaBracket={bracket.fechaPublica ?? ''} />
             </div>
           )}
         </>
