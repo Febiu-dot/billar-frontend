@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-07-05-bracket-tab
+// PUBLIC_BUILD = pub-public-2026-07-05-bracket-inputs
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
@@ -52,6 +52,8 @@ function SeccionNacional() {
   const [errorRankingFinal, setErrorRankingFinal] = useState('');
   const [bracket, setBracket]                     = useState<any | null>(null);
   const [errorBracket, setErrorBracket]            = useState('');
+  const [brakSala, setBrakSala]                   = useState('');
+  const [brakFecha, setBrakFecha]                 = useState('');
 
   useEffect(() => {
     api.get('/publicaciones/circuitos').then(r => {
@@ -392,7 +394,29 @@ function SeccionNacional() {
 
           {tab === 'bracket' && bracket && (
             <div className="mt-2">
-              <BracketNacional data={bracket} />
+              <div className="flex gap-3 mb-3 flex-wrap">
+                <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
+                  <label className="text-xs text-silver-dark font-semibold uppercase tracking-wide">Sede</label>
+                  <input
+                    type="text"
+                    className="input text-sm"
+                    placeholder="Ej: Willy Billar Club"
+                    value={brakSala}
+                    onChange={e => setBrakSala(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
+                  <label className="text-xs text-silver-dark font-semibold uppercase tracking-wide">Fecha</label>
+                  <input
+                    type="text"
+                    className="input text-sm"
+                    placeholder="Ej: 5 de julio 2026"
+                    value={brakFecha}
+                    onChange={e => setBrakFecha(e.target.value)}
+                  />
+                </div>
+              </div>
+              <BracketNacional data={bracket} sala={brakSala} fechaBracket={brakFecha} />
             </div>
           )}
         </>
