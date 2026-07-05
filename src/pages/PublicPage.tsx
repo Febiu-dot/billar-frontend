@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-07-01-mesas-sin-modal
+// PUBLIC_BUILD = pub-public-2026-07-05-semis-fix
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
@@ -130,7 +130,7 @@ function SeccionNacional() {
     const etapas = [
       { key: 'octavos',  label: 'Octavos de Final', items: cruces.octavos ?? [] },
       { key: 'cuartos',  label: 'Cuartos de Final', items: cruces.cuartos ?? [] },
-      { key: 'semis',    label: 'Semifinales',       items: [cruces.semi1, cruces.semi2].filter(Boolean) },
+      { key: 'semis',    label: 'Semifinales',       items: cruces.semis ?? [cruces.semi1, cruces.semi2].filter(Boolean) },
       { key: 'final',    label: 'Final',             items: [cruces.final].filter(Boolean) },
     ];
     for (const etapa of etapas) {
@@ -140,7 +140,7 @@ function SeccionNacional() {
     return partidos;
   })();
 
-  const hayCruces = cruces && (cruces.octavos?.length > 0 || cruces.cuartos?.length > 0 || cruces.semi1 || cruces.final);
+  const hayCruces = cruces && (cruces.octavos?.length > 0 || cruces.cuartos?.length > 0 || cruces.semis?.length > 0 || cruces.semi1 || cruces.final);
   const esPana = /panamericano/i.test(torneoNombre);
 
   return (
