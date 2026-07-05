@@ -265,7 +265,8 @@ export default function BracketNacional({ data, sala = '', fechaBracket = '', ho
   );
 
   return (
-    <div className="bk-stage" ref={stageRef} style={{ ...cssVars, width: '100%', maxWidth: 1440, margin: '0 auto', fontFamily: "'Rajdhani', sans-serif" } as React.CSSProperties}>
+    <div style={{ overflowX: 'auto', width: '100%' }}>
+    <div className="bk-stage" ref={stageRef} style={{ ...cssVars, width: '100%', minWidth: 480, maxWidth: 1440, margin: '0 auto', fontFamily: "'Rajdhani', sans-serif" } as React.CSSProperties}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Condensed:wght@600;700;800&family=Oswald:wght@500;600;700&display=swap');
         .bk-stage{position:relative;padding:20px 28px 22px;background:radial-gradient(120% 90% at 50% 8%,rgba(95,212,255,.10),rgba(95,212,255,0) 55%),radial-gradient(150% 120% at 50% 42%,${C.navy2} 0%,${C.navy} 38%,${C.navyDeep} 70%,#03101f 100%);overflow:hidden;color:#fff;-webkit-font-smoothing:antialiased;}
@@ -332,6 +333,42 @@ export default function BracketNacional({ data, sala = '', fechaBracket = '', ho
         .bk-champ-name{font-family:'Saira Condensed',sans-serif;font-weight:800;font-size:15px;color:${C.goldBright};letter-spacing:.06em;z-index:1;display:inline-flex;align-items:center;}
         .bk-foot{position:relative;z-index:4;text-align:center;margin-top:20px;font-family:'Saira Condensed',sans-serif;letter-spacing:.5em;font-size:11px;color:rgba(143,227,255,.5);text-indent:.5em;}
         #bk-wires{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;}
+        @media(max-width:640px){
+          .bk-stage{padding:10px 6px 14px;}
+          .bk-header-bar{grid-template-columns:80px 1fr 80px;gap:6px;padding:8px 6px 10px;}
+          .bk-meta-chip{width:80px;padding:6px 8px;}
+          .bk-meta-chip .lab{font-size:8px;letter-spacing:.15em;}
+          .bk-meta-chip .val{font-size:10px;}
+          .bk-hl{width:44px;height:44px;}
+          .bk-kicker{font-size:7px;letter-spacing:.12em;}
+          .bk-h1{font-size:22px;}
+          .bk-subtitle{font-size:8px;letter-spacing:.15em;}
+          .bk-gold-rule{margin-top:6px;}
+          .bk-bracket{min-height:160px;}
+          .bk-col{gap:6px;padding:0 2px;}
+          .bk-round-head{padding:3px 5px 3px 4px;margin-bottom:-4px;}
+          .bk-round-head .rname{font-size:7px;}
+          .bk-round-head .rtime{font-size:7px;padding-left:3px;}
+          .clock{width:7px;height:7px;}
+          .bk-match{padding:4px;border-radius:6px;gap:3px;}
+          .bk-seat{padding:4px 5px 4px 4px;min-height:22px;gap:4px;border-radius:5px;}
+          .bk-seat .dot{width:4px;height:12px;}
+          .bk-seat .bk-flag{width:13px;height:9px;}
+          .bk-seat .nm{font-size:8px;}
+          .bk-seat.bk-placeholder .nm{font-size:7px;}
+          .bk-final-label{font-size:13px;letter-spacing:.2em;}
+          .bk-final-card{padding:5px;border-radius:8px;}
+          .bk-final-head{padding:3px 0 6px;}
+          .bk-final-head .ft{font-size:9px;}
+          .bk-final-head .fh{font-size:8px;}
+          .bk-final-card .bk-seat{padding:5px;min-height:24px;}
+          .bk-final-card .bk-seat .nm{font-size:9px;}
+          .bk-trophy{font-size:18px;}
+          .bk-champ-label{font-size:11px;letter-spacing:.18em;}
+          .bk-champ-card{height:32px;}
+          .bk-champ-name{font-size:9px;}
+          .bk-center{gap:8px;}
+        }
       `}</style>
 
       {/* HEADER */}
@@ -459,6 +496,7 @@ export default function BracketNacional({ data, sala = '', fechaBracket = '', ho
       {/* WIRES SVG OVERLAY */}
       <svg id="bk-wires" ref={svgRef}></svg>
 
+    </div>
     </div>
   );
 }
