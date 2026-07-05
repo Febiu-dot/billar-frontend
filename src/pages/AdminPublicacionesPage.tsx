@@ -1751,7 +1751,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
-const BUILD_TAG = 'pub-2026-07-04-hora-cruces-nacional';
+const BUILD_TAG = 'pub-2026-07-05-sala-fecha-publica';
 
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
@@ -2088,6 +2088,20 @@ export default function AdminPublicacionesPage() {
                   <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Fecha (aparece en el bracket)</label>
                   <input className="input" placeholder="Ej: 14 de junio de 2026" value={fechaBracket} onChange={e => setFechaBracket(e.target.value)} />
                 </div>
+              </div>
+              <div>
+                <button
+                  className="py-1.5 px-4 text-xs rounded-lg bg-gold/20 text-gold border border-gold/40 hover:bg-gold/30 transition-all"
+                  onClick={async () => {
+                    if (!circuitId) return;
+                    try {
+                      await api.patch(`/circuits/${circuitId}/sala-fecha`, { salaPublica: sala, fechaPublica: fechaBracket });
+                      alert('Sede y fecha guardadas para la vista pública.');
+                    } catch { alert('Error al guardar.'); }
+                  }}
+                >
+                  💾 Guardar sede y fecha para vista pública
+                </button>
               </div>
 
               <div className="space-y-3">
