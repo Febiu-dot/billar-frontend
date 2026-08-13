@@ -47,6 +47,14 @@ export default function PlayersPage() {
     api.get('/departamentos').then(r => setDepartamentos(r.data));
   }, []);
 
+  const filtered = players.filter(p => {
+    const matchesCat    = filterCat ? p.category?.name === filterCat : true;
+    const matchesDep    = filterDep ? p.departamentoId?.toString() === filterDep : true;
+    const matchesPais   = filterPais ? (p.pais ?? 'Uruguay') === filterPais : true;
+    const matchesSearch = search ? `${p.firstName} ${p.lastName}`.toLowerCase().includes(search.toLowerCase()) : true;
+    return matchesCat && matchesDep && matchesPais && matchesSearch;
+  });
+
   // Devuelve la lista de clubes según el departamentoId seleccionado en el form
   const getClubsForForm = (): string[] => {
     if (!form.departamentoId) return [];
@@ -56,16 +64,26 @@ export default function PlayersPage() {
   };
 
   const handleDescargarPlantilla = () => {
-    const header = ['ID', 'Apellido', 'Nombre', 'CI', 'Club', 'Departamento', 'Categoria'];
-    const filas = players.map(p => [
+    const header = ['ID', 'Apellido', 'Nombre', 'CI', 'Club', 'Pais', 'Departamento', 'Categoria', 'Estado'];
+    const filas = filtered.map(p => [
       p.id, p.lastName, p.firstName, p.dni ?? '', p.club ?? '',
-      p.departamento?.nombre ?? '', p.category?.name ?? '',
+      p.pais ?? 'Uruguay', p.departamento?.nombre ?? '', p.category?.name ?? '',
+      p.active ? 'Activo' : 'Inactivo',
     ]);
     const csv = [header, ...filas].map(r => r.join(';')).join('\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = 'jugadores_departamentos.csv'; a.click();
+
+    // Nombre de archivo según los filtros activos en pantalla
+    const partes = ['jugadores'];
+    if (filterPais) partes.push(filterPais.toLowerCase().replace(/\s+/g, '_'));
+    if (filterDep) {
+      const depNombre = departamentos.find(d => d.id.toString() === filterDep)?.nombre;
+      if (depNombre) partes.push(depNombre.toLowerCase().replace(/\s+/g, '_'));
+    }
+    if (filterCat) partes.push(filterCat);
+    a.href = url; a.download = `${partes.join('_')}.csv`; a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -189,14 +207,6 @@ export default function PlayersPage() {
 
   const catOrder: CategoryName[] = ['master', 'primera', 'segunda', 'tercera'];
 
-  const filtered = players.filter(p => {
-    const matchesCat    = filterCat ? p.category?.name === filterCat : true;
-    const matchesDep    = filterDep ? p.departamentoId?.toString() === filterDep : true;
-    const matchesPais   = filterPais ? (p.pais ?? 'Uruguay') === filterPais : true;
-    const matchesSearch = search ? `${p.firstName} ${p.lastName}`.toLowerCase().includes(search.toLowerCase()) : true;
-    return matchesCat && matchesDep && matchesPais && matchesSearch;
-  });
-
   const grouped: Record<string, Player[]> = {};
   filtered.forEach(p => {
     const cat = p.category?.name ?? 'sin_categoria';
@@ -233,7 +243,7 @@ export default function PlayersPage() {
         subtitle={`${players.length} jugadores registrados`}
         action={
           <div className="flex gap-2 flex-wrap">
-            <button className="btn-secondary text-xs py-1.5 px-3" onClick={handleDescargarPlantilla}>⬇ Plantilla CSV</button>
+            <button className="btn-secondary text-xs py-1.5 px-3" onClick={handleDescargarPlantilla} title="Exporta los jugadores según los filtros activos (país/departamento/categoría/búsqueda)">⬇ Exportar CSV</button>
             <button className="btn-secondary text-xs py-1.5 px-3" disabled={importando} onClick={() => fileInputRef.current?.click()}>
               {importando ? 'Importando...' : '⬆ Importar departamentos'}
             </button>
@@ -269,8 +279,9 @@ export default function PlayersPage() {
         </div>
 
         <div className="bg-felt-dark/30 border border-felt-light/10 rounded-lg px-4 py-3 text-xs text-chalk/50 space-y-1">
-          <p className="font-semibold text-chalk/70">¿Cómo importar departamentos?</p>
-          <p>1. Descargá la plantilla CSV con el botón <strong>⬇ Plantilla CSV</strong></p>
+          <p className="font-semibold text-chalk/70">¿Cómo exportar / importar?</p>
+          <p>• <strong>⬇ Exportar CSV</strong> descarga los jugadores que se ven en pantalla: si tenés un país o departamento seleccionado arriba, exporta solo esos. Sin filtros, exporta la base completa.</p>
+          <p>1. Descargá con <strong>⬇ Exportar CSV</strong>, editá lo que necesites (por ejemplo la columna CI) y guardalo</p>
           <p>2. Para <strong>actualizar</strong> jugadores existentes: completá la columna <strong>Departamento</strong></p>
           <p>3. Para <strong>crear jugadores nuevos</strong>: usá ID=0 y completá todas las columnas incluyendo <strong>Categoria</strong></p>
           <p>4. Guardá el archivo como CSV (separado por punto y coma) y subilo con <strong>⬆ Importar departamentos</strong></p>
