@@ -65,7 +65,21 @@ export default function PlayersPage() {
 
   const handleDescargarPlantilla = () => {
     const header = ['ID', 'Apellido', 'Nombre', 'CI', 'Club', 'Pais', 'Departamento', 'Categoria', 'Estado'];
-    const filas = filtered.map(p => [
+    const ordenados = [...filtered].sort((a, b) => {
+      const ciA = (a.dni ?? '').trim();
+      const ciB = (b.dni ?? '').trim();
+      if (!ciA && !ciB) return 0;
+      if (!ciA) return 1;  // sin CI al final
+      if (!ciB) return -1;
+      const numA = parseInt(ciA.replace(/\D/g, ''), 10);
+      const numB = parseInt(ciB.replace(/\D/g, ''), 10);
+      const prefA = ciA.replace(/[0-9]/g, '');
+      const prefB = ciB.replace(/[0-9]/g, '');
+      if (prefA !== prefB) return prefA.localeCompare(prefB);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      return ciA.localeCompare(ciB);
+    });
+    const filas = ordenados.map(p => [
       p.id, p.lastName, p.firstName, p.dni ?? '', p.club ?? '',
       p.pais ?? 'Uruguay', p.departamento?.nombre ?? '', p.category?.name ?? '',
       p.active ? 'Activo' : 'Inactivo',
