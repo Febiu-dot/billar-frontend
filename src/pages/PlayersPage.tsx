@@ -202,14 +202,26 @@ export default function PlayersPage() {
         pais:           form.pais || 'Uruguay',
         departamentoId: form.departamentoId ? Number(form.departamentoId) : undefined,
       };
-      if (editPlayer) { await api.put(`/players/${editPlayer.id}`, payload); }
+        if (editPlayer) { await api.put(`/players/${editPlayer.id}`, payload); }
       else { await api.post('/players', payload); }
       setShowModal(false); fetchPlayers();
     } catch { setError('Error al guardar el jugador'); }
     finally { setSaving(false); }
   };
 
-  const handleToggleActive = async (p: Player) => {
+  const handleDelete = async () => {
+    if (!editPlayer) return;
+    if (!window.confirm(`¿Eliminar definitivamente a ${editPlayer.firstName} ${editPlayer.lastName}? Esta acción no se puede deshacer.`)) return;
+    setSaving(true); setError('');
+    try {
+      await api.delete(`/players/${editPlayer.id}`);
+      setShowModal(false); fetchPlayers();
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'No se pudo eliminar. Si el jugador ya tiene partidos o inscripciones, desactivalo en vez de eliminarlo.');
+    } finally { setSaving(false); }
+  };
+
+  const handleToggleActive = async (p: Player) => { 
     try {
       await api.put(`/players/${p.id}`, {
         firstName: p.firstName, lastName: p.lastName, dni: p.dni,
@@ -430,14 +442,19 @@ export default function PlayersPage() {
               </select>
             </div>
 
-            {error && <p className="text-red-400 text-sm">{error}</p>}
+                {error && <p className="text-red-400 text-sm">{error}</p>}
             <div className="flex gap-3 pt-2">
               <button type="submit" className="btn-primary flex-1" disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</button>
               <button type="button" className="btn-secondary flex-1" onClick={() => setShowModal(false)}>Cancelar</button>
             </div>
+            {editPlayer && (
+              <button type="button" className="text-red-400 text-xs w-full text-center pt-1 hover:underline" disabled={saving} onClick={handleDelete}>
+                🗑 Eliminar jugador definitivamente
+              </button>
+            )}
           </form>
         </Modal>
-      )}
+      )}  
     </div>
   );
 }
