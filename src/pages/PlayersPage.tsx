@@ -194,11 +194,13 @@ export default function PlayersPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true); setError('');
     try {
-      const payload = {
+           const payload = {
         ...form,
+        firstName:      form.firstName.trim(),
+        lastName:       form.lastName.trim(),
         categoryId:     Number(form.categoryId),
-        dni:            form.dni || undefined,
-        club:           form.club || undefined,
+        dni:            form.dni?.trim() || undefined,
+        club:           form.club?.trim() || undefined,
         pais:           form.pais || 'Uruguay',
         departamentoId: form.departamentoId ? Number(form.departamentoId) : undefined,
       };
