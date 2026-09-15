@@ -8,7 +8,7 @@ const PAISES = ['Uruguay', 'Argentina', 'Brasil', 'Paraguay', 'Chile', 'Bolivia'
 
 // Clubes por departamento — agregar según se incorporen nuevos departamentos
 const CLUBS_BY_DEPARTAMENTO: Record<string, string[]> = {
-  'Montevideo': ['CAPOLAVORO', 'FERIA FRANCA', 'YATAY', 'CABRERA', 'MODEL CENTER', 'NUEVO MALVIN', 'SPORTING UNION', 'CENTENARIO', 'CASA DEL BILLAR', 'PIEDRA HONDA'],
+    'Montevideo': ['Capolavoro', 'Feria Franca', 'Yatay', 'Cabrera', 'Model Center', 'Nuevo Malvin', 'Sporting Union', 'Centenario', 'Casa Del Billar', 'Piedra Honda'],
   'Canelones':  ['San Bautista', 'Centro Comercial', '23 de Marzo', 'Lomas 3', 'CAR', 'Club Carlitos'],
     'Canelones Este':  ['San Bautista', 'FrepiBar'],
   'Canelones Oeste': ['Centro Comercial', '23 de Marzo', 'Lomas 3', 'Club Carlitos'],
