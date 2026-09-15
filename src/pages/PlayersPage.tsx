@@ -52,7 +52,7 @@ export default function PlayersPage() {
     const matchesCat    = filterCat ? p.category?.name === filterCat : true;
     const matchesDep    = filterDep ? p.departamentoId?.toString() === filterDep : true;
     const matchesPais   = filterPais ? (p.pais ?? 'Uruguay') === filterPais : true;
-    const matchesSearch = search ? `${p.firstName} ${p.lastName}`.toLowerCase().includes(search.toLowerCase()) : true;
+        const matchesSearch = search ? `${p.firstName} ${p.lastName} ${p.club ?? ''} ${p.dni ?? ''}`.toLowerCase().includes(search.toLowerCase()) : true;
     return matchesCat && matchesDep && matchesPais && matchesSearch;
   });
 
@@ -276,7 +276,7 @@ export default function PlayersPage() {
 
       <div className="p-6 space-y-5">
         <div className="flex flex-wrap gap-3 items-center">
-          <input className="input w-48" placeholder="Buscar jugador..." value={search} onChange={e => setSearch(e.target.value)} />
+                   <input className="input w-48" placeholder="Buscar por nombre, club o C.I..." value={search} onChange={e => setSearch(e.target.value)} />
           <select className="input w-48" value={filterDep} onChange={e => setFilterDep(e.target.value)}>
             <option value="">Todos los departamentos</option>
             {departamentos.map(d => <option key={d.id} value={d.id}>{d.nombre}</option>)}
