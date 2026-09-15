@@ -10,7 +10,7 @@ const PAISES = ['Uruguay', 'Argentina', 'Brasil', 'Paraguay', 'Chile', 'Bolivia'
 const CLUBS_BY_DEPARTAMENTO: Record<string, string[]> = {
   'Montevideo': ['CAPOLAVORO', 'FERIA FRANCA', 'YATAY', 'CABRERA', 'MODEL CENTER', 'NUEVO MALVIN', 'SPORTING UNION', 'CENTENARIO', 'CASA DEL BILLAR', 'PIEDRA HONDA'],
   'Canelones':  ['San Bautista', 'Centro Comercial', '23 de Marzo', 'Lomas 3', 'CAR', 'Club Carlitos'],
-  'Canelones Este':  ['San Bautista', 'Empalme Olmos'],
+    'Canelones Este':  ['San Bautista', 'FrepiBar'],
   'Canelones Oeste': ['Centro Comercial', '23 de Marzo', 'Lomas 3', 'Club Carlitos'],
   'Rivera':     ['Club Uruguay Rivera'],
   'Lavalleja':  ['Centro Democratico', 'Solis De Mataojo'],
