@@ -29,8 +29,13 @@ export default function JudgePage() {
   };
 
   const fetchPending = () => {
-    api.get('/matches?status=pendiente').then(r => {
-      const soloActivos = (r.data as Match[]).filter(m => m.phase?.circuit?.tournament?.active !== false);
+    const url = user?.venueId
+      ? `/matches?status=pendiente&venueId=${user.venueId}`
+      : '/matches?status=pendiente';
+    api.get(url).then(r => {
+      const soloActivos = (r.data as Match[])
+        .filter(m => m.phase?.circuit?.tournament?.active !== false)
+        .sort((a, b) => a.id - b.id);
       setPendingMatches(soloActivos);
     });
   };
