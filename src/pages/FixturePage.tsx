@@ -738,7 +738,7 @@ export default function FixturePage() {
                       disabled={inscribiendoClub === 'departamento'}
                       onClick={() => {
                         const inscriptosIds = new Set(inscripcionModal.players?.map(cp => cp.player.id) ?? []);
-                        const jugadoresDep = allPlayers.filter(p => p.departamentoId === selectedTournament.departamentoId && (p as any).dni !== 'FEBIU000' && !inscriptosIds.has(p.id));
+                                                const jugadoresDep = allPlayers.filter(p => p.departamentoId === selectedTournament.departamentoId && (p as any).dni !== 'FEBIU000' && p.active && !inscriptosIds.has(p.id));has(p.id));
                         handleInscribirTodos(inscripcionModal, jugadoresDep, 'departamento');
                       }}
                     >
@@ -794,9 +794,10 @@ export default function FixturePage() {
                   <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">Disponibles para inscribir</p>
                   {(() => {
                     const inscriptosIds = new Set(inscripcionModal.players?.map(cp => cp.player.id) ?? []);
-                    const disponibles = allPlayers.filter(p => {
+                                        const disponibles = allPlayers.filter(p => {
                       if (inscriptosIds.has(p.id)) return false;
                       if ((p as any).dni === 'FEBIU000') return false;
+                      if (!p.active) return false;
                       const nombre = `${p.firstName} ${p.lastName} ${p.club ?? ''}`.toLowerCase();
                       const matchesSearch = nombre.includes(inscripcionSearch.toLowerCase());
                       const matchesDep = soloDepTorneo && selectedTournament?.departamentoId ? p.departamentoId === selectedTournament.departamentoId : true;
