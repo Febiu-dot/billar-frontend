@@ -738,7 +738,7 @@ export default function FixturePage() {
                       disabled={inscribiendoClub === 'departamento'}
                       onClick={() => {
                         const inscriptosIds = new Set(inscripcionModal.players?.map(cp => cp.player.id) ?? []);
-                                                const jugadoresDep = allPlayers.filter(p => p.departamentoId === selectedTournament.departamentoId && (p as any).dni !== 'FEBIU000' && p.active && !inscriptosIds.has(p.id));has(p.id));
+                                                const jugadoresDep = allPlayers.filter(p => p.departamentoId === selectedTournament.departamentoId && (p as any).dni !== 'FEBIU000' && p.active && !inscriptosIds.has(p.id));
                         handleInscribirTodos(inscripcionModal, jugadoresDep, 'departamento');
                       }}
                     >
