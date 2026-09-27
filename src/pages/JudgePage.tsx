@@ -19,22 +19,51 @@ export default function JudgePage() {
   const [saving, setSaving]           = useState(false);
   const [savingSet, setSavingSet]     = useState<number | null>(null);
   const [error, setError]             = useState('');
+  const [pendingMatches, setPendingMatches] = useState<Match[]>([]);
+  const [assignTable, setAssignTable] = useState<Record<number, string>>({});
+  const [assigningId, setAssigningId] = useState<number | null>(null);
 
   const fetchTables = () => {
     const url = user?.venueId ? `/tables?venueId=${user.venueId}` : '/tables';
     api.get(url).then(r => { setTables(r.data); setLoading(false); });
   };
 
+  const fetchPending = () => {
+    api.get('/matches?status=pendiente').then(r => {
+      const soloActivos = (r.data as Match[]).filter(m => m.phase?.circuit?.tournament?.active !== false);
+      setPendingMatches(soloActivos);
+    });
+  };
+
   useEffect(() => {
     fetchTables();
+    fetchPending();
     if (user?.venueId) socket.emit('join:venue', user.venueId);
     socket.on('match:updated', fetchTables);
+    socket.on('match:updated', fetchPending);
     socket.on('table:updated', fetchTables);
     return () => {
       socket.off('match:updated', fetchTables);
+      socket.off('match:updated', fetchPending);
       socket.off('table:updated', fetchTables);
     };
   }, [user?.venueId]);
+
+  const handleAssignTable = async (matchId: number) => {
+    const tableId = Number(assignTable[matchId]);
+    if (!tableId) return;
+    setAssigningId(matchId);
+    try {
+      await api.put(`/matches/${matchId}/assign`, { tableId });
+      setAssignTable(prev => { const n = { ...prev }; delete n[matchId]; return n; });
+      fetchPending();
+      fetchTables();
+    } catch {
+      setError('No se pudo asignar la mesa. Puede que ya esté ocupada.');
+    } finally {
+      setAssigningId(null);
+    }
+  };
 
   const openResultModal = (match: Match) => {
     setResultModal(match);
@@ -190,6 +219,47 @@ export default function JudgePage() {
       </div>
 
       <div className="p-6 space-y-4">
+        {pendingMatches.length > 0 && (
+          <div className="card space-y-3 border-gold/30">
+            <p className="text-gold text-sm font-semibold uppercase tracking-widest">
+              ⏳ Partidos por asignar mesa ({pendingMatches.length})
+            </p>
+            {pendingMatches.map(m => {
+              const mesasLibres = tables.filter(t => t.status === 'libre');
+              return (
+                <div key={m.id} className="flex flex-col sm:flex-row sm:items-center gap-2 border-t border-felt-light/10 pt-3">
+                  <div className="flex-1">
+                    <p className="text-chalk text-sm font-medium">
+                      {playerName(m.playerA)} <span className="text-gold/60">vs</span> {playerName(m.playerB)}
+                    </p>
+                    <p className="text-chalk/40 text-xs">
+                      {m.phase?.circuit?.tournament?.name} · {m.phase?.name}
+                    </p>
+                  </div>
+                  <select
+                    className="input text-sm w-full sm:w-40"
+                    value={assignTable[m.id] ?? ''}
+                    onChange={e => setAssignTable(prev => ({ ...prev, [m.id]: e.target.value }))}
+                  >
+                    <option value="">Mesa libre...</option>
+                    {mesasLibres.map(t => (
+                      <option key={t.id} value={t.id}>Mesa {t.number}</option>
+                    ))}
+                  </select>
+                  <button
+                    className="btn-primary text-sm px-4"
+                    disabled={!assignTable[m.id] || assigningId === m.id}
+                    onClick={() => handleAssignTable(m.id)}
+                  >
+                    {assigningId === m.id ? '...' : '✓ Asignar'}
+                  </button>
+                </div>
+              );
+            })}
+            {error && <p className="text-red-400 text-sm">{error}</p>}
+          </div>
+        )}
+
         {tables.length === 0 ? (
           <EmptyState message="No hay mesas asignadas a tu sede" />
         ) : (
