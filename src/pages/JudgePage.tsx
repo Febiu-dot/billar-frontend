@@ -22,9 +22,10 @@ export default function JudgePage() {
   const [pendingMatches, setPendingMatches] = useState<Match[]>([]);
   const [assignTable, setAssignTable] = useState<Record<number, string>>({});
   const [assigningId, setAssigningId] = useState<number | null>(null);
+  const [verProximas, setVerProximas] = useState(false);
 
   const fetchTables = () => {
-    const url = user?.venueId ? `/tables?venueId=${user.venueId}` : '/tables';
+    const url = user?.venueId ? `/tables?venueId=${user.venueId}&cola=1` : '/tables?cola=1';
     api.get(url).then(r => { setTables(r.data); setLoading(false); });
   };
 
@@ -200,7 +201,29 @@ export default function JudgePage() {
     }
   };
 
-  const currentMatch = (t: Table) => t.matches?.[0];
+  // Jornada (día) de un partido. Sin fecha programada = continuación de una serie
+  // ya empezada (partidos 3/4/5) o asignado sin fecha: va PRIMERO ('0000').
+  const claveDia = (m: Match) =>
+    m.scheduledAt ? new Date(m.scheduledAt).toLocaleDateString('en-CA') : '0000';
+  const todosLosPartidos: Match[] = tables.flatMap(t => t.matches ?? []);
+  // Jornada actual de la sede = el día más antiguo que todavía tiene partidos sin cerrar.
+  const jornadaActual = todosLosPartidos.map(claveDia).sort()[0];
+  const esDeJornadaActual = (m: Match) => m.status === 'en_juego' || claveDia(m) === jornadaActual;
+  const proximasOcultas = todosLosPartidos.filter(m => !esDeJornadaActual(m)).length;
+  const textoJornada = jornadaActual === '0000' || !jornadaActual
+    ? 'Pendientes de días anteriores'
+    : new Date(jornadaActual + 'T12:00:00').toLocaleDateString('es-UY', { weekday: 'long', day: '2-digit', month: '2-digit' });
+
+  // Cola de la mesa en orden cronológico: en juego primero, luego por día y hora.
+  // Por defecto solo la jornada actual; las siguientes se ven con el botón.
+  const colaDeMesa = (t: Table): Match[] =>
+    [...(t.matches ?? [])]
+      .filter(m => verProximas || esDeJornadaActual(m))
+      .sort((a, b) =>
+        (a.status === 'en_juego' ? 0 : 1) - (b.status === 'en_juego' ? 0 : 1) ||
+        claveDia(a).localeCompare(claveDia(b)) ||
+        (a.scheduledAt ?? '').localeCompare(b.scheduledAt ?? '') ||
+        a.round - b.round);
 
   const getSummary = () => {
     let winsA = 0, winsB = 0;
@@ -265,12 +288,26 @@ export default function JudgePage() {
           </div>
         )}
 
+        {todosLosPartidos.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <p className="text-chalk/60 text-sm">
+              Jornada: <span className="text-gold font-semibold capitalize">{textoJornada}</span>
+            </p>
+            {(proximasOcultas > 0 || verProximas) && (
+              <button className="btn-secondary text-sm" onClick={() => setVerProximas(v => !v)}>
+                {verProximas ? 'Ocultar próximas jornadas' : `Mostrar próximas jornadas (${proximasOcultas})`}
+              </button>
+            )}
+          </div>
+        )}
+
         {tables.length === 0 ? (
           <EmptyState message="No hay mesas asignadas a tu sede" />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {tables.sort((a, b) => a.number - b.number).map(t => {
-              const match = currentMatch(t);
+              const partidos = colaDeMesa(t);
+              const match = partidos[0];
               return (
                 <div
                   key={t.id}
@@ -293,8 +330,9 @@ export default function JudgePage() {
                     {match && <MatchStatusBadge status={match.status} />}
                   </div>
 
-                  {match ? (
-                    <div className="border-t border-felt-light/20 pt-3 space-y-3">
+                  {partidos.length > 0 ? (
+                    partidos.map(match => (
+                    <div key={match.id} className="border-t border-felt-light/20 pt-3 space-y-3">
                       <div className="grid grid-cols-3 gap-2 text-center">
                         <div>
                           <p className="font-semibold text-chalk text-sm leading-tight">{playerName(match.playerA)}</p>
@@ -326,6 +364,7 @@ export default function JudgePage() {
 
                       <p className="text-chalk/30 text-xs text-center font-mono">
                         {match.phase?.name} · Ronda {match.round}
+                        {match.scheduledAt && ` · ${new Date(match.scheduledAt).toLocaleDateString('es-UY', { day: '2-digit', month: '2-digit' })} ${new Date(match.scheduledAt).toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' })}`}
                       </p>
 
                       <div className="flex gap-2">
@@ -351,6 +390,7 @@ export default function JudgePage() {
                         )}
                       </div>
                     </div>
+                    ))
                   ) : (
                     <div className="border-t border-felt-light/20 pt-3 text-center text-chalk/30 text-sm py-4">
                       Sin partido asignado
