@@ -1806,10 +1806,11 @@ export default function AdminPublicacionesPage() {
   }, [pubData, notas, sala, fechaBracket, horas]);
 
   const vaciarTodo = async () => {
-    if (!confirm('⚠️ ¿Vaciar todos los reportes y ranking?\n\nEsta acción no se puede deshacer.')) return;
+    if (!circuitId) { alert('Elegí primero el circuito que querés vaciar.'); return; }
+    if (!confirm('⚠️ ¿Vaciar los reportes y el ranking de ESTE circuito?\n\nSolo afecta al circuito seleccionado, no a otros torneos.\nEsta acción no se puede deshacer.')) return;
     setVaciando(true);
     try {
-      const res = await api.delete('/publicaciones/reset');
+      const res = await api.delete(`/publicaciones/reset?circuitId=${circuitId}`);
       alert(`✅ ${res.data.message}`);
       setPubData(null);
     } catch (err: any) {
@@ -2027,7 +2028,7 @@ export default function AdminPublicacionesPage() {
         {esAdmin && (
           <button className="py-1.5 px-4 text-xs rounded-lg border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all disabled:opacity-40"
             onClick={vaciarTodo} disabled={vaciando}>
-            {vaciando ? 'Vaciando...' : '🗑 Vaciar todo'}
+            {vaciando ? 'Vaciando...' : '🗑 Vaciar este circuito'}
           </button>
         )}
       </div>
