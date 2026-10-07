@@ -29,6 +29,7 @@ const banderaPaisG = (pais?: string | null): string | null => {
 const TEMAS: Record<string, { header: string; accent: string; light: string; badge: string }> = {
   clasificatorio:   { header: '#1a5c2a', accent: '#2d8a3e', light: '#edf7ef', badge: '#1a5c2a' },
   reduccion:        { header: '#1a5c2a', accent: '#388e3c', light: '#f1f8e9', badge: '#1a5c2a' },
+  'ranking-clasificatorio': { header: '#1a5c2a', accent: '#2d8a3e', light: '#edf7ef', badge: '#1a5c2a' },
   segunda:          { header: '#6B2737', accent: '#8a3447', light: '#fbeef1', badge: '#6B2737' },
   primera:          { header: '#014f86', accent: '#0277bd', light: '#e8f4fd', badge: '#014f86' },
   master:           { header: '#4a1070', accent: '#7b1fa2', light: '#f5eef8', badge: '#4a1070' },
@@ -93,6 +94,7 @@ const getSeccionColor = (seccion: string): { text: string; badge: string; light:
 const FASES = [
   { value: 'clasificatorio',    label: '🟢 Series Clasificatorio' },
   { value: 'reduccion',         label: '🟢 Reducción Clasificatorio' },
+  { value: 'ranking-clasificatorio', label: '📋 Ranking del Clasificatorio (22)' },
   { value: 'segunda',           label: '🟠 Series Segunda' },
   { value: 'primera',           label: '🔵 Cruces Primera' },
   { value: 'master',            label: '🟣 Fase Máster' },
@@ -353,6 +355,54 @@ function PlantillaSeries({ data, tema }: { data: any; tema: any }) {
           ) : <div key={si} style={{ flex: 1 }} />)}
         </div>
       ))}
+    </div>
+  );
+}
+
+function PlantillaRankingClasif({ data, tema }: { data: any; tema: any }) {
+  const jugadores: any[] = data.jugadores ?? [];
+  const grupos: { destino: string; items: any[] }[] = [];
+  for (const j of jugadores) {
+    const g = grupos[grupos.length - 1];
+    if (g && g.destino === (j.destino ?? '')) g.items.push(j); else grupos.push({ destino: j.destino ?? '', items: [j] });
+  }
+  const colDestino = (d: string) => d === 'REDUCCIÓN' ? { bg: '#b45309', light: '#fff7ed' } : { bg: tema.header, light: tema.light };
+  return (
+    <div style={{ padding: '20px 24px', background: '#f8f8f8', fontFamily: F }}>
+      {grupos.map((g, gi) => {
+        const c = colDestino(g.destino);
+        return (
+          <div key={gi} style={{ marginBottom: 16 }}>
+            {g.destino && (
+              <div style={{ background: c.bg, color: '#fff', padding: '9px 18px', fontSize: 20, fontWeight: 900, letterSpacing: 3, borderRadius: '8px 8px 0 0' }}>
+                {g.destino} <span style={{ fontSize: 15, opacity: 0.85, fontWeight: 600 }}>· puestos {g.items[0].posicion}–{g.items[g.items.length - 1].posicion}</span>
+              </div>
+            )}
+            <div style={{ background: '#fff', border: `2px solid ${c.bg}`, borderTop: g.destino ? 'none' : `2px solid ${c.bg}`, borderRadius: g.destino ? '0 0 8px 8px' : 8, overflow: 'hidden' }}>
+              <div style={{ display: 'flex', background: c.bg, padding: '6px 12px', gap: 10, color: '#fff', fontSize: 13, fontWeight: 700 }}>
+                <span style={{ width: 44, textAlign: 'center' }}>#</span>
+                <span style={{ flex: 1 }}>Jugador</span>
+                <span style={{ width: 44, textAlign: 'center' }}>Club</span>
+                <span style={{ width: 56, textAlign: 'center' }}>Serie</span>
+                <span style={{ width: 44, textAlign: 'right' }}>Pts</span>
+                <span style={{ width: 70, textAlign: 'right' }}>Dif. sets</span>
+                <span style={{ width: 70, textAlign: 'right' }}>Prom.</span>
+              </div>
+              {g.items.map((j: any, idx: number) => (
+                <div key={j.posicion} style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', gap: 10, background: idx % 2 === 0 ? c.light : '#fff', borderBottom: '1px solid #eee' }}>
+                  <div style={{ width: 44, height: 30, borderRadius: 4, flexShrink: 0, background: c.bg, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900 }}>{j.posicion}</div>
+                  <div style={{ flex: 1, fontSize: 19, fontWeight: 700, color: '#1f2937', lineHeight: 1.2 }}>{j.nombre}</div>
+                  <div style={{ width: 44, textAlign: 'center' }}>{j.club && <span style={{ background: c.bg, color: '#fff', padding: '3px 5px', borderRadius: 3, fontSize: 13, fontWeight: 800 }}>{j.club}</span>}</div>
+                  <div style={{ width: 56, textAlign: 'center', fontSize: 16, fontWeight: 700, color: '#374151' }}>S{j.serie}</div>
+                  <div style={{ width: 44, textAlign: 'right', fontSize: 18, fontWeight: 900, color: '#1f2937' }}>{j.puntos}</div>
+                  <div style={{ width: 70, textAlign: 'right', fontSize: 16, fontWeight: 700, color: '#374151' }}>{j.difSets > 0 ? `+${j.difSets}` : j.difSets}</div>
+                  <div style={{ width: 70, textAlign: 'right', fontSize: 16, fontWeight: 700, color: '#374151' }}>{j.promedio}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -1739,6 +1789,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
       <PubHeader data={dataFinal} tema={temaUsado} />
       {data.tipo === 'series'          && <PlantillaSeries          data={data} tema={temaUsado} />}
       {data.tipo === 'reduccion'       && <PlantillaReduccion       data={data} tema={temaUsado} />}
+      {data.tipo === 'ranking-clasif'  && <PlantillaRankingClasif   data={data} tema={temaUsado} />}
       {data.tipo === 'cruces'          && <PlantillaCruces          data={data} tema={temaUsado} />}
       {data.tipo === 'ranking'         && <PlantillaRanking         data={data} tema={temaUsado} />}
       {data.tipo === 'series-nacional'  && <PlantillaSeriesNacional  data={dataFinal} tema={temaUsado} />}
@@ -2206,7 +2257,7 @@ export default function AdminPublicacionesPage() {
         {pubData && !loading && (
           <div>
             <p className="text-chalk/40 text-xs uppercase tracking-widest mb-3">
-              {pubData.tipo === 'ranking'         ? `${pubData.jugadores?.length ?? 0} jugadores`
+              {pubData.tipo === 'ranking' || pubData.tipo === 'ranking-clasif' ? `${pubData.jugadores?.length ?? 0} jugadores`
                : pubData.tipo === 'series'        ? `${pubData.series?.length ?? 0} series`
                : pubData.tipo === 'series-nacional'? `${pubData.series?.length ?? 0} series`
                : pubData.tipo === 'bracket-nacional'? `Bracket ${pubData.tamano ?? 16} jugadores`
