@@ -1,4 +1,5 @@
 // BUILD_TAG = fixture-2026-07-01-solo-activos
+import { diaCalendario, diaCalendarioFmt } from '../utils/fechas';
 import { useEffect, useState, useRef } from 'react';
 import { api } from '../services/api';
 import { Tournament, Match, Phase, Circuit, Player, Departamento } from '../types';
@@ -180,8 +181,8 @@ export default function FixturePage() {
     setEcForm({
       name:      circuit.name,
       order:     String(circuit.order ?? 1),
-      startDate: circuit.startDate ? new Date(circuit.startDate).toISOString().split('T')[0] : '',
-      endDate:   circuit.endDate   ? new Date(circuit.endDate).toISOString().split('T')[0]   : '',
+      startDate: circuit.startDate ? diaCalendario(circuit.startDate) : '',
+      endDate:   circuit.endDate   ? diaCalendario(circuit.endDate)   : '',
     });
     setEcError('');
   };
@@ -501,8 +502,8 @@ export default function FixturePage() {
                       </span>
                       {circuit.startDate && (
                         <span className="text-chalk/30 text-xs font-mono">
-                          {new Date(circuit.startDate).toLocaleDateString('es-UY')}
-                          {circuit.endDate && ` → ${new Date(circuit.endDate).toLocaleDateString('es-UY')}`}
+                          {diaCalendarioFmt(circuit.startDate)}
+                          {circuit.endDate && ` → ${diaCalendarioFmt(circuit.endDate)}`}
                         </span>
                       )}
                       <div className="flex gap-2 ml-auto flex-wrap">

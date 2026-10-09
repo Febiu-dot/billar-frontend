@@ -1,3 +1,4 @@
+import { fechaUY, horaUY, isoDesdeUY } from '../utils/fechas';
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { LoadingSpinner, EmptyState, Modal } from '../components/ui';
@@ -131,13 +132,13 @@ export default function CrucesPage() {
 
   const abrirAsignacion = (cruce: Cruce) => {
     setAsignandoModal(cruce);
-    const horaCompleta = cruce.scheduledAt ? cruce.scheduledAt.split('T')[1]?.slice(0, 5) : '';
+    const hl = horaUY(cruce.scheduledAt);
     setForm({
       venueId: cruce.table?.venue?.id?.toString() ?? '',
       tableId: cruce.tableId?.toString() ?? '',
-      scheduledAt: cruce.scheduledAt ? cruce.scheduledAt.split('T')[0] : '',
-      hora: horaCompleta.split(':')[0] ?? '',
-      minutos: horaCompleta.split(':')[1] ?? '00',
+      scheduledAt: fechaUY(cruce.scheduledAt),
+      hora: hl.hora,
+      minutos: hl.minutos || '00',
     });
   };
 
@@ -146,7 +147,7 @@ export default function CrucesPage() {
     setSaving(true);
     try {
       const scheduledAt = form.scheduledAt && form.hora
-        ? new Date(`${form.scheduledAt}T${form.hora}:${form.minutos || '00'}:00`).toISOString()
+        ? isoDesdeUY(form.scheduledAt, form.hora, form.minutos)
         : undefined;
       if (form.tableId) await api.put(`/matches/${asignandoModal.id}/assign`, { tableId: parseInt(form.tableId) });
       if (scheduledAt) await api.put(`/matches/${asignandoModal.id}`, { scheduledAt });

@@ -1,3 +1,4 @@
+import { fechaUY, horaUY, isoDesdeUY } from '../utils/fechas';
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { LoadingSpinner, EmptyState, Modal } from '../components/ui';
@@ -93,13 +94,13 @@ export default function SeriesPage() {
 
   const abrirAsignacion = (serie: Serie, partido: any) => {
     setAsignandoModal({ serie, partido });
-    const horaCompleta = partido.scheduledAt ? partido.scheduledAt.split('T')[1]?.slice(0, 5) : '';
+    const hl = horaUY(partido.scheduledAt);
     setForm({
       venueId: partido.table?.venue?.id?.toString() ?? '',
       tableId: partido.tableId?.toString() ?? '',
-      scheduledAt: partido.scheduledAt ? partido.scheduledAt.split('T')[0] : '',
-      hora: horaCompleta.split(':')[0] ?? '',
-      minutos: horaCompleta.split(':')[1] ?? '00',
+      scheduledAt: fechaUY(partido.scheduledAt),
+      hora: hl.hora,
+      minutos: hl.minutos || '00',
     });
   };
 
@@ -109,7 +110,7 @@ export default function SeriesPage() {
     try {
       const { partido } = asignandoModal;
       const scheduledAt = form.scheduledAt && form.hora
-        ? new Date(`${form.scheduledAt}T${form.hora}:${form.minutos || '00'}:00`).toISOString()
+        ? isoDesdeUY(form.scheduledAt, form.hora, form.minutos)
         : undefined;
       if (form.tableId) await api.put(`/matches/${partido.id}/assign`, { tableId: parseInt(form.tableId) });
       if (scheduledAt) await api.put(`/matches/${partido.id}`, { scheduledAt });
