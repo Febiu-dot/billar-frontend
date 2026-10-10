@@ -31,6 +31,7 @@ const TEMAS: Record<string, { header: string; accent: string; light: string; bad
   reduccion:        { header: '#1a5c2a', accent: '#388e3c', light: '#f1f8e9', badge: '#1a5c2a' },
   'ranking-clasificatorio': { header: '#1a5c2a', accent: '#2d8a3e', light: '#edf7ef', badge: '#1a5c2a' },
   segunda:          { header: '#6B2737', accent: '#8a3447', light: '#fbeef1', badge: '#6B2737' },
+  'ranking-segunda': { header: '#6B2737', accent: '#8a3447', light: '#fbeef1', badge: '#6B2737' },
   primera:          { header: '#014f86', accent: '#0277bd', light: '#e8f4fd', badge: '#014f86' },
   master:           { header: '#4a1070', accent: '#7b1fa2', light: '#f5eef8', badge: '#4a1070' },
   ranking:          { header: '#7c4d00', accent: '#b8860b', light: '#fffbf0', badge: '#7c4d00' },
@@ -96,6 +97,7 @@ const FASES = [
   { value: 'reduccion',         label: '🟢 Reducción Clasificatorio' },
   { value: 'ranking-clasificatorio', label: '📋 Ranking del Clasificatorio (22)' },
   { value: 'segunda',           label: '🟠 Series Segunda' },
+  { value: 'ranking-segunda',   label: '📋 Ranking de Segunda (1° y 2° → cruces)' },
   { value: 'primera',           label: '🔵 Cruces Primera' },
   { value: 'master',            label: '🟣 Fase Máster' },
   { value: 'ranking',           label: '🏅 Ranking del Circuito' },
@@ -366,7 +368,10 @@ function PlantillaRankingClasif({ data, tema }: { data: any; tema: any }) {
     const g = grupos[grupos.length - 1];
     if (g && g.destino === (j.destino ?? '')) g.items.push(j); else grupos.push({ destino: j.destino ?? '', items: [j] });
   }
-  const colDestino = (d: string) => d === 'REDUCCIÓN' ? { bg: '#b45309', light: '#fff7ed' } : { bg: tema.header, light: tema.light };
+  const colDestino = (d: string) =>
+    d === 'REDUCCIÓN' ? { bg: '#b45309', light: '#fff7ed' }
+    : d === '2DOS DE SERIE' ? { bg: tema.accent, light: tema.light }
+    : { bg: tema.header, light: tema.light };
   return (
     <div style={{ padding: '20px 24px', background: '#f8f8f8', fontFamily: F }}>
       {grupos.map((g, gi) => {
@@ -1802,7 +1807,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
-const BUILD_TAG = 'pub-2026-07-05-sala-fecha-publica';
+const BUILD_TAG = 'pub-2026-10-10-ranking-segunda';
 
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
