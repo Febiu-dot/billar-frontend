@@ -1807,7 +1807,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
-const BUILD_TAG = 'pub-2026-10-10-corregir-primera';
+const BUILD_TAG = 'pub-2026-10-10-corregir-primera-tabla';
 
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
@@ -1821,6 +1821,7 @@ export default function AdminPublicacionesPage() {
   const [exportando, setExportando] = useState(false);
   const [vaciando, setVaciando]     = useState(false);
   const [corrigiendo, setCorrigiendo] = useState(false);
+  const [planPrimera, setPlanPrimera] = useState<any[] | null>(null);
   const [notas, setNotas]           = useState('');
   const [sala, setSala]             = useState('');
   const [fechaBracket, setFechaBracket] = useState('');
@@ -1862,18 +1863,27 @@ export default function AdminPublicacionesPage() {
     }
   }, [pubData, notas, sala, fechaBracket, horas]);
 
-  // Corrige los cruces de Primera para que los clasificados de Segunda queden en el orden oficial del ranking
-  const corregirCrucesPrimera = async () => {
+  // Cruces de Primera: paso 1 = ver los cambios (no modifica nada); paso 2 = aplicarlos
+  const verCambiosPrimera = async () => {
     if (!circuitId) return;
-    setCorrigiendo(true);
+    setCorrigiendo(true); setPlanPrimera(null);
     try {
       const prev = await api.post(`/matches/reordenar-primera/${circuitId}`);
       const cambios: any[] = prev.data.plan ?? [];
       if (cambios.length === 0) { alert('✅ Los cruces de Primera ya están en el orden oficial del ranking. No hay nada para corregir.'); return; }
-      const detalle = cambios.map((c: any) => `Puesto ${c.puesto} (cruce ${c.cruceNumero}): ${c.actual.nombre}  →  ${c.oficial.nombre}`).join('\n');
-      if (!confirm(`Se van a corregir ${cambios.length} lugares en los cruces de Primera:\n\n${detalle}\n\n¿Aplicar los cambios?`)) return;
+      setPlanPrimera(cambios);
+    } catch (err: any) {
+      alert(err?.response?.data?.error ?? 'No se pudo revisar los cruces de Primera');
+    } finally { setCorrigiendo(false); }
+  };
+  const aplicarCambiosPrimera = async () => {
+    if (!circuitId || !planPrimera) return;
+    if (!confirm(`¿Aplicar los ${planPrimera.length} cambios en los cruces de Primera?`)) return;
+    setCorrigiendo(true);
+    try {
       const res = await api.post(`/matches/reordenar-primera/${circuitId}?aplicar=true`);
-      alert(`✅ Listo: se corrigieron ${res.data.cambios} lugares en los cruces de Primera.`);
+      setPlanPrimera(null);
+      alert(`✅ Listo: se corrigieron ${res.data.cambios} cruces de Primera.`);
     } catch (err: any) {
       alert(err?.response?.data?.error ?? 'No se pudo corregir los cruces de Primera');
     } finally { setCorrigiendo(false); }
@@ -2153,11 +2163,42 @@ export default function AdminPublicacionesPage() {
 
           {/* Corregir cruces de Primera segun el ranking de Segunda */}
           {esAdmin && tipoFase === 'ranking-segunda' && circuitId && (
-            <div className="pt-1 border-t border-felt-light/10 flex items-center gap-3 flex-wrap">
-              <button className="btn-primary" disabled={corrigiendo} onClick={corregirCrucesPrimera}>
-                {corrigiendo ? 'Revisando...' : '🔧 Corregir cruces de Primera con este ranking'}
-              </button>
-              <span className="text-chalk/50 text-xs">Muestra los cambios antes de aplicarlos. No toca cruces que ya empezaron.</span>
+            <div className="pt-1 border-t border-felt-light/10 space-y-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                <button className="btn-primary" disabled={corrigiendo} onClick={verCambiosPrimera}>
+                  {corrigiendo ? 'Revisando...' : '🔧 Ver cómo quedarían los cruces de Primera'}
+                </button>
+                <span className="text-chalk/50 text-xs">Primero te muestra los cruces; no cambia nada hasta que apliques. No toca cruces que ya empezaron.</span>
+              </div>
+              {planPrimera && (
+                <div className="rounded-lg border border-gold/40 p-3 space-y-3">
+                  <div className="text-chalk text-sm font-semibold">Cruces de Primera que se van a corregir ({planPrimera.length}):</div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-chalk">
+                      <thead>
+                        <tr className="text-chalk/60 text-xs uppercase text-left">
+                          <th className="pr-3 py-1">Cruce</th><th className="pr-3">Primera</th><th className="pr-3">Pasa a jugar contra (Segunda)</th><th className="pr-3">Puesto</th><th>Antes estaba</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {planPrimera.map((c: any) => (
+                          <tr key={c.cruceId} className="border-t border-felt-light/10">
+                            <td className="pr-3 py-1 font-bold">{c.cruceNumero}</td>
+                            <td className="pr-3">{c.rival}</td>
+                            <td className="pr-3 font-semibold text-gold">{c.oficial.nombre}</td>
+                            <td className="pr-3">{c.puesto}°</td>
+                            <td className="text-chalk/50">{c.actual.nombre}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="flex gap-3 flex-wrap">
+                    <button className="btn-primary" disabled={corrigiendo} onClick={aplicarCambiosPrimera}>✅ Aplicar estos cambios</button>
+                    <button className="py-1.5 px-4 text-sm rounded-lg border border-felt-light/30 text-chalk/70" disabled={corrigiendo} onClick={() => setPlanPrimera(null)}>Cancelar</button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
