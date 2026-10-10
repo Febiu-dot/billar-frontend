@@ -1807,7 +1807,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
-const BUILD_TAG = 'pub-2026-10-10-ranking-segunda';
+const BUILD_TAG = 'pub-2026-10-10-corregir-primera';
 
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
@@ -1820,6 +1820,7 @@ export default function AdminPublicacionesPage() {
   const [loading, setLoading]       = useState(false);
   const [exportando, setExportando] = useState(false);
   const [vaciando, setVaciando]     = useState(false);
+  const [corrigiendo, setCorrigiendo] = useState(false);
   const [notas, setNotas]           = useState('');
   const [sala, setSala]             = useState('');
   const [fechaBracket, setFechaBracket] = useState('');
@@ -1860,6 +1861,23 @@ export default function AdminPublicacionesPage() {
       wrapperRef.current.style.height = `${Math.round(exportRef.current.scrollHeight * scale)}px`;
     }
   }, [pubData, notas, sala, fechaBracket, horas]);
+
+  // Corrige los cruces de Primera para que los clasificados de Segunda queden en el orden oficial del ranking
+  const corregirCrucesPrimera = async () => {
+    if (!circuitId) return;
+    setCorrigiendo(true);
+    try {
+      const prev = await api.post(`/matches/reordenar-primera/${circuitId}`);
+      const cambios: any[] = prev.data.plan ?? [];
+      if (cambios.length === 0) { alert('✅ Los cruces de Primera ya están en el orden oficial del ranking. No hay nada para corregir.'); return; }
+      const detalle = cambios.map((c: any) => `Puesto ${c.puesto} (cruce ${c.cruceNumero}): ${c.actual.nombre}  →  ${c.oficial.nombre}`).join('\n');
+      if (!confirm(`Se van a corregir ${cambios.length} lugares en los cruces de Primera:\n\n${detalle}\n\n¿Aplicar los cambios?`)) return;
+      const res = await api.post(`/matches/reordenar-primera/${circuitId}?aplicar=true`);
+      alert(`✅ Listo: se corrigieron ${res.data.cambios} lugares en los cruces de Primera.`);
+    } catch (err: any) {
+      alert(err?.response?.data?.error ?? 'No se pudo corregir los cruces de Primera');
+    } finally { setCorrigiendo(false); }
+  };
 
   const vaciarTodo = async () => {
     if (!circuitId) { alert('Elegí primero el circuito que querés vaciar.'); return; }
@@ -2132,6 +2150,16 @@ export default function AdminPublicacionesPage() {
               </button>
             </div>
           </div>
+
+          {/* Corregir cruces de Primera segun el ranking de Segunda */}
+          {esAdmin && tipoFase === 'ranking-segunda' && circuitId && (
+            <div className="pt-1 border-t border-felt-light/10 flex items-center gap-3 flex-wrap">
+              <button className="btn-primary" disabled={corrigiendo} onClick={corregirCrucesPrimera}>
+                {corrigiendo ? 'Revisando...' : '🔧 Corregir cruces de Primera con este ranking'}
+              </button>
+              <span className="text-chalk/50 text-xs">Muestra los cambios antes de aplicarlos. No toca cruces que ya empezaron.</span>
+            </div>
+          )}
 
           {/* Campos extra para bracket */}
           {esAdmin && esBracket && (
