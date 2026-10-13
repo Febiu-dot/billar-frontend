@@ -34,6 +34,7 @@ const TEMAS: Record<string, { header: string; accent: string; light: string; bad
   'ranking-segunda': { header: '#6B2737', accent: '#8a3447', light: '#fbeef1', badge: '#6B2737' },
   primera:          { header: '#014f86', accent: '#0277bd', light: '#e8f4fd', badge: '#014f86' },
   master:           { header: '#4a1070', accent: '#7b1fa2', light: '#f5eef8', badge: '#4a1070' },
+  'master-final':   { header: '#4a1070', accent: '#7b1fa2', light: '#f5eef8', badge: '#4a1070' },
   ranking:          { header: '#7c4d00', accent: '#b8860b', light: '#fffbf0', badge: '#7c4d00' },
   'ranking-final':  { header: '#1a3560', accent: '#1e40af', light: '#eff6ff', badge: '#1a3560' },
   acumulado:        { header: '#1a3a5c', accent: '#1565c0', light: '#e8f0fe', badge: '#1a3a5c' },
@@ -99,7 +100,8 @@ const FASES = [
   { value: 'segunda',           label: '🟠 Series Segunda' },
   { value: 'ranking-segunda',   label: '📋 Ranking de Segunda (1° y 2° → cruces)' },
   { value: 'primera',           label: '🔵 Cruces Primera' },
-  { value: 'master',            label: '🟣 Fase Máster' },
+  { value: 'master',            label: '🟣 Fase Máster (cruces)' },
+  { value: 'master-final',      label: '🏆 Fase Final (octavos a la final)' },
   { value: 'ranking',           label: '🏅 Ranking del Circuito' },
   { value: 'ranking-final',     label: '🏆 Ranking Final' },
   { value: 'acumulado',         label: '📊 Ranking Acumulado' },
@@ -1807,7 +1809,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
-const BUILD_TAG = 'pub-2026-10-10-corregir-primera-tabla';
+const BUILD_TAG = 'pub-2026-10-13-corte-master';
 
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
