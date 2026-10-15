@@ -46,12 +46,15 @@ export default function JudgePage() {
   const fetchFinalizados = () => {
     const q = user?.venueId ? `&venueId=${user.venueId}` : '';
     Promise.all([api.get(`/matches?status=finalizado${q}`), api.get(`/matches?status=wo${q}`)]).then(([f, w]) => {
-      const desde = Date.now() - 24 * 60 * 60 * 1000;
+      // Solo la jornada de hoy: la lista se vacia al empezar el dia siguiente (corte a las 05:00 hora de Uruguay,
+      // asi un partido que cierra pasada la medianoche sigue en la jornada que corresponde).
+      const diaJornada = (t: number) => new Date(t - 5 * 60 * 60 * 1000).toLocaleDateString('en-CA', { timeZone: 'America/Montevideo' });
+      const hoy = diaJornada(Date.now());
       const lista = ([...f.data, ...w.data] as Match[])
         .filter(m => m.phase?.circuit?.tournament?.active !== false)
-        .filter(m => m.finishedAt && new Date(m.finishedAt).getTime() >= desde)
+        .filter(m => m.finishedAt && diaJornada(new Date(m.finishedAt).getTime()) === hoy)
         .sort((a, b) => new Date(b.finishedAt as string).getTime() - new Date(a.finishedAt as string).getTime())
-        .slice(0, 12);
+        .slice(0, 40);
       setFinalizados(lista);
     }).catch(() => {});
   };
@@ -424,7 +427,7 @@ export default function JudgePage() {
         <div>
           <h2 className="font-display text-xl text-gold mb-2">✓ ÚLTIMOS FINALIZADOS</h2>
           {finalizados.length === 0 ? (
-            <div className="card text-chalk/40 text-sm text-center py-4">Todavía no hay partidos finalizados en las últimas 24 horas</div>
+            <div className="card text-chalk/40 text-sm text-center py-4">Todavía no hay partidos finalizados hoy</div>
           ) : (
             <div className="space-y-2">
               {finalizados.map(m => (
