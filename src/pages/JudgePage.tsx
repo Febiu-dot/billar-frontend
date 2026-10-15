@@ -92,28 +92,33 @@ export default function JudgePage() {
     }
   };
 
-  const openResultModal = (match: Match) => {
+  // Arma las filas de sets del modal a partir de los sets GUARDADOS en el servidor.
+  const filasDesdeServidor = (m: Match, extraLocales: SetScore[] = []): SetScore[] => {
+    const guardados: SetScore[] = (m.sets ?? [])
+      .slice().sort((x, y) => x.setNumber - y.setNumber)
+      .map(st => ({ a: st.pointsA.toString(), b: st.pointsB.toString(), saved: true }));
+    const setsToWin = m.ruleSet?.setsToWin ?? 3;
+    const winsA = guardados.filter(st => Number(st.a) > Number(st.b)).length;
+    const winsB = guardados.filter(st => Number(st.b) > Number(st.a)).length;
+    const filas = [...guardados];
+    if (winsA < setsToWin && winsB < setsToWin) filas.push(extraLocales[0] ?? { a: '', b: '', saved: false });
+    return filas.length > 0 ? filas : [{ a: '', b: '', saved: false }];
+  };
+
+  // El partido que viene de la lista de mesas puede estar desactualizado (otro juez, o sets cargados hace un rato):
+  // al abrir el modal se pide SIEMPRE el partido fresco al servidor, para que los sets ya guardados no aparezcan vacios.
+  const openResultModal = async (match: Match) => {
     setResultModal(match);
-    if (match.sets && match.sets.length > 0) {
-      const loadedSets: SetScore[] = match.sets.map(s => ({
-        a: s.pointsA.toString(),
-        b: s.pointsB.toString(),
-        saved: true,
-      }));
-      const setsToWin = match.ruleSet?.setsToWin ?? 3;
-      const winsA = loadedSets.filter(s => Number(s.a) > Number(s.b)).length;
-      const winsB = loadedSets.filter(s => Number(s.b) > Number(s.a)).length;
-      if (winsA < setsToWin && winsB < setsToWin) {
-        loadedSets.push({ a: '', b: '', saved: false });
-      }
-      setSets(loadedSets);
-    } else {
-      setSets([{ a: '', b: '', saved: false }]);
-    }
+    setSets(filasDesdeServidor(match));
     setIsWO(false);
     setWoPlayerId('');
     setNotes('');
     setError('');
+    try {
+      const { data: fresh } = await api.get(`/matches/${match.id}`);
+      setResultModal(fresh);
+      setSets(filasDesdeServidor(fresh));
+    } catch { /* se queda con lo que ya hay en pantalla */ }
   };
 
   const handleStartMatch = async (matchId: number) => {
@@ -149,23 +154,16 @@ export default function JudgePage() {
     setSavingSet(index);
     setError('');
     try {
-      await api.put(`/matches/${resultModal.id}/set`, {
+      const { data: actualizado } = await api.put(`/matches/${resultModal.id}/set`, {
         setNumber: index + 1,
         pointsA: Number(s.a),
         pointsB: Number(s.b),
       });
 
-      const newSets = sets.map((set, i) => i === index ? { ...set, saved: true } : set);
-
-      const setsToWin = resultModal.ruleSet?.setsToWin ?? 3;
-      const winsA = newSets.filter(set => Number(set.a) > Number(set.b) && set.saved).length;
-      const winsB = newSets.filter(set => Number(set.b) > Number(set.a) && set.saved).length;
-
-      if (winsA < setsToWin && winsB < setsToWin && newSets.length === index + 1) {
-        newSets.push({ a: '', b: '', saved: false });
-      }
-
-      setSets(newSets);
+      // Se re-sincroniza con lo que quedo guardado en el servidor (no se confia en el estado local)
+      const locales = sets.slice(index + 1).filter(set => !set.saved && (set.a !== '' || set.b !== ''));
+      setResultModal(prev => prev ? { ...prev, ...actualizado } : actualizado);
+      setSets(filasDesdeServidor(actualizado, locales));
       fetchTables();
     } catch {
       setError('Error al guardar el set');
