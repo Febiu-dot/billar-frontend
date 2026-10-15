@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-10-14-sin-mesas
+// PUBLIC_BUILD = pub-public-2026-10-14-departamentales
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
@@ -56,7 +56,7 @@ function SeccionNacional() {
   useEffect(() => {
     api.get('/publicaciones/circuitos').then(r => {
       const nac = (r.data as any[]).filter(t =>
-        t.active === true && (/nacional/i.test(t.name) || /panamericano/i.test(t.name))
+        t.active === true && (t.circuits ?? []).length > 0
       );
       setTorneos(nac);
     }).catch(() => {});
@@ -130,7 +130,7 @@ function SeccionNacional() {
     const found = circuitos.find(c => String(c.id) === cid);
     setTorneoNombre(found?.torneoNombre ?? '');
     setTorneoId(found?.torneoId ?? null);
-    if (found) cargar(cid, found.torneoId);
+    if (found) { if (!/nacional|panamericano/i.test(found.torneoNombre)) setTab('clasificados'); cargar(cid, found.torneoId); }
   };
 
   const CLASIFICA = 16;
@@ -154,6 +154,8 @@ function SeccionNacional() {
 
   const hayCruces = cruces && (cruces.octavos?.length > 0 || cruces.cuartos?.length > 0 || cruces.semis?.length > 0 || cruces.semi1 || cruces.final);
   const esPana = /panamericano/i.test(torneoNombre);
+  // Torneos departamentales: en esta seccion solo se muestra el ranking del circuito (sin series/cruces/bracket de nacional).
+  const esDep = !!torneoNombre && !/nacional|panamericano/i.test(torneoNombre);
 
   return (
     <section>
@@ -180,19 +182,19 @@ function SeccionNacional() {
       {!loading && circuitId && (series !== null || ranking !== null) && (
         <>
           <div className="flex gap-2 mb-4 flex-wrap">
-            <button
+            {!esDep && <button
               onClick={() => setTab('fixture')}
               className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${tab === 'fixture' ? 'bg-orange text-carbon-100' : 'bg-carbon-50 text-silver-dark hover:text-silver-light'}`}
             >
               🎱 Fixture de Series
-            </button>
+            </button>}
             <button
               onClick={() => setTab('clasificados')}
               className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${tab === 'clasificados' ? 'bg-orange text-carbon-100' : 'bg-carbon-50 text-silver-dark hover:text-silver-light'}`}
             >
-              📋 Clasificados
+              {esDep ? '🏅 Ranking' : '📋 Clasificados'}
             </button>
-            {hayCruces && (
+            {!esDep && hayCruces && (
               <button
                 onClick={() => setTab('cruces')}
                 className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${tab === 'cruces' ? 'bg-orange text-carbon-100' : 'bg-carbon-50 text-silver-dark hover:text-silver-light'}`}
@@ -208,7 +210,7 @@ function SeccionNacional() {
                 🏆 Ranking Final
               </button>
             )}
-            {bracket && (bracket.cuartos?.length > 0 || bracket.semis?.length > 0 || bracket.final) && (
+            {!esDep && bracket && (bracket.cuartos?.length > 0 || bracket.semis?.length > 0 || bracket.final) && (
               <button
                 onClick={() => setTab('bracket')}
                 className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${tab === 'bracket' ? 'bg-orange text-carbon-100' : 'bg-carbon-50 text-silver-dark hover:text-silver-light'}`}
@@ -271,13 +273,13 @@ function SeccionNacional() {
                   <span className="font-display text-silver-light font-bold uppercase tracking-wide text-sm">
                     Ranking — {torneoNombre}
                   </span>
-                  <span className="text-xs text-green-400 font-semibold bg-green-900/20 px-2 py-0.5 rounded-full">
+                  {!esDep && <span className="text-xs text-green-400 font-semibold bg-green-900/20 px-2 py-0.5 rounded-full">
                     Top {CLASIFICA} clasifican a cruces
-                  </span>
+                  </span>}
                 </div>
                 <div className="divide-y divide-silver-muted/10">
                   {ranking.map((j: any) => {
-                    const clasifica = j.posicion <= CLASIFICA;
+                    const clasifica = !esDep && j.posicion <= CLASIFICA;
                     return (
                       <div
                         key={j.posicion}
@@ -308,9 +310,9 @@ function SeccionNacional() {
                     );
                   })}
                 </div>
-                <div className="px-4 py-2 border-t border-silver-muted/10 text-xs text-silver-dark text-center">
+                {!esDep && <div className="px-4 py-2 border-t border-silver-muted/10 text-xs text-silver-dark text-center">
                   ✓ = Clasifica a la Etapa de Cruces
-                </div>
+                </div>}
               </div>
           )}
 
