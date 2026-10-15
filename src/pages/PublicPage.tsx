@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-07-05-sala-fecha-publica
+// PUBLIC_BUILD = pub-public-2026-10-14-sin-mesas
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
@@ -509,26 +509,6 @@ export default function PublicPage() {
   const esPanaSel = torneoSel != null &&
     /panamericano/i.test(torneosActivos.find(t => t.id === torneoSel)?.name ?? '');
 
-  // Mesas del torneo elegido. Se derivan de los partidos (cualquier estado) que
-  // pertenecen al torneo: una mesa entra si tiene al menos un partido de ese torneo.
-  // Así no dependemos de un venueId fijo: para el Panamericano quedan las 6 de Willy.
-  const mesasTorneo: Table[] = (() => {
-    if (torneoSel == null) return [];
-    const idsMesa: Set<number> = new Set();
-    allMatches.forEach((m: any) => {
-      if (m?.tableId != null && m?.phase?.circuit?.tournament?.id === torneoSel) {
-        idsMesa.add(m.tableId);
-      }
-    });
-    return tables
-      .filter(t => idsMesa.has(t.id))
-      .sort((a, b) => a.number - b.number);
-  })();
-
-  // Match en juego por mesa (para mostrar el partido en la propia tarjeta).
-  const matchEnMesaDe = (tableId: number): Match | null =>
-    activeMatches.find(m => m.tableId === tableId) ?? null;
-
   return (
     <div className="min-h-screen bg-carbon-100">
       {/* Header */}
@@ -574,101 +554,6 @@ export default function PublicPage() {
             <p className="text-silver-dark text-sm mt-2 pl-3">
               Elegí un torneo arriba para ver los partidos en curso, próximos y resultados.
             </p>
-          )}
-        </section>
-
-        {/* Estado de mesas */}
-        <section>
-          <h2 className="font-display text-lg font-bold text-silver-light uppercase tracking-wide mb-3 orange-line pl-3">
-            Estado de Mesas
-            {mesasTorneo.length > 0 && <span className="ml-3 text-orange">({mesasTorneo.length})</span>}
-          </h2>
-
-          {torneoSel == null ? (
-            <div className="card text-silver-dark text-sm text-center py-8">
-              Elegí un torneo arriba para ver las mesas en juego.
-            </div>
-          ) : mesasTorneo.length === 0 ? (
-            <div className="card text-silver-dark text-sm text-center py-8">
-              Este torneo no tiene mesas asignadas todavía.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {mesasTorneo.map(t => {
-                const m = matchEnMesaDe(t.id);
-                const ocupada = t.status === 'ocupada' && m != null;
-                const fuera   = t.status === 'fuera_de_servicio';
-                const esPana  = m ? matchEsPana(m) : false;
-                const r: any  = (m as any)?.result;
-                return (
-                  <button
-                    key={t.id}
-                    className={`rounded-xl border text-left w-full overflow-hidden transition-all ${
-                      ocupada
-                        ? 'bg-orange/5 border-orange/30 cursor-default'
-                        : fuera
-                        ? 'bg-red-900/10 border-red-800/20 opacity-50 cursor-default'
-                        : 'bg-green-900/5 border-green-800/20 cursor-default'
-                    }`}
-                  >
-                    {/* Barra superior: mesa + sede + estado */}
-                    <div className="flex items-center justify-between px-3 py-2 border-b border-silver-muted/10">
-                      <div className="flex items-baseline gap-2">
-                        <span className="font-display text-2xl font-bold text-orange leading-none">{t.number}</span>
-                        <span className="text-xs text-silver-dark truncate">{t.venue?.name}</span>
-                      </div>
-                      <span className={`flex items-center gap-1.5 text-xs font-mono uppercase tracking-wide ${
-                        ocupada ? 'text-orange' : fuera ? 'text-red-400' : 'text-green-400'
-                      }`}>
-                        <span className={`w-2 h-2 rounded-full ${
-                          ocupada ? 'bg-orange animate-pulse' : fuera ? 'bg-red-500' : 'bg-green-400'
-                        }`} />
-                        {ocupada ? 'En juego' : fuera ? 'Fuera de servicio' : 'Libre'}
-                      </span>
-                    </div>
-
-                    {/* Cuerpo */}
-                    {ocupada && m ? (
-                      <div className="px-3 py-3">
-                        {/* Torneo · categoría */}
-                        <p className="text-xs text-silver-dark font-mono mb-2 truncate">
-                          {m.phase?.circuit?.tournament?.name} · {m.phase?.name}
-                        </p>
-                        {/* Jugadores + marcador */}
-                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                          <p className="font-semibold text-silver-light text-sm leading-tight">
-                            {nombrePublico(m.playerA, esPana)}
-                          </p>
-                          <div className="flex flex-col items-center px-1">
-                            <span className="font-mono text-orange font-bold text-2xl leading-none">
-                              {r ? `${r.setsA}—${r.setsB}` : '0—0'}
-                            </span>
-                            {m.sets && m.sets.length > 0 && (
-                              <div className="flex flex-col items-center gap-0.5 mt-1">
-                                {m.sets.map((s: any, i: number) => (
-                                  <span key={i} className="text-[10px] font-mono">
-                                    <span className={s.pointsA > s.pointsB ? 'text-orange font-bold' : 'text-silver-dark'}>{s.pointsA}</span>
-                                    <span className="text-silver-dark mx-0.5">—</span>
-                                    <span className={s.pointsB > s.pointsA ? 'text-orange font-bold' : 'text-silver-dark'}>{s.pointsB}</span>
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          <p className="font-semibold text-silver-light text-sm leading-tight text-right">
-                            {nombrePublico(m.playerB, esPana)}
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="px-3 py-4 text-center text-silver-dark text-sm">
-                        {fuera ? 'Mesa fuera de servicio' : 'Mesa disponible'}
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
           )}
         </section>
 
