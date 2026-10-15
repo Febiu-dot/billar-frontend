@@ -23,6 +23,7 @@ export default function JudgePage() {
   const [assignTable, setAssignTable] = useState<Record<number, string>>({});
   const [assigningId, setAssigningId] = useState<number | null>(null);
   const [verProximas, setVerProximas] = useState(false);
+  const [finalizados, setFinalizados] = useState<Match[]>([]);
 
   const fetchTables = () => {
     const url = user?.venueId ? `/tables?venueId=${user.venueId}&cola=1` : '/tables?cola=1';
@@ -41,16 +42,33 @@ export default function JudgePage() {
     });
   };
 
+  // Ultimos partidos cerrados de la sede (finalizados + W.O.), el que termino ultimo primero.
+  const fetchFinalizados = () => {
+    const q = user?.venueId ? `&venueId=${user.venueId}` : '';
+    Promise.all([api.get(`/matches?status=finalizado${q}`), api.get(`/matches?status=wo${q}`)]).then(([f, w]) => {
+      const desde = Date.now() - 24 * 60 * 60 * 1000;
+      const lista = ([...f.data, ...w.data] as Match[])
+        .filter(m => m.phase?.circuit?.tournament?.active !== false)
+        .filter(m => m.finishedAt && new Date(m.finishedAt).getTime() >= desde)
+        .sort((a, b) => new Date(b.finishedAt as string).getTime() - new Date(a.finishedAt as string).getTime())
+        .slice(0, 12);
+      setFinalizados(lista);
+    }).catch(() => {});
+  };
+
   useEffect(() => {
     fetchTables();
     fetchPending();
+    fetchFinalizados();
     if (user?.venueId) socket.emit('join:venue', user.venueId);
     socket.on('match:updated', fetchTables);
     socket.on('match:updated', fetchPending);
+    socket.on('match:updated', fetchFinalizados);
     socket.on('table:updated', fetchTables);
     return () => {
       socket.off('match:updated', fetchTables);
       socket.off('match:updated', fetchPending);
+      socket.off('match:updated', fetchFinalizados);
       socket.off('table:updated', fetchTables);
     };
   }, [user?.venueId]);
@@ -401,6 +419,41 @@ export default function JudgePage() {
             })}
           </div>
         )}
+
+        {/* Ultimos partidos cerrados (para poder verificar que quedaron cargados) */}
+        <div>
+          <h2 className="font-display text-xl text-gold mb-2">✓ ÚLTIMOS FINALIZADOS</h2>
+          {finalizados.length === 0 ? (
+            <div className="card text-chalk/40 text-sm text-center py-4">Todavía no hay partidos finalizados en las últimas 24 horas</div>
+          ) : (
+            <div className="space-y-2">
+              {finalizados.map(m => (
+                <div key={m.id} className="card py-2.5">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`text-sm font-semibold ${m.result?.winnerId === m.playerAId ? 'text-gold' : 'text-chalk/60'}`}>{playerName(m.playerA)}</span>
+                      <span className="font-mono font-bold text-chalk">{m.result?.setsA}—{m.result?.setsB}</span>
+                      <span className={`text-sm font-semibold ${m.result?.winnerId === m.playerBId ? 'text-gold' : 'text-chalk/60'}`}>{playerName(m.playerB)}</span>
+                      {m.result?.isWO && <span className="text-red-400 text-xs">W.O.</span>}
+                    </div>
+                    <span className="text-chalk/40 text-xs font-mono">
+                      {m.finishedAt ? new Date(m.finishedAt).toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' }) : ''}
+                      {m.table ? ` · Mesa ${m.table.number}` : ''}
+                    </span>
+                  </div>
+                  {m.sets && m.sets.length > 0 && (
+                    <div className="flex gap-2 mt-1 flex-wrap">
+                      {m.sets.map(st => (
+                        <span key={st.setNumber} className="font-mono text-xs text-chalk/40">S{st.setNumber}: {st.pointsA}—{st.pointsB}</span>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-chalk/30 text-xs font-mono">{m.phase?.name} · R{m.round}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {resultModal && (() => {
