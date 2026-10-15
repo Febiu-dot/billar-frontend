@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-10-14-departamentales
+// PUBLIC_BUILD = pub-public-2026-10-14-finalizados-recientes
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
@@ -458,7 +458,8 @@ export default function PublicPage() {
       api.get('/matches?status=pendiente'),
       api.get('/matches?status=finalizado'),
       api.get('/matches'),
-    ]).then(([t, active, assigned, pending, finished, all]) => {
+      api.get('/matches?status=wo'),
+    ]).then(([t, active, assigned, pending, finished, all, woRes]) => {
       const activeMerged = active.data; // solo en_juego
       setTables(t.data);
       setActiveMatches(activeMerged);
@@ -466,7 +467,9 @@ export default function PublicPage() {
       // al renderizar, según el torneo que elija el espectador.
       setPendingMatches([...assigned.data, ...pending.data]);
       // Resultados finalizados, más recientes primero. Filtrado por torneo al renderizar.
-      setRecentMatches([...finished.data].reverse());
+      // Orden: el que termino ultimo aparece primero (por hora de cierre real, no por fase/horario programado).
+      setRecentMatches([...finished.data, ...(woRes?.data ?? [])].sort((a: any, b: any) =>
+        (b.finishedAt ? new Date(b.finishedAt).getTime() : 0) - (a.finishedAt ? new Date(a.finishedAt).getTime() : 0)));
       setAllMatches(all.data);
       setLastUpdate(new Date());
       setLoading(false);
@@ -507,7 +510,7 @@ export default function PublicPage() {
     torneoSel != null && m?.phase?.circuit?.tournament?.id === torneoSel;
   const activosF   = torneoSel != null ? activeMatches.filter(porTorneo)  : [];
   const pendientesF = torneoSel != null ? pendingMatches.filter(porTorneo).slice(0, 8) : [];
-  const recientesF  = torneoSel != null ? recentMatches.filter(porTorneo).slice(0, 5)  : [];
+  const recientesF  = torneoSel != null ? recentMatches.filter(porTorneo).slice(0, 10)  : [];
   const esPanaSel = torneoSel != null &&
     /panamericano/i.test(torneosActivos.find(t => t.id === torneoSel)?.name ?? '');
 

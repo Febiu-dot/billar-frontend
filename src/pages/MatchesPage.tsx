@@ -327,9 +327,16 @@ export default function MatchesPage() {
     en_juego: 'En Juego', finalizado: 'Finalizados', wo: 'W.O.',
   };
 
-  const filtered = filterStatus
+  // Los finalizados / W.O. se muestran del MAS RECIENTE al mas antiguo (por hora de cierre), para encontrarlos rapido
+  const esCerrado = (st: string) => st === 'finalizado' || st === 'wo';
+  const cierre = (m: any) => (m.finishedAt ? new Date(m.finishedAt).getTime() : 0);
+  const base = filterStatus
     ? matches.filter(m => m.status === filterStatus)
     : [...matches].sort((a, b) => statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status));
+  const filtered = [
+    ...base.filter(m => !esCerrado(m.status)),
+    ...base.filter(m => esCerrado(m.status)).sort((a, b) => cierre(b) - cierre(a)),
+  ];
 
   const freeTables = tables.filter(t => t.status === 'libre');
 
