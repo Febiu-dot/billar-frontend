@@ -1809,7 +1809,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
-const BUILD_TAG = 'pub-2026-10-13-corte-master';
+const BUILD_TAG = 'pub-2026-10-15-publicar-publico';
 
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
@@ -1821,6 +1821,8 @@ export default function AdminPublicacionesPage() {
   const [pubData, setPubData]       = useState<any>(null);
   const [loading, setLoading]       = useState(false);
   const [exportando, setExportando] = useState(false);
+  const [publicando, setPublicando] = useState(false);
+  const [publicadas, setPublicadas] = useState<any[]>([]);
   const [vaciando, setVaciando]     = useState(false);
   const [corrigiendo, setCorrigiendo] = useState(false);
   const [planPrimera, setPlanPrimera] = useState<any[] | null>(null);
@@ -2030,6 +2032,50 @@ export default function AdminPublicacionesPage() {
       link.click();
     } catch (e: any) { alert(`Error al exportar: ${e.message}`); }
     finally { setExportando(false); }
+  };
+
+  // Publicadas en la vista publica para el circuito elegido
+  const cargarPublicadas = useCallback(() => {
+    if (!circuitId) { setPublicadas([]); return; }
+    api.get(`/publicaciones-publicas?circuitId=${circuitId}`).then(r => setPublicadas(r.data)).catch(() => setPublicadas([]));
+  }, [circuitId]);
+  useEffect(() => { cargarPublicadas(); }, [cargarPublicadas]);
+
+  // Publica el MISMO PNG que se exporta para WhatsApp/redes, para que lo vea el publico en /publico.
+  // Volver a publicar la misma fase reemplaza la anterior.
+  const publicarEnVistaPublica = async () => {
+    if (!exportRef.current || !pubData || !circuitId) return;
+    setPublicando(true);
+    try {
+      const hti = await cargarHtmlToImage();
+      const isBracket = pubData?.tipo === 'bracket-nacional';
+      const el = exportRef.current;
+      const opts = {
+        width: isBracket ? 1440 : 1080,
+        height: el.scrollHeight,
+        pixelRatio: 1.5,
+        backgroundColor: isBracket ? undefined : '#06182f',
+        skipFonts: false,
+        useCORS: true,
+        style: { transform: 'none', position: 'static', top: '0', left: '0' },
+        filter: (node: HTMLElement) => node.tagName !== 'SCRIPT',
+      };
+      await hti.toPng(el, opts); // primera pasada: carga fuentes
+      const dataUrl = await hti.toPng(el, opts);
+      await api.post('/publicaciones-publicas', {
+        circuitId: Number(circuitId), tipoFase, titulo: pubData?.fase ?? 'Publicación',
+        subtitulo: [pubData?.torneo, pubData?.circuito].filter(Boolean).join(' · '), imagen: dataUrl,
+      });
+      cargarPublicadas();
+      alert('✅ Publicado en la vista pública.');
+    } catch (e: any) { alert(`Error al publicar: ${e?.response?.data?.error ?? e.message}`); }
+    finally { setPublicando(false); }
+  };
+
+  const quitarPublicada = async (id: number) => {
+    if (!window.confirm('¿Quitar esta publicación de la vista pública?')) return;
+    try { await api.delete(`/publicaciones-publicas/${id}`); cargarPublicadas(); }
+    catch { alert('No se pudo quitar.'); }
   };
 
   const exportarEnPartes = async () => {
@@ -2321,8 +2367,25 @@ export default function AdminPublicacionesPage() {
                     {exportando ? 'Exportando...' : '⬇ Exportar en 2 partes (WhatsApp)'}
                   </button>
                 )}
+                <button className="btn-primary px-8" disabled={publicando || exportando} onClick={publicarEnVistaPublica}
+                  style={{ background: 'linear-gradient(135deg, #1b5e20, #2e7d32)', border: '1px solid #66bb6a55' }}>
+                  {publicando ? 'Publicando...' : '📢 Publicar en vista pública'}
+                </button>
                 <span className="text-chalk/30 text-xs">Alta resolución · WhatsApp y redes</span>
               </div>
+              {publicadas.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">Publicadas en la vista pública (este circuito)</p>
+                  <div className="space-y-1">
+                    {publicadas.map((p: any) => (
+                      <div key={p.id} className="flex items-center justify-between gap-3 bg-felt-dark/40 rounded px-3 py-2 text-sm">
+                        <span className="text-chalk/80 truncate">{p.titulo} <span className="text-chalk/30 text-xs">· {new Date(p.updatedAt).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span></span>
+                        <button className="text-red-400 text-xs hover:underline shrink-0" onClick={() => quitarPublicada(p.id)}>Quitar</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>

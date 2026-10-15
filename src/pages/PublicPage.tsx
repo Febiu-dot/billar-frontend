@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-10-14-finalizados-recientes
+// PUBLIC_BUILD = pub-public-2026-10-15-publicaciones
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
@@ -403,6 +403,53 @@ function SeccionNacional() {
   );
 }
 
+// Publicaciones del torneo elegido (las mismas imagenes que el admin exporta para WhatsApp/redes).
+function SeccionPublicaciones({ torneoSel, lista }: { torneoSel: number | null; lista: any[] }) {
+  const [abierta, setAbierta] = useState<any | null>(null);
+  const base = (api.defaults.baseURL ?? '').replace(/\/$/, '');
+  const urlImg = (p: any) => `${base}/publicaciones-publicas/${p.id}/imagen?v=${new Date(p.updatedAt).getTime()}`;
+  const propias = torneoSel != null ? lista.filter(p => p.tournamentId === torneoSel) : [];
+  return (
+    <section>
+      <h2 className="font-display text-lg font-bold text-silver-light uppercase tracking-wide mb-3 orange-line pl-3">
+        Publicaciones del Torneo
+        {propias.length > 0 && <span className="ml-3 text-orange">({propias.length})</span>}
+      </h2>
+      {torneoSel == null ? (
+        <div className="card text-silver-dark text-sm text-center py-8">Elegí un torneo arriba para ver sus publicaciones.</div>
+      ) : propias.length === 0 ? (
+        <div className="card text-silver-dark text-sm text-center py-8">Todavía no hay publicaciones para este torneo.</div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {propias.map(p => (
+            <button key={p.id} className="card p-0 overflow-hidden text-left" onClick={() => setAbierta(p)}>
+              <img src={urlImg(p)} alt={p.titulo} loading="lazy" className="w-full h-auto block" />
+              <div className="px-3 py-2">
+                <p className="text-silver-light text-sm font-semibold">{p.titulo}</p>
+                <p className="text-silver-dark text-xs">{p.circuito} · {new Date(p.updatedAt).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+      {abierta && (
+        <div className="fixed inset-0 z-50 bg-black/90 overflow-auto" onClick={() => setAbierta(null)}>
+          <div className="min-h-full flex flex-col items-center p-3" onClick={e => e.stopPropagation()}>
+            <div className="w-full max-w-3xl flex justify-between items-center py-2">
+              <span className="text-silver-light text-sm font-semibold">{abierta.titulo}</span>
+              <div className="flex gap-3">
+                <a href={urlImg(abierta)} download={`${abierta.titulo}.png`} className="text-orange text-sm font-semibold">⬇ Descargar</a>
+                <button className="text-silver-light text-sm font-semibold" onClick={() => setAbierta(null)}>✕ Cerrar</button>
+              </div>
+            </div>
+            <img src={urlImg(abierta)} alt={abierta.titulo} className="w-full max-w-3xl h-auto" />
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function PartidoRow({ p, label }: { p: any; label: string }) {
   if (!p) return null;
   const hayResultado = !!p.resultado;
@@ -449,6 +496,8 @@ export default function PublicPage() {
   const [lastUpdate, setLastUpdate]         = useState(new Date());
   // Torneo elegido por el espectador para filtrar las 3 columnas. null = aún no eligió.
   const [torneoSel, setTorneoSel]           = useState<number | null>(null);
+  const [fechaSel, setFechaSel]             = useState<string | null>(null);
+  const [publicaciones, setPublicaciones]   = useState<any[]>([]);
 
   const fetchAll = () => {
     Promise.all([
@@ -459,7 +508,9 @@ export default function PublicPage() {
       api.get('/matches?status=finalizado'),
       api.get('/matches'),
       api.get('/matches?status=wo'),
-    ]).then(([t, active, assigned, pending, finished, all, woRes]) => {
+      api.get('/publicaciones-publicas').catch(() => ({ data: [] })),
+    ]).then(([t, active, assigned, pending, finished, all, woRes, pubs]) => {
+      setPublicaciones(pubs?.data ?? []);
       const activeMerged = active.data; // solo en_juego
       setTables(t.data);
       setActiveMatches(activeMerged);
@@ -510,7 +561,16 @@ export default function PublicPage() {
     torneoSel != null && m?.phase?.circuit?.tournament?.id === torneoSel;
   const activosF   = torneoSel != null ? activeMatches.filter(porTorneo)  : [];
   const pendientesF = torneoSel != null ? pendingMatches.filter(porTorneo).slice(0, 8) : [];
-  const recientesF  = torneoSel != null ? recentMatches.filter(porTorneo).slice(0, 10)  : [];
+  // TODOS los resultados del torneo elegido, agrupados por jornada (dia; corte 05:00 hora de Uruguay).
+  // Por defecto se muestra la ultima jornada; con los botones de fecha se ven las anteriores.
+  const recientesF  = torneoSel != null ? recentMatches.filter(porTorneo) : [];
+  const jornadaDe = (m: any): string => m.finishedAt
+    ? new Date(new Date(m.finishedAt).getTime() - 5 * 60 * 60 * 1000).toLocaleDateString('en-CA', { timeZone: 'America/Montevideo' })
+    : '0000';
+  const fechasRes: string[] = Array.from(new Set(recientesF.map(jornadaDe)));
+  const fechaActiva = fechaSel && fechasRes.includes(fechaSel) ? fechaSel : fechasRes[0];
+  const recientesDia = recientesF.filter(m => jornadaDe(m) === fechaActiva);
+  const etiquetaFecha = (f: string) => f === '0000' ? 'Sin fecha' : new Date(f + 'T12:00:00').toLocaleDateString('es-UY', { weekday: 'short', day: '2-digit', month: '2-digit' });
   const esPanaSel = torneoSel != null &&
     /panamericano/i.test(torneosActivos.find(t => t.id === torneoSel)?.name ?? '');
 
@@ -650,13 +710,23 @@ export default function PublicPage() {
           {/* Últimos resultados */}
           <section>
             <h2 className="font-display text-lg font-bold text-silver-light uppercase tracking-wide mb-3 orange-line pl-3">
-              Últimos Resultados
+              Resultados{recientesDia.length > 0 && <span className="ml-3 text-orange">({recientesDia.length})</span>}
             </h2>
-            {recientesF.length === 0 ? (
+            {fechasRes.length > 1 && (
+              <div className="flex gap-2 mb-3 flex-wrap">
+                {fechasRes.map(f => (
+                  <button key={f} onClick={() => setFechaSel(f)}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold capitalize transition-all ${f === fechaActiva ? 'bg-orange text-carbon-100' : 'bg-carbon-50 text-silver-dark hover:text-silver-light'}`}>
+                    {etiquetaFecha(f)}
+                  </button>
+                ))}
+              </div>
+            )}
+            {recientesDia.length === 0 ? (
               <div className="card text-silver-dark text-sm text-center py-8">Sin resultados aún</div>
             ) : (
               <div className="space-y-2">
-                {recientesF.map(m => (
+                {recientesDia.map(m => (
                   <div key={m.id} className="card py-2.5">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex-1 min-w-0">
@@ -694,7 +764,7 @@ export default function PublicPage() {
         </div>
 
         {/* Sección Nacional */}
-        <SeccionNacional />
+        <SeccionPublicaciones torneoSel={torneoSel} lista={publicaciones} />
 
         <footer className="border-t border-silver-muted/10 pt-4 text-center text-silver-muted text-xs">
           Federación de Billar del Uruguay · Sistema de Torneos · {new Date().getFullYear()}

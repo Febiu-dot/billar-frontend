@@ -1,4 +1,4 @@
-const CACHE_NAME = 'febiu-billar-v6';
+const CACHE_NAME = 'febiu-billar-v7';
 
 const STATIC_ASSETS = [
   '/publico',
