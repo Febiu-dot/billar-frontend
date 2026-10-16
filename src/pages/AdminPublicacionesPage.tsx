@@ -40,6 +40,7 @@ const TEMAS: Record<string, { header: string; accent: string; light: string; bad
   acumulado:        { header: '#1a3a5c', accent: '#1565c0', light: '#e8f0fe', badge: '#1a3a5c' },
   'series-nacional':  { header: '#06182f', accent: '#f4c430', light: '#0a223f', badge: '#014f86' },
   'inicial-nacional': { header: '#06182f', accent: '#f4c430', light: '#0a223f', badge: '#014f86' },
+  'bracket-master': { header: '#4a1070', accent: '#7b1fa2', light: '#f5eef8', badge: '#4a1070' },
   'bracket-nacional': { header: '#135c1a', accent: '#f5d020', light: '#fffde7', badge: '#135c1a' },
   'cruces-nacional':  { header: '#06182f', accent: '#f4c430', light: '#0a223f', badge: '#014f86' },
 };
@@ -102,6 +103,7 @@ const FASES = [
   { value: 'primera',           label: '🔵 Cruces Primera' },
   { value: 'master',            label: '🟣 Fase Máster (cruces)' },
   { value: 'master-final',      label: '🏆 Fase Final (octavos a la final)' },
+  { value: 'bracket-master',    label: '🏟 Bracket Final (violeta)' },
   { value: 'ranking',           label: '🏅 Ranking del Circuito' },
   { value: 'ranking-final',     label: '🏆 Ranking Final' },
   { value: 'acumulado',         label: '📊 Ranking Acumulado' },
@@ -1365,6 +1367,10 @@ const COLORES_CATEGORIA_V2: Record<string, {
     navyDeep:'#061a0e', navy:'#0a2f1a', navy2:'#0d3d22', petrol:'#0e5c30',
     gold:'#f4c430', goldBright:'#ffd95a', goldDeep:'#c9962a',
     cyan:'#5fffa0', cyanSoft:'#8fffc0', ink:'#0a1a12',
+  },  master: {
+    navyDeep:'#1a0830', navy:'#2e0f52', navy2:'#4a1070', petrol:'#6a1b9a',
+    gold:'#D4AF37', goldBright:'#e8c75a', goldDeep:'#b08d22',
+    cyan:'#d19cff', cyanSoft:'#e4c4ff', ink:'#1a0a2a',
   },
 };
 const getCatV2 = (cat?: string) =>
@@ -1381,7 +1387,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
   const sem  = data.semis   ?? Array(2).fill(null);
   const fin  = data.final;
   const camp = data.campeon;
-  const C    = getCatV2(catPaletaFE(data));
+  const C    = getCatV2(data.paleta === 'master' ? 'master' : catPaletaFE(data));
   const es8  = data.tamano === 8; // ← bracket arranca en cuartos (8 jugadores)
 
   // Subtítulo dinámico del header: "Bracket Final · Categoría X".
@@ -1809,7 +1815,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
-const BUILD_TAG = 'pub-2026-10-15-publicar-publico';
+const BUILD_TAG = 'pub-2026-10-16-bracket-master';
 
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
@@ -2142,7 +2148,7 @@ export default function AdminPublicacionesPage() {
       if (a.torneoNombre !== b.torneoNombre) return a.torneoNombre.localeCompare(b.torneoNombre);
       return (a.order ?? 0) - (b.order ?? 0);
     });
-  const esBracket = tipoFase === 'bracket-nacional';
+  const esBracket = tipoFase === 'bracket-nacional' || tipoFase === 'bracket-master';
 
   return (
     <div>
