@@ -1388,6 +1388,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
   const fin  = data.final;
   const camp = data.campeon;
   const C    = getCatV2(data.paleta === 'master' ? 'master' : catPaletaFE(data));
+  const esMaster = data.paleta === 'master';
   const es8  = data.tamano === 8; // ← bracket arranca en cuartos (8 jugadores)
 
   // Subtítulo dinámico del header: "Bracket Final · Categoría X".
@@ -1422,11 +1423,14 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
 
   // Draw wires after render
   React.useEffect(() => {
+    const draw = () => {
     const stage = stageRef.current;
     const svg   = svgRef.current;
     if (!stage || !svg) return;
     const sr = stage.getBoundingClientRect();
-    svg.setAttribute('viewBox', `0 0 ${sr.width} ${sr.height}`);
+    const sc = stage.offsetWidth ? sr.width / stage.offsetWidth : 1; // escala de la vista previa
+    svg.setAttribute('viewBox', `0 0 ${stage.offsetWidth} ${stage.offsetHeight}`);
+    svg.setAttribute('preserveAspectRatio', 'none');
     svg.innerHTML = '';
 
     const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
@@ -1441,16 +1445,16 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
 
     const rect = (el: Element) => {
       const r = el.getBoundingClientRect();
-      return { x: r.left-sr.left, y: r.top-sr.top, w: r.width, h: r.height, cy: r.top-sr.top+r.height/2 };
+      return { x: (r.left-sr.left)/sc, y: (r.top-sr.top)/sc, w: r.width/sc, h: r.height/sc, cy: (r.top-sr.top+r.height/2)/sc };
     };
     const wire = (ax:number,ay:number,bx:number,by:number,px:number,py:number, dir:'ltr'|'rtl') => {
       const midX = dir==='ltr' ? (ax+px)/2 : (bx+px)/2;
-      const d = `M ${ax} ${ay} H ${midX} V ${py} H ${px} M ${bx} ${by} H ${midX}`;
+      const d = `M ${ax} ${ay} H ${midX} V ${py} H ${px} M ${bx} ${by} H ${midX} V ${py}`;
       const p = document.createElementNS('http://www.w3.org/2000/svg','path');
       p.setAttribute('d',d); p.setAttribute('fill','none');
-      p.setAttribute('stroke','url(#wg)'); p.setAttribute('stroke-width','2');
+      p.setAttribute('stroke',C.cyan); p.setAttribute('stroke-width','2.5');
       p.setAttribute('stroke-linecap','round'); p.setAttribute('stroke-linejoin','round');
-      p.setAttribute('filter','url(#glow)'); p.setAttribute('opacity','0.85');
+      p.setAttribute('opacity','0.95');
       svg.appendChild(p);
     };
     const singleWire = (fromX:number,fromY:number,toX:number,toY:number) => {
@@ -1458,9 +1462,9 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
       const d = `M ${fromX} ${fromY} H ${midX} V ${toY} H ${toX}`;
       const p = document.createElementNS('http://www.w3.org/2000/svg','path');
       p.setAttribute('d',d); p.setAttribute('fill','none');
-      p.setAttribute('stroke','url(#wg)'); p.setAttribute('stroke-width','2');
-      p.setAttribute('filter','url(#glow)'); p.setAttribute('stroke-linejoin','round');
-      p.setAttribute('opacity','0.9');
+      p.setAttribute('stroke',C.cyan); p.setAttribute('stroke-width','2.5');
+      p.setAttribute('stroke-linecap','round'); p.setAttribute('stroke-linejoin','round');
+      p.setAttribute('opacity','0.95');
       svg.appendChild(p);
     };
 
@@ -1509,6 +1513,12 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
       const s=rect(Rsem[0]),f=rect(finCard);
       singleWire(s.x,s.cy,f.x+f.w,f.cy);
     }
+    };
+    draw();
+    const t1 = setTimeout(draw, 250);
+    const t2 = setTimeout(draw, 1200);
+    (document as any).fonts?.ready?.then(draw);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   });
 
   const cssVars = {
@@ -1552,6 +1562,18 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
     );
   };
 
+  const fechaCorta = (() => {
+    const t = (fechaBracket ?? '').trim();
+    let m = t.match(/(\d{1,2})\s*[\/\-.]\s*(\d{1,2})\s*[\/\-.]\s*(\d{4})/);
+    if (m) return `${m[1].padStart(2,'0')}/${m[2].padStart(2,'0')}/${m[3]}`;
+    const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','setiembre','octubre','noviembre','diciembre'];
+    m = t.toLowerCase().match(/(\d{1,2})\s+de\s+([a-z\u00e1\u00e9]+)\s+de\s+(\d{4})/);
+    if (m) {
+      let i = meses.indexOf(m[2]); if (i === 10) i = 8; if (i > 10) i -= 1;
+      if (i >= 0) return `${m[1].padStart(2,'0')}/${String(i + 1).padStart(2,'0')}/${m[3]}`;
+    }
+    return '';
+  })();
   const RoundHead = ({ label, hora, right }: { label:string; hora:string; right?:boolean }) => (
     <div className={`bk-round-head${right?' bk-right':''}`}>
       <span className="rname">{label}</span>
@@ -1560,6 +1582,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
           <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
         </svg>
         {hora && hora.trim() ? hora : 'Hora: ___'}
+        {fechaCorta ? <span style={{ marginLeft: 3 }}>· {fechaCorta.slice(0,5)}</span> : null}
       </span>
     </div>
   );
@@ -1603,12 +1626,13 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
         .bk-gold-rule{height:2px;width:100%;margin-top:12px;background:linear-gradient(90deg,transparent,${C.goldDeep} 12%,${C.goldBright} 50%,${C.goldDeep} 88%,transparent);box-shadow:0 0 12px rgba(244,196,48,.5);border-radius:2px;}
         .bk-meta-chip{width:200px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.16);border-radius:12px;padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.35);}
         .bk-meta-chip .lab{font-family:'Saira Condensed',sans-serif;letter-spacing:.34em;font-weight:700;font-size:11px;color:${C.goldBright};text-transform:uppercase;}
-        .bk-meta-chip .val{margin-top:6px;height:20px;border-bottom:2px dashed rgba(255,255,255,.32);font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;color:#fff;}
+        .bk-meta-chip .val{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:6px;height:20px;border-bottom:2px dashed rgba(255,255,255,.32);font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;color:#fff;}
         .bk-meta-chip.right{text-align:right;}
         .bk-bracket{position:relative;z-index:4;display:grid;grid-template-columns:1.4fr 0.4fr 1fr 0.4fr 0.9fr 1.2fr 0.9fr 0.4fr 1fr 0.4fr 1.4fr;align-items:stretch;column-gap:0;row-gap:0;min-height:300px;max-width:1180px;margin-left:auto;margin-right:auto;}
         .bk-col{display:flex;flex-direction:column;justify-content:center;gap:14px;padding:0 8px;}
+        ${esMaster ? `.bk-col{padding:0 4px;} .bk-round-head{gap:5px;padding:4px 7px;} .bk-round-head .rname{font-size:10.5px;letter-spacing:.05em;} .bk-round-head .rtime{font-size:9px;padding-left:5px;} .bk-round-head.bk-right .rtime{padding-right:5px;flex-direction:row !important;} .bk-col[data-bk="Lcua"],.bk-col[data-bk="Rcua"]{justify-content:space-around;} .bk-center{padding:0 12px;} .bk-final-head{flex-wrap:wrap;gap:2px 8px;} .bk-final-head .fh{border-left:none;padding-left:0;}` : ''}
         .bk-col.bk-rail{padding:0;}
-        .bk-round-head{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:5px 10px 5px 9px;border-radius:8px;background:linear-gradient(160deg,${C.goldBright},${C.gold} 55%,${C.goldDeep});box-shadow:0 4px 12px rgba(201,150,42,.45),inset 0 1px 0 rgba(255,255,255,.55);margin-bottom:-8px;position:relative;z-index:3;}
+        .bk-round-head{white-space:nowrap;display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:5px 10px 5px 9px;border-radius:8px;background:linear-gradient(160deg,${C.goldBright},${C.gold} 55%,${C.goldDeep});box-shadow:0 4px 12px rgba(201,150,42,.45),inset 0 1px 0 rgba(255,255,255,.55);margin-bottom:-8px;position:relative;z-index:3;}
         .bk-round-head .rname{font-family:'Saira Condensed',sans-serif;font-weight:800;letter-spacing:.1em;font-size:12px;color:${C.ink};text-transform:uppercase;line-height:1;}
         .bk-round-head .rtime{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:10px;color:#3a2c08;letter-spacing:.04em;display:flex;align-items:center;gap:3px;border-left:1px solid rgba(58,44,8,.3);padding-left:6px;}
         .bk-round-head.bk-right{align-self:flex-end;flex-direction:row-reverse;}
@@ -1683,7 +1707,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
       </header>
 
       {/* BRACKET */}
-      <div className="bk-bracket" style={es8 ? { gridTemplateColumns: '1fr 0.4fr 0.9fr 1.2fr 0.9fr 0.4fr 1fr' } : undefined}>
+      <div className="bk-bracket" style={es8 ? { gridTemplateColumns: '1fr 0.4fr 0.9fr 1.2fr 0.9fr 0.4fr 1fr' } : (esMaster ? { gridTemplateColumns: 'minmax(0,1.35fr) minmax(0,.28fr) minmax(0,1.4fr) minmax(0,.28fr) minmax(0,1.45fr) minmax(0,1.15fr) minmax(0,1.45fr) minmax(0,.28fr) minmax(0,1.4fr) minmax(0,.28fr) minmax(0,1.35fr)', maxWidth: 1384 } : undefined)}>
 
         {/* COL 0 — LEFT OCTAVOS (solo bracket de 16) */}
         {!es8 && (
@@ -1724,6 +1748,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
                     <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
                   </svg>
                   {horas.fin && horas.fin.trim() ? horas.fin : 'Hora: ___'}
+                  {fechaCorta ? <span style={{ marginLeft: 5, whiteSpace: 'nowrap' }}>· {fechaCorta.slice(0,5)}</span> : null}
                 </span>
               </div>
               <Seat m={fin} side="A" isPlaceholder={!fin?.playerAId} />
@@ -1815,7 +1840,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
-const BUILD_TAG = 'pub-2026-10-16-bracket-master';
+const BUILD_TAG = 'pub-2026-10-16-bracket-master-v2';
 
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
@@ -1983,6 +2008,18 @@ export default function AdminPublicacionesPage() {
 
       const res = await api.get(`/publicaciones/${circuitId}/${tipoFase}`);
       setPubData(res.data); setNotas('');
+      if (tipoFase === 'bracket-master') {
+        // Valores cargados por el admin (siguen siendo editables): sede, fecha y horas de cada ronda
+        setSala(res.data.salaPublica || 'Feria Franca');
+        setFechaBracket(res.data.fechaPublica || '17/10/2026');
+        // orden en pantalla: octavos [17, 24, 20, 21 | 18, 23, 19, 22]
+        setHoras({
+          oct: ['13:00', '14:30', '13:00', '14:30', '13:00', '14:30', '13:00', '14:30'],
+          cua: ['16:00', '16:00', '16:00', '16:00'],
+          sem: ['17:30', '17:30'],
+          fin: '19:00',
+        });
+      }
     } catch (e: any) {
       setError(e?.response?.data?.error ?? 'Error al cargar los datos');
     } finally { setLoading(false); }
