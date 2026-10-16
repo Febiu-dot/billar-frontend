@@ -9,6 +9,7 @@ import MatchesPage from './pages/MatchesPage';
 import JudgePage from './pages/JudgePage';
 import PublicPage from './pages/PublicPage';
 import FixturePage from './pages/FixturePage';
+import BotonInstalar from './components/BotonInstalar';
 import SeriesPage from './pages/SeriesPage';
 import CrucesPage from './pages/CrucesPage';
 import UsersPage from './pages/UsersPage';
@@ -81,6 +82,7 @@ export default function App() {
   return (
     <AuthProvider>
       <AppRoutes />
+      <BotonInstalar />
     </AuthProvider>
   );
 }
