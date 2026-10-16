@@ -15,6 +15,8 @@ export default function BotonInstalar() {
 
   const ua = navigator.userAgent;
   const esIOS = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
+  // Samsung Internet instala un paquete viejo que Android 14+ bloquea (Play Protect): hay que usar Chrome
+  const esSamsung = /SamsungBrowser/i.test(ua) && /Android/i.test(ua);
   const esSafariIOS = esIOS && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
 
   useEffect(() => {
@@ -26,10 +28,16 @@ export default function BotonInstalar() {
   }, []);
 
   if (instalada || oculto) return null;
-  if (!prompt && !esSafariIOS) return null;
+  if (!esSamsung && !prompt && !esSafariIOS) return null;
 
   const cerrar = () => { setOculto(true); try { sessionStorage.setItem('pwa-oculto', '1'); } catch {} };
+  const abrirEnChrome = () => {
+    const u = window.location;
+    const web = encodeURIComponent(u.href);
+    window.location.href = `intent://${u.host}${u.pathname}${u.search}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${web};end`;
+  };
   const instalar = async () => {
+    if (esSamsung) { abrirEnChrome(); return; }
     if (prompt) {
       prompt.prompt();
       try { await prompt.userChoice; } catch {}
@@ -43,8 +51,8 @@ export default function BotonInstalar() {
     <>
       <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 9999, padding: '10px 12px calc(10px + env(safe-area-inset-bottom))', background: 'rgba(10,10,10,.92)', borderTop: '1px solid rgba(255,255,255,.12)', display: 'flex', gap: 8, alignItems: 'center' }}>
         <button onClick={instalar}
-          style={{ flex: 1, background: '#16a34a', color: '#fff', border: 'none', borderRadius: 14, padding: '16px 12px', fontSize: 20, fontWeight: 800, letterSpacing: '.02em' }}>
-          📲 INSTALAR APP
+          style={{ flex: 1, background: '#16a34a', color: '#fff', border: 'none', borderRadius: 14, padding: '16px 12px', fontSize: esSamsung ? 17 : 20, fontWeight: 800, letterSpacing: '.02em' }}>
+          {esSamsung ? '🌐 ABRIR EN CHROME PARA INSTALAR' : '📲 INSTALAR APP'}
         </button>
         <button onClick={cerrar} aria-label="Cerrar"
           style={{ background: 'transparent', color: '#aaa', border: '1px solid rgba(255,255,255,.2)', borderRadius: 12, padding: '14px 16px', fontSize: 18 }}>✕</button>
