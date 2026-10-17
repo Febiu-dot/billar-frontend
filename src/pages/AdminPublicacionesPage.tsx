@@ -1574,7 +1574,9 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
     }
     return '';
   })();
-  const RoundHead = ({ label, hora, right }: { label:string; hora:string; right?:boolean }) => (
+  const RoundHead = ({ label, hora, right, fecha }: { label:string; hora:string; right?:boolean; fecha?: string }) => {
+    const fCorta = esMaster ? ((fecha && fecha.length >= 5 ? fecha.slice(0, 5) : '') || fechaCorta.slice(0, 5)) : '';
+    return (
     <div className={`bk-round-head${right?' bk-right':''}`}>
       <span className="rname">{label}</span>
       <span className="rtime">
@@ -1582,14 +1584,15 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
           <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
         </svg>
         {hora && hora.trim() ? hora : 'Hora: ___'}
-        {fechaCorta ? <span style={{ marginLeft: 3 }}>· {fechaCorta.slice(0,5)}</span> : null}
+        {fCorta ? <span style={{ marginLeft: 3 }}>· {fCorta}</span> : null}
       </span>
     </div>
-  );
+    );
+  };
 
   const OctGroup = ({ m, hora, right, placeholder }: { m:any; hora:string; right?:boolean; placeholder?:boolean }) => (
     <div className="bk-group">
-      <RoundHead label="Octavos" hora={hora} right={right} />
+      <RoundHead label="Octavos" hora={hora} right={right} fecha={m?.fecha} />
       <div className="bk-match">
         <Seat m={m} side="A" isPlaceholder={placeholder} />
         <Seat m={m} side="B" isPlaceholder={placeholder} />
@@ -1599,7 +1602,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
 
   const StageGroup = ({ m, label, hora, right, placeholder }: { m:any; label:string; hora:string; right?:boolean; placeholder?:boolean }) => (
     <div className="bk-group">
-      <RoundHead label={label} hora={hora} right={right} />
+      <RoundHead label={label} hora={hora} right={right} fecha={m?.fecha} />
       <div className="bk-match">
         <Seat m={m} side="A" isPlaceholder={placeholder} />
         <Seat m={m} side="B" isPlaceholder={placeholder} />
@@ -1748,7 +1751,7 @@ function PlantillaBracketNacional({ data, sala, fechaBracket, horas }:
                     <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
                   </svg>
                   {horas.fin && horas.fin.trim() ? horas.fin : 'Hora: ___'}
-                  {fechaCorta ? <span style={{ marginLeft: 5, whiteSpace: 'nowrap' }}>· {fechaCorta.slice(0,5)}</span> : null}
+                  {esMaster && ((fin?.fecha && fin.fecha.slice(0,5)) || fechaCorta.slice(0,5)) ? <span style={{ marginLeft: 5, whiteSpace: 'nowrap' }}>· {(fin?.fecha && fin.fecha.slice(0,5)) || fechaCorta.slice(0,5)}</span> : null}
                 </span>
               </div>
               <Seat m={fin} side="A" isPlaceholder={!fin?.playerAId} />
@@ -1840,7 +1843,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
-const BUILD_TAG = 'pub-2026-10-16-bracket-master-v2';
+const BUILD_TAG = 'pub-2026-10-17-bracket-master-v3';
 
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
@@ -2009,16 +2012,17 @@ export default function AdminPublicacionesPage() {
       const res = await api.get(`/publicaciones/${circuitId}/${tipoFase}`);
       setPubData(res.data); setNotas('');
       if (tipoFase === 'bracket-master') {
-        // Valores cargados por el admin (siguen siendo editables): sede, fecha y horas de cada ronda
-        setSala(res.data.salaPublica || 'Feria Franca');
-        setFechaBracket(res.data.fechaPublica || '17/10/2026');
-        // orden en pantalla: octavos [17, 24, 20, 21 | 18, 23, 19, 22]
-        setHoras({
-          oct: ['13:00', '14:30', '13:00', '14:30', '13:00', '14:30', '13:00', '14:30'],
-          cua: ['16:00', '16:00', '16:00', '16:00'],
-          sem: ['17:30', '17:30'],
-          fin: '19:00',
-        });
+        // Sede, fecha y horas salen de los partidos de ESTE circuito (o de lo guardado con "Guardar sede y fecha").
+        // Cada torneo es independiente: no hay valores fijos.
+        const d = res.data;
+        const ms: any[] = [...(d.octavos ?? []), ...(d.cuartos ?? []), ...(d.semis ?? []), d.final].filter(Boolean);
+        const sedes = Array.from(new Set(ms.map(m => String(m.sede ?? '').trim()).filter(Boolean)));
+        const clave = (f: string) => f.split('/').reverse().join('');
+        const fechas = Array.from(new Set(ms.map(m => String(m.fecha ?? '')).filter(Boolean))).sort((a, b) => clave(a).localeCompare(clave(b)));
+        setSala(d.salaPublica || sedes.join(' / '));
+        setFechaBracket(d.fechaPublica || (fechas.length <= 1 ? (fechas[0] ?? '') : `${fechas[0].slice(0, 5)} al ${fechas[fechas.length - 1]}`));
+        const hs = (arr: any[], n: number) => Array.from({ length: n }, (_, k) => String(arr?.[k]?.hora ?? ''));
+        setHoras({ oct: hs(d.octavos, 8), cua: hs(d.cuartos, 4), sem: hs(d.semis, 2), fin: String(d.final?.hora ?? '') });
       }
     } catch (e: any) {
       setError(e?.response?.data?.error ?? 'Error al cargar los datos');
