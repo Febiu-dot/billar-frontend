@@ -110,7 +110,13 @@ const FASES = [
   { value: 'ranking-parte-1',   label: '🏅 Ranking del Circuito — Parte 1 de 2' },
   { value: 'ranking-parte-2',   label: '🏅 Ranking del Circuito — Parte 2 de 2' },
   { value: 'ranking-final',     label: '🏆 Ranking Final' },
-  { value: 'acumulado',         label: '📊 Ranking Acumulado' },
+  { value: 'acumulado',         label: '📊 Ranking Acumulado (general)' },
+  { value: 'acumulado-parte-1', label: '📊 Acumulado general — Parte 1 de 2' },
+  { value: 'acumulado-parte-2', label: '📊 Acumulado general — Parte 2 de 2' },
+  { value: 'acumulado-master',  label: '🟣 Acumulado — Máster' },
+  { value: 'acumulado-primera', label: '🔵 Acumulado — Primera' },
+  { value: 'acumulado-segunda', label: '🟤 Acumulado — Segunda' },
+  { value: 'acumulado-tercera', label: '🟢 Acumulado — Tercera' },
   { value: 'series-nacional',   label: '🎱 Series Nacional' },
   { value: 'cruces-nacional',   label: '⚔️ Cruces Nacional' },
   { value: 'bracket-nacional',  label: '🏟 Bracket Nacional' },
@@ -1981,7 +1987,7 @@ export default function AdminPublicacionesPage() {
         setNotas(''); setLoading(false); return;
       }
 
-      if (tipoFase === 'acumulado') {
+      if (tipoFase === 'acumulado' || tipoFase.startsWith('acumulado-')) {
         const todosCircuitos = torneos.flatMap((t: any) =>
           (t.circuits ?? []).map((c: any) => ({ ...c, torneoNombre: t.name, torneoYear: t.year, torneoId: t.id }))
         );
@@ -1993,15 +1999,28 @@ export default function AdminPublicacionesPage() {
         }
         const lastCircuitOrder = acumRes.data[0]?.lastCircuitOrder ?? 1;
         const circuitosIncluidos = acumRes.data[0]?.circuitosIncluidos ?? '';
-        const jugadores = acumRes.data.map((e: any) => ({
+        const SEC_CAT: Record<string, string> = { master: 'MÁSTER', primera: 'PRIMERA', segunda: 'SEGUNDA', tercera: 'TERCERA' };
+        // Color/sección = categoría INICIAL del jugador (se reasigna recién al terminar el 4° circuito); orden = ranking acumulado general.
+        let jugadores = acumRes.data.map((e: any) => ({
           posicion: e.position ?? 0,
           nombre: `${e.player.lastName}, ${e.player.firstName}`,
           club: abrevClub(e.player.club),
           puntos: e.points,
           categoria: e.player?.category?.name ?? null,
-          seccion: (e.position ?? 999) <= 8 ? 'MÁSTER' : (e.position ?? 999) <= 32 ? 'PRIMERA' : (e.position ?? 999) <= 64 ? 'SEGUNDA' : 'TERCERA',
+          seccion: SEC_CAT[String(e.player?.category?.name ?? '').toLowerCase()] ?? 'TERCERA',
         }));
-        setPubData({ tipo: 'ranking', tipoFase: 'acumulado', torneo: circuito.torneoNombre, circuito: circuitosIncluidos, temporada: String(circuito.torneoYear), fase: `RANKING ACUMULADO — LUEGO DEL CIRCUITO ${lastCircuitOrder}`, formato: '', fechaPrincipal: `Incluye: ${circuitosIncluidos}`, jugadores });
+        let sufijo = '';
+        const catSel = tipoFase.replace('acumulado-', '');
+        if (SEC_CAT[catSel]) {
+          // Ranking de la categoría: mismos jugadores, en el orden del acumulado general, numerados dentro de la categoría
+          jugadores = jugadores.filter((j: any) => j.seccion === SEC_CAT[catSel]).map((j: any, i: number) => ({ ...j, posicion: i + 1 }));
+          sufijo = ` — ${SEC_CAT[catSel]}`;
+        } else if (tipoFase === 'acumulado-parte-1' || tipoFase === 'acumulado-parte-2') {
+          const m = Math.ceil(jugadores.length / 2);
+          jugadores = tipoFase === 'acumulado-parte-1' ? jugadores.slice(0, m) : jugadores.slice(m);
+          sufijo = ` — PARTE ${tipoFase.endsWith('1') ? 1 : 2} DE 2`;
+        }
+        setPubData({ tipo: 'ranking', tipoFase, torneo: circuito.torneoNombre, circuito: circuitosIncluidos, temporada: String(circuito.torneoYear), fase: `RANKING ACUMULADO${sufijo} — LUEGO DEL CIRCUITO ${lastCircuitOrder}`, formato: '', fechaPrincipal: `Incluye: ${circuitosIncluidos}`, jugadores });
         setNotas(''); setLoading(false); return;
       }
 
@@ -2167,7 +2186,7 @@ export default function AdminPublicacionesPage() {
     finally { setExportando(false); }
   };
 
-  const tema = TEMAS[tipoFase] ?? TEMAS.clasificatorio;
+  const tema = TEMAS[tipoFase] ?? (tipoFase.startsWith('acumulado') ? TEMAS.acumulado : TEMAS.clasificatorio);
   // Ordenar: nacionales primero (por nombre torneo), luego departamentales; dentro de cada torneo por order
   const esNacionalTorneo = (nombre: string) => /nacional/i.test(nombre);
   const ordenTorneo = (nombre: string) => {
