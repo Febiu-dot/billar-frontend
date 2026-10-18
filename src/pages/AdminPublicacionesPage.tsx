@@ -2415,6 +2415,20 @@ export default function AdminPublicacionesPage() {
             </div>
           )}
 
+            {esAdmin && circuitId && publicadas.length > 0 && (
+              <div className="mt-3">
+                <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">Publicadas en la vista pública (este circuito)</p>
+                <div className="space-y-1">
+                  {publicadas.map((p: any) => (
+                    <div key={p.id} className="flex items-center justify-between gap-3 bg-felt-dark/40 rounded px-3 py-2 text-sm">
+                      <span className="text-chalk/80 truncate">{p.titulo} <span className="text-chalk/30 text-xs">· {new Date(p.updatedAt).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span></span>
+                      <button className="text-red-400 text-xs hover:underline shrink-0" onClick={() => quitarPublicada(p.id)}>Quitar</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
           {esAdmin && pubData && (
             <>
               {!esBracket && (
@@ -2439,19 +2453,6 @@ export default function AdminPublicacionesPage() {
                 </button>
                 <span className="text-chalk/30 text-xs">Alta resolución · WhatsApp y redes</span>
               </div>
-              {publicadas.length > 0 && (
-                <div className="mt-3">
-                  <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2">Publicadas en la vista pública (este circuito)</p>
-                  <div className="space-y-1">
-                    {publicadas.map((p: any) => (
-                      <div key={p.id} className="flex items-center justify-between gap-3 bg-felt-dark/40 rounded px-3 py-2 text-sm">
-                        <span className="text-chalk/80 truncate">{p.titulo} <span className="text-chalk/30 text-xs">· {new Date(p.updatedAt).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span></span>
-                        <button className="text-red-400 text-xs hover:underline shrink-0" onClick={() => quitarPublicada(p.id)}>Quitar</button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </>
           )}
         </div>
