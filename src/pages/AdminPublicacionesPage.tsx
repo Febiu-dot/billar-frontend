@@ -109,6 +109,10 @@ const FASES = [
   { value: 'ranking',           label: '🏅 Ranking del Circuito' },
   { value: 'ranking-parte-1',   label: '🏅 Ranking del Circuito — Parte 1 de 2' },
   { value: 'ranking-parte-2',   label: '🏅 Ranking del Circuito — Parte 2 de 2' },
+  { value: 'ranking-cat-master',  label: '🟣 Ranking del Circuito — Máster' },
+  { value: 'ranking-cat-primera', label: '🔵 Ranking del Circuito — Primera' },
+  { value: 'ranking-cat-segunda', label: '🟤 Ranking del Circuito — Segunda' },
+  { value: 'ranking-cat-tercera', label: '🟢 Ranking del Circuito — Tercera' },
   { value: 'ranking-final',     label: '🏆 Ranking Final' },
   { value: 'acumulado',         label: '📊 Ranking Acumulado (general)' },
   { value: 'acumulado-parte-1', label: '📊 Acumulado general — Parte 1 de 2' },
@@ -1946,7 +1950,7 @@ export default function AdminPublicacionesPage() {
     if (!circuitId) return;
     setLoading(true); setError(''); setPubData(null);
     try {
-      if (tipoFase === 'ranking' || tipoFase === 'ranking-final' || tipoFase === 'ranking-parte-1' || tipoFase === 'ranking-parte-2') {
+      if (tipoFase === 'ranking' || tipoFase === 'ranking-final' || tipoFase === 'ranking-parte-1' || tipoFase === 'ranking-parte-2' || tipoFase.startsWith('ranking-cat-')) {
         const res = await api.get(`/publicaciones/${circuitId}/${tipoFase}`);
         setPubData(res.data); setNotas(''); setLoading(false); return;
       }
@@ -2186,7 +2190,7 @@ export default function AdminPublicacionesPage() {
     finally { setExportando(false); }
   };
 
-  const tema = TEMAS[tipoFase] ?? (tipoFase.startsWith('acumulado') ? TEMAS.acumulado : TEMAS.clasificatorio);
+  const tema = TEMAS[tipoFase] ?? (tipoFase.startsWith('acumulado') ? TEMAS.acumulado : tipoFase.startsWith('ranking-cat-') ? TEMAS.ranking : TEMAS.clasificatorio);
   // Ordenar: nacionales primero (por nombre torneo), luego departamentales; dentro de cada torneo por order
   const esNacionalTorneo = (nombre: string) => /nacional/i.test(nombre);
   const ordenTorneo = (nombre: string) => {
