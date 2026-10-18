@@ -7,7 +7,7 @@ const CLUB_ABREV: Record<string, string> = {
   'CAPOLAVORO': 'CAP', 'FERIA FRANCA': 'FER', 'YATAY': 'YAT',
   'CABRERA': 'CAB', 'MODEL CENTER': 'MOD', 'NUEVO MALVIN': 'NM',
   'SPORTING UNION': 'SPO', 'CENTENARIO': 'CEN',
-  'CASA DEL BILLAR': 'CDB', 'PIEDRA HONDA': 'PH',
+  'CASA DEL BILLAR': 'CDB', 'PIEDRA HONDA': 'PH', 'LA SALA': 'LS',
 };
 const abrevClub = (club?: string) =>
   club ? (CLUB_ABREV[club.toUpperCase()] ?? club.slice(0, 3).toUpperCase()) : '';

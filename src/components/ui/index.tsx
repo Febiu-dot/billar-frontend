@@ -73,6 +73,7 @@ const CLUB_ABBR: Record<string, string> = {
   CENTENARIO: 'CEN',
   'CASA DEL BILLAR': 'CDB',
   'PIEDRA HONDA': 'PH',
+  'LA SALA': 'LS',
 };
 
 export function playerName(p?: { firstName: string; lastName: string; club?: string }) {
