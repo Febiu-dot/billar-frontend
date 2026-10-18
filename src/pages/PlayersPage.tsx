@@ -25,6 +25,7 @@ export default function PlayersPage() {
   const [players, setPlayers]             = useState<Player[]>([]);
   const [categories, setCategories]       = useState<Category[]>([]);
   const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
+  const [sedes, setSedes]               = useState<any[]>([]);
   const [loading, setLoading]             = useState(true);
   const [showModal, setShowModal]         = useState(false);
   const [editPlayer, setEditPlayer]       = useState<Player | null>(null);
@@ -46,6 +47,7 @@ export default function PlayersPage() {
     fetchPlayers();
     api.get('/categories').then(r => setCategories(r.data));
     api.get('/departamentos').then(r => setDepartamentos(r.data));
+    api.get('/venues').then(r => setSedes(r.data ?? [])).catch(() => {});
   }, []);
 
   const filtered = players.filter(p => {
@@ -61,7 +63,15 @@ export default function PlayersPage() {
     if (!form.departamentoId) return [];
     const dep = departamentos.find(d => d.id.toString() === form.departamentoId);
     if (!dep) return [];
-    return CLUBS_BY_DEPARTAMENTO[dep.nombre] ?? [];
+    // Lista fija + salas (sedes) cargadas para ese departamento (o sin departamento) + clubes que ya usan sus jugadores
+    const lista: string[] = [...(CLUBS_BY_DEPARTAMENTO[dep.nombre] ?? [])];
+    const agregar = (n?: string | null) => {
+      const v = (n ?? '').trim();
+      if (v && !lista.some(x => x.toLowerCase() === v.toLowerCase())) lista.push(v);
+    };
+    sedes.filter(v => v.departamentoId === dep.id || v.departamentoId == null).forEach(v => agregar(v.name));
+    players.filter(pl => pl.departamentoId === dep.id).forEach(pl => agregar(pl.club));
+    return lista;
   };
 
   const handleDescargarPlantilla = () => {
