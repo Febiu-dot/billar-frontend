@@ -36,6 +36,8 @@ const TEMAS: Record<string, { header: string; accent: string; light: string; bad
   master:           { header: '#4a1070', accent: '#7b1fa2', light: '#f5eef8', badge: '#4a1070' },
   'master-final':   { header: '#4a1070', accent: '#7b1fa2', light: '#f5eef8', badge: '#4a1070' },
   ranking:          { header: '#7c4d00', accent: '#b8860b', light: '#fffbf0', badge: '#7c4d00' },
+  'ranking-parte-1': { header: '#7c4d00', accent: '#b8860b', light: '#fffbf0', badge: '#7c4d00' },
+  'ranking-parte-2': { header: '#7c4d00', accent: '#b8860b', light: '#fffbf0', badge: '#7c4d00' },
   'ranking-final':  { header: '#1a3560', accent: '#1e40af', light: '#eff6ff', badge: '#1a3560' },
   acumulado:        { header: '#1a3a5c', accent: '#1565c0', light: '#e8f0fe', badge: '#1a3a5c' },
   'series-nacional':  { header: '#06182f', accent: '#f4c430', light: '#0a223f', badge: '#014f86' },
@@ -105,6 +107,8 @@ const FASES = [
   { value: 'master-final',      label: '🏆 Fase Final (octavos a la final)' },
   { value: 'bracket-master',    label: '🏟 Bracket Final (violeta)' },
   { value: 'ranking',           label: '🏅 Ranking del Circuito' },
+  { value: 'ranking-parte-1',   label: '🏅 Ranking del Circuito — Parte 1 de 2' },
+  { value: 'ranking-parte-2',   label: '🏅 Ranking del Circuito — Parte 2 de 2' },
   { value: 'ranking-final',     label: '🏆 Ranking Final' },
   { value: 'acumulado',         label: '📊 Ranking Acumulado' },
   { value: 'series-nacional',   label: '🎱 Series Nacional' },
@@ -803,53 +807,45 @@ function PlantillaRanking({ data, tema }: { data: any; tema: any }) {
   // Variante nacional (todo en color de la categoría, top 16 destacado)
   if (data.categoriaFederal) return <PlantillaRankingNacional data={data} />;
 
+  // Departamental: una sola lista en orden de ranking; cada fila lleva el color de la categoría INICIAL del jugador.
   const jugadores: any[] = data.jugadores ?? [];
-  const secciones = ['MÁSTER', 'PRIMERA', 'SEGUNDA', 'TERCERA'];
-  const porSeccion: Record<string, any[]> = {};
-  for (const j of jugadores) { if (!porSeccion[j.seccion]) porSeccion[j.seccion] = []; porSeccion[j.seccion].push(j); }
+  const mitad = Math.ceil(jugadores.length / 2);
+  const col1 = jugadores.slice(0, mitad);
+  const col2 = jugadores.slice(mitad);
+  const HEAD = '#1a3560';
   return (
     <div style={{ padding: '20px 24px', background: '#f8f8f8', fontFamily: F }}>
-      {secciones.filter(s => porSeccion[s]?.length > 0).map(seccion => {
-        const secColor = SECCION_COLORES[seccion];
-        const jugSec = porSeccion[seccion];
-        const mitad = Math.ceil(jugSec.length / 2);
-        const col1 = jugSec.slice(0, mitad);
-        const col2 = jugSec.slice(mitad);
-        return (
-          <div key={seccion} style={{ marginBottom: 20 }}>
-            <div style={{ background: secColor.bg, color: '#fff', padding: '10px 20px', fontSize: 22, fontWeight: 900, letterSpacing: 3, borderRadius: '8px 8px 0 0', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span>{seccion}</span>
-              <span style={{ fontSize: 16, opacity: 0.8, fontWeight: 600 }}>({jugSec.length} jugadores · pos. {jugSec[0].posicion}–{jugSec[jugSec.length - 1].posicion})</span>
+      <div style={{ display: 'flex', gap: 14, justifyContent: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
+        {['MÁSTER', 'PRIMERA', 'SEGUNDA', 'TERCERA'].map(sec => (
+          <span key={sec} style={{ background: SECCION_COLORES[sec].badge, color: '#fff', fontSize: 14, fontWeight: 800, letterSpacing: 2, padding: '4px 14px', borderRadius: 4 }}>{sec}</span>
+        ))}
+      </div>
+      <div style={{ display: 'flex', background: '#fff', border: `2px solid ${HEAD}`, borderRadius: 8, overflow: 'hidden' }}>
+        {[col1, col2].map((col, ci) => (
+          <div key={ci} style={{ flex: 1, borderLeft: ci === 1 ? `2px solid ${HEAD}` : 'none' }}>
+            <div style={{ display: 'flex', background: HEAD, padding: '6px 10px', gap: 8 }}>
+              <span style={{ width: 44, fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'center' }}>#</span>
+              <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#fff' }}>Jugador</span>
+              <span style={{ width: 40, fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'center' }}>Club</span>
+              <span style={{ width: 44, fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'right' }}>Pts</span>
             </div>
-            <div style={{ display: 'flex', gap: 0, background: '#fff', border: `2px solid ${secColor.bg}`, borderTop: 'none', borderRadius: '0 0 8px 8px', overflow: 'hidden' }}>
-              {[col1, col2].map((col, ci) => (
-                <div key={ci} style={{ flex: 1, borderLeft: ci === 1 ? `2px solid ${secColor.bg}` : 'none' }}>
-                  <div style={{ display: 'flex', background: secColor.bg, padding: '6px 10px', gap: 8, opacity: 0.9 }}>
-                    <span style={{ width: 44, fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'center' }}>#</span>
-                    <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#fff' }}>Jugador</span>
-                    <span style={{ width: 40, fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'center' }}>Club</span>
-                    <span style={{ width: 44, fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'right' }}>Pts</span>
-                  </div>
-                  {col.map((j: any, idx: number) => {
-                    const catColor = getSeccionColor(j.seccion);
-                    return (
-                      <div key={j.posicion} style={{ display: 'flex', alignItems: 'center', padding: '8px 10px', gap: 8, background: idx % 2 === 0 ? catColor.light : '#fff', borderBottom: '1px solid #eee' }}>
-                        <div style={{ width: 44, height: 30, borderRadius: 4, flexShrink: 0, background: catColor.badge, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900 }}>{j.posicion}</div>
-                        <div style={{ flex: 1, fontSize: 18, fontWeight: 700, color: catColor.text, wordBreak: 'break-word', lineHeight: 1.2 }}>{j.nombre}</div>
-                        {j.club && <div style={{ width: 40, background: catColor.badge, color: '#fff', padding: '3px 4px', borderRadius: 3, fontSize: 13, fontWeight: 800, textAlign: 'center', flexShrink: 0 }}>{j.club}</div>}
-                        <div style={{ width: 44, fontSize: 17, fontWeight: 900, color: catColor.text, textAlign: 'right', flexShrink: 0 }}>{j.puntos}</div>
-                      </div>
-                    );
-                  })}
-                  {ci === 1 && col.length < col1.length && Array.from({ length: col1.length - col.length }).map((_, i) => (
-                    <div key={`e-${i}`} style={{ height: 47, background: (col.length + i) % 2 === 0 ? '#f9f9f9' : '#fff', borderBottom: '1px solid #eee' }} />
-                  ))}
+            {col.map((j: any, idx: number) => {
+              const catColor = getSeccionColor(j.seccion);
+              return (
+                <div key={j.posicion} style={{ display: 'flex', alignItems: 'center', padding: '8px 10px', gap: 8, background: idx % 2 === 0 ? catColor.light : '#fff', borderBottom: '1px solid #eee' }}>
+                  <div style={{ width: 44, height: 30, borderRadius: 4, flexShrink: 0, background: catColor.badge, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900 }}>{j.posicion}</div>
+                  <div style={{ flex: 1, fontSize: 18, fontWeight: 700, color: catColor.text, wordBreak: 'break-word', lineHeight: 1.2 }}>{j.nombre}</div>
+                  {j.club && <div style={{ width: 40, background: catColor.badge, color: '#fff', padding: '3px 4px', borderRadius: 3, fontSize: 13, fontWeight: 800, textAlign: 'center', flexShrink: 0 }}>{j.club}</div>}
+                  <div style={{ width: 44, fontSize: 17, fontWeight: 900, color: catColor.text, textAlign: 'right', flexShrink: 0 }}>{j.puntos}</div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
+            {ci === 1 && col.length < col1.length && Array.from({ length: col1.length - col.length }).map((_, i) => (
+              <div key={`e-${i}`} style={{ height: 47, background: '#fff', borderBottom: '1px solid #eee' }} />
+            ))}
           </div>
-        );
-      })}
+        ))}
+      </div>
     </div>
   );
 }
@@ -1944,7 +1940,7 @@ export default function AdminPublicacionesPage() {
     if (!circuitId) return;
     setLoading(true); setError(''); setPubData(null);
     try {
-      if (tipoFase === 'ranking' || tipoFase === 'ranking-final') {
+      if (tipoFase === 'ranking' || tipoFase === 'ranking-final' || tipoFase === 'ranking-parte-1' || tipoFase === 'ranking-parte-2') {
         const res = await api.get(`/publicaciones/${circuitId}/${tipoFase}`);
         setPubData(res.data); setNotas(''); setLoading(false); return;
       }
