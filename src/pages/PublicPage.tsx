@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-10-15-publicaciones
+// PUBLIC_BUILD = pub-public-2026-11-03-exportar-excel
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';

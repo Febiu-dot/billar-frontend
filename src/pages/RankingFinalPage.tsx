@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import * as XLSX from 'xlsx';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { apocPais, banderaPais } from '../utils/banderas';
@@ -210,6 +211,34 @@ export default function RankingFinalPage() {
     } finally { setIniciandoC2(false); }
   };
 
+  const handleExportarExcel = () => {
+    const lista = ranking.filter(e => filtro === 'general' || e.categoria === filtro);
+    const filas = lista.map(e => {
+      const setsPerdidos = e.setsJugados - e.setsGanados;
+      const fila: Record<string, string | number> = {
+        '#': e.posicion,
+        'Jugador': `${e.lastName}, ${e.firstName}`,
+        [esPanamericano ? 'País' : 'Club']: (esPanamericano ? e.pais : e.club) || '',
+      };
+      if (!esPanamericano) fila['Categoría'] = CAT_LABEL[e.categoria] ?? e.categoria;
+      fila['Pts'] = e.puntos;
+      fila['Sets G'] = e.setsGanados;
+      fila['Sets P'] = setsPerdidos;
+      fila['Dif. Sets'] = e.setsGanados - setsPerdidos;
+      fila['Tantos F'] = e.tantos;
+      fila['Tantos C'] = e.tantosContra;
+      fila['Prom. Tantos'] = e.tantosContra > 0 ? Number((e.tantos / e.tantosContra).toFixed(4)) : '';
+      return fila;
+    });
+    const ws = XLSX.utils.json_to_sheet(filas);
+    ws['!cols'] = Object.keys(filas[0] ?? {}).map(k => ({ wch: k === 'Jugador' ? 30 : k === 'Club' || k === 'País' ? 24 : 12 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Ranking');
+    const limpiar = (t: string) => t.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    const cat = filtro === 'general' ? '' : `_${filtro}`;
+    XLSX.writeFile(wb, `ranking_${limpiar(tournamentName)}_${limpiar(circuitName)}${cat}.xlsx`);
+  };
+
   const filtrado = ranking
     .filter(e => filtro === 'general' || e.categoria === filtro)
     .filter(e =>
@@ -391,6 +420,13 @@ export default function RankingFinalPage() {
                 ))}
               </div>
             )}
+
+            {/* Exportar a Excel */}
+            <div className="flex justify-center mb-4">
+              <button className="btn-secondary px-6" onClick={handleExportarExcel}>
+                📊 Exportar a Excel{filtro !== 'general' ? ` (${CAT_LABEL[filtro]})` : ''}
+              </button>
+            </div>
 
             {/* Buscador */}
             <div className="mb-4">
