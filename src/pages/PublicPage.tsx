@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-11-08-analytics
+// PUBLIC_BUILD = pub-public-2026-11-08-analytics-activo
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
