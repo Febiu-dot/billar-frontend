@@ -18,6 +18,8 @@ export default function BotonInstalar() {
   // Samsung Internet instala un paquete viejo que Android 14+ bloquea (Play Protect): hay que usar Chrome
   const esSamsung = /SamsungBrowser/i.test(ua) && /Android/i.test(ua);
   const esSafariIOS = esIOS && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+  // Navegador interno de WhatsApp/Facebook/Instagram/Gmail etc. en iPhone: no tiene "Agregar a pantalla de inicio"
+  const esInternoIOS = esIOS && !/Safari|CriOS|FxiOS|EdgiOS/.test(ua);
 
   useEffect(() => {
     const onPrompt = (e: any) => { e.preventDefault(); window.__pwaPrompt = e; setPrompt(e); };
@@ -28,7 +30,7 @@ export default function BotonInstalar() {
   }, []);
 
   if (instalada || oculto) return null;
-  if (!esSamsung && !prompt && !esSafariIOS) return null;
+  if (!esSamsung && !prompt && !esSafariIOS && !esInternoIOS) return null;
 
   const cerrar = () => { setOculto(true); try { sessionStorage.setItem('pwa-oculto', '1'); } catch {} };
   const abrirEnChrome = () => {
@@ -59,11 +61,19 @@ export default function BotonInstalar() {
       </div>
       {ayudaIOS && (
         <div onClick={() => setAyudaIOS(false)}
-          style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,.75)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', padding: 24, paddingBottom: 90 }}>
-          <div style={{ background: '#fff', color: '#111', borderRadius: 18, padding: '22px 20px', textAlign: 'center', maxWidth: 360, fontSize: 20, fontWeight: 700, lineHeight: 1.35 }}>
-            Tocá <span style={{ fontSize: 30 }}>⬆️</span> abajo<br />y elegí<br /><span style={{ color: '#16a34a' }}>“Agregar a inicio”</span>
-          </div>
-          <div style={{ fontSize: 46, color: '#fff', marginTop: 8 }}>⬇️</div>
+          style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,.75)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          {esInternoIOS ? (
+            <div style={{ background: '#fff', color: '#111', borderRadius: 18, padding: '22px 20px', textAlign: 'center', maxWidth: 360, fontSize: 20, fontWeight: 700, lineHeight: 1.4 }}>
+              Para instalar, abrí esta página en <span style={{ color: '#16a34a' }}>Safari</span><br />
+              <span style={{ fontSize: 16, fontWeight: 500 }}>Tocá ⋯ o el ícono de la brújula y elegí “Abrir en Safari”. O copiá el link y pegalo en Safari.</span>
+            </div>
+          ) : (
+            <div style={{ background: '#fff', color: '#111', borderRadius: 18, padding: '22px 20px', textAlign: 'left', maxWidth: 360, fontSize: 19, fontWeight: 700, lineHeight: 1.4 }}>
+              <div>1. Tocá <span style={{ fontSize: 26 }}>⬆️</span> <span style={{ fontSize: 15, fontWeight: 500 }}>(Compartir: abajo en el centro, o arriba a la derecha. Si no lo ves, tocá ⋯)</span></div>
+              <div style={{ marginTop: 10 }}>2. Deslizá hacia arriba y elegí <span style={{ color: '#16a34a' }}>“Agregar a pantalla de inicio”</span> <span style={{ fontSize: 15, fontWeight: 500 }}>(puede estar en “Ver más”)</span></div>
+              <div style={{ marginTop: 10 }}>3. Tocá <span style={{ color: '#16a34a' }}>“Agregar”</span></div>
+            </div>
+          )}
         </div>
       )}
     </>
