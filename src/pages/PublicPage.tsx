@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-11-10-ayuda-iphone
+// PUBLIC_BUILD = pub-public-2026-11-10-acceso-jueces
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
@@ -765,6 +765,13 @@ export default function PublicPage() {
 
         {/* Sección Nacional */}
         <SeccionPublicaciones torneoSel={torneoSel} lista={publicaciones} />
+
+        <div className="text-center pt-2">
+          <a href={(() => { try { return localStorage.getItem('token') ? '/' : '/login'; } catch { return '/login'; } })()}
+            className="inline-block border border-silver-muted/30 text-silver-light text-sm rounded-lg px-5 py-3">
+            {(() => { try { return localStorage.getItem('token') ? 'Ir a mi panel' : 'Acceso jueces y administración'; } catch { return 'Acceso jueces y administración'; } })()}
+          </a>
+        </div>
 
         <footer className="border-t border-silver-muted/10 pt-4 text-center text-silver-muted text-xs">
           Federación de Billar del Uruguay · Sistema de Torneos · {new Date().getFullYear()}
