@@ -1,4 +1,4 @@
-// BUILD_TAG = matches-2026-11-10-doble-wo
+// BUILD_TAG = matches-2026-11-10-filtros-fecha-sede
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
@@ -20,6 +20,9 @@ export default function MatchesPage() {
   const [filterStatus, setFilterStatus]         = useState<MatchStatus | ''>('');
   const [filterTournament, setFilterTournament] = useState('');
   const [filterCircuit, setFilterCircuit]       = useState('');
+  const [filterFecha, setFilterFecha]           = useState('');
+  const [filterSede, setFilterSede]             = useState('');
+  const [filterBuscar, setFilterBuscar]         = useState('');
 
   // Modal asignar mesa
   const [assignModal, setAssignModal]     = useState<Match | null>(null);
@@ -356,10 +359,35 @@ export default function MatchesPage() {
   const base = filterStatus
     ? matches.filter(m => m.status === filterStatus)
     : [...matches].sort((a, b) => statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status));
+  // Dia en que se jugo el partido (hora de Uruguay): cierre, si no inicio, si no fecha programada
+  const fechaDe = (m: any): string => {
+    const f = m.finishedAt ?? m.startedAt ?? m.scheduledAt;
+    if (!f) return '';
+    try { return new Date(f).toLocaleDateString('en-CA', { timeZone: 'America/Montevideo' }); } catch { return ''; }
+  };
+  const horaDe = (m: any): string => {
+    const f = m.finishedAt ?? m.startedAt ?? m.scheduledAt;
+    if (!f) return '';
+    try { return new Date(f).toLocaleString('es-UY', { timeZone: 'America/Montevideo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); } catch { return ''; }
+  };
+  const sedeDe = (m: any): string => m.table?.venue?.name ?? '';
+  const sedes = Array.from(new Set(matches.map(sedeDe).filter(Boolean))).sort();
+  const norm = (t: string) => (t ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const textoBuscar = norm(filterBuscar.trim());
+  const pasaFiltros = (m: any) => {
+    if (filterFecha && fechaDe(m) !== filterFecha) return false;
+    if (filterSede === '__sin__' ? sedeDe(m) !== '' : (filterSede && sedeDe(m) !== filterSede)) return false;
+    if (textoBuscar) {
+      const nombres = norm(`${m.playerA?.firstName ?? ''} ${m.playerA?.lastName ?? ''} ${m.playerB?.firstName ?? ''} ${m.playerB?.lastName ?? ''}`);
+      if (!textoBuscar.split(/\s+/).every(w => nombres.includes(w))) return false;
+    }
+    return true;
+  };
+  const hayFiltros = !!(filterFecha || filterSede || textoBuscar);
   const filtered = [
     ...base.filter(m => !esCerrado(m.status)),
     ...base.filter(m => esCerrado(m.status)).sort((a, b) => cierre(b) - cierre(a)),
-  ];
+  ].filter(pasaFiltros);
 
   const freeTables = tables.filter(t => t.status === 'libre');
 
@@ -382,9 +410,31 @@ export default function MatchesPage() {
           </select>
         </div>
 
+        <div className="flex flex-wrap gap-3 items-end">
+          <div>
+            <label className="block text-chalk/50 text-xs mb-1">Fecha de juego</label>
+            <input type="date" className="input w-44" value={filterFecha} onChange={e => setFilterFecha(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-chalk/50 text-xs mb-1">Sede</label>
+            <select className="input w-56" value={filterSede} onChange={e => setFilterSede(e.target.value)}>
+              <option value="">Todas las sedes</option>
+              {sedes.map(v => <option key={v} value={v}>{v}</option>)}
+              <option value="__sin__">Sin mesa asignada</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-chalk/50 text-xs mb-1">Jugador</label>
+            <input className="input w-48" placeholder="Apellido o nombre" value={filterBuscar} onChange={e => setFilterBuscar(e.target.value)} />
+          </div>
+          {hayFiltros && (
+            <button className="btn-secondary text-sm py-2" onClick={() => { setFilterFecha(''); setFilterSede(''); setFilterBuscar(''); }}>Limpiar</button>
+          )}
+        </div>
+
         <div className="flex flex-wrap gap-2">
           {statuses.map(s => {
-            const count = s === '' ? filtered.length : matches.filter(m => m.status === s).length;
+            const count = s === '' ? filtered.length : matches.filter(m => m.status === s && pasaFiltros(m)).length;
             return (
               <button key={s} onClick={() => setFilterStatus(s as MatchStatus | '')}
                 className={`badge-status cursor-pointer text-xs px-3 py-1 ${filterStatus === s ? 'bg-gold/30 text-gold border border-gold/40' : 'bg-felt-light/20 text-chalk/60'}`}>
@@ -406,6 +456,7 @@ export default function MatchesPage() {
                       <MatchStatusBadge status={m.status} />
                       {m.table && <span className="text-xs text-chalk/40 font-mono">Mesa {m.table.number} — {m.table.venue?.name}</span>}
                       <span className="text-xs text-chalk/30 font-mono">{m.phase?.circuit?.tournament?.name} · {m.phase?.name} · R{m.round}</span>
+                      {horaDe(m) && <span className="text-xs text-gold/60 font-mono">{horaDe(m)}</span>}
                     </div>
                     <div className="flex items-center gap-3">
                       {(() => {

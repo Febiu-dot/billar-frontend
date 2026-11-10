@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-11-10-acceso-jueces
+// PUBLIC_BUILD = pub-public-2026-11-10-filtros-partidos
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
