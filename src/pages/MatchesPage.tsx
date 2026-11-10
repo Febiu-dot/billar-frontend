@@ -222,9 +222,28 @@ export default function MatchesPage() {
     const eraFinalizado = resultModal.status === 'finalizado' || resultModal.status === 'wo';
 
     if (eraFinalizado) {
-      // Para partidos finalizados: solo actualizar estado local, sin llamar al backend
-      const newSets = sets.map((set, i) => i === index ? { ...set, saved: true } : set);
-      setSets(newSets);
+      // Para partidos finalizados: solo actualizar estado local, sin llamar al backend.
+      // Después de confirmar el set se reajustan las filas: si el partido quedó sin
+      // ganador (ej. 1-1) se agrega una fila vacía para cargar el set siguiente; si
+      // alguien ya llegó a los sets necesarios se descartan los sets que sobran.
+      const setsToWinEdit = (resultModal as any).ruleSet?.setsToWin ?? 3;
+      const confirmados: SetScore[] = sets.map((set, i) => i === index ? { ...set, saved: true } : set);
+      const ajustados: SetScore[] = [];
+      let gA = 0, gB = 0;
+      for (const set of confirmados) {
+        if (gA >= setsToWinEdit || gB >= setsToWinEdit) break;
+        ajustados.push(set);
+        if (set.saved) {
+          const w = calcSetWinner(set.a, set.b, pointsPerSet);
+          if (w === 'a') gA++;
+          if (w === 'b') gB++;
+        }
+      }
+      const todosGuardados = ajustados.every(set => set.saved);
+      if (todosGuardados && gA < setsToWinEdit && gB < setsToWinEdit) {
+        ajustados.push({ a: '', b: '', saved: false });
+      }
+      setSets(ajustados);
       setResError('');
       return;
     }
