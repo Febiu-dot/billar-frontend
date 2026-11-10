@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-11-09-editar-set-extra
+// PUBLIC_BUILD = pub-public-2026-11-10-doble-wo
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';

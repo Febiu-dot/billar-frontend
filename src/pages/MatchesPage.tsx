@@ -1,4 +1,4 @@
-// BUILD_TAG = matches-2026-07-01-set-fresh-fetch
+// BUILD_TAG = matches-2026-11-10-doble-wo
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
@@ -31,6 +31,7 @@ export default function MatchesPage() {
   const [sets, setSets]               = useState<SetScore[]>([{ a: '', b: '', saved: false }]);
   const [isWO, setIsWO]               = useState(false);
   const [woPlayerId, setWoPlayerId]   = useState('');
+  const [avanzaId, setAvanzaId]         = useState('');
   const [notes, setNotes]             = useState('');
   const [resSaving, setResSaving]     = useState(false);
   const [savingSet, setSavingSet]     = useState<number | null>(null);
@@ -190,6 +191,7 @@ export default function MatchesPage() {
     }
     setIsWO(false);
     setWoPlayerId('');
+    setAvanzaId('');
     setNotes('');
     setResError('');
   };
@@ -311,7 +313,9 @@ export default function MatchesPage() {
       await api.put(`/matches/${resultModal.id}/result`, {
         setsA, setsB, pointsA, pointsB,
         isWO,
-        woPlayerId: isWO && woPlayerId ? Number(woPlayerId) : undefined,
+        woPlayerId: isWO && woPlayerId && woPlayerId !== 'ambos' ? Number(woPlayerId) : undefined,
+        dobleWO: isWO && woPlayerId === 'ambos' ? true : undefined,
+        avanzaId: isWO && woPlayerId === 'ambos' && avanzaId ? Number(avanzaId) : undefined,
         notes: notes || undefined,
         sets: savedSets.map((s, i) => ({
           setNumber: i + 1,
@@ -567,7 +571,19 @@ export default function MatchesPage() {
                     <option value="">Seleccionar</option>
                     <option value={resultModal.playerAId ?? ''}>{playerName(resultModal.playerA)}</option>
                     <option value={resultModal.playerBId ?? ''}>{playerName(resultModal.playerB)}</option>
+                    <option value="ambos">Ninguno se presentó (los dos ausentes)</option>
                   </select>
+                  {woPlayerId === 'ambos' && (
+                    <div className="mt-3">
+                      <p className="text-chalk/50 text-xs mb-2">El partido se cierra 0-0, sin sets ni tantos y no cuenta como jugado.</p>
+                      <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">¿Quién sigue en la serie/cruce? (opcional)</label>
+                      <select className="input" value={avanzaId} onChange={e => setAvanzaId(e.target.value)}>
+                        <option value="">Ninguno (sin ganador)</option>
+                        <option value={resultModal.playerAId ?? ''}>{playerName(resultModal.playerA)}</option>
+                        <option value={resultModal.playerBId ?? ''}>{playerName(resultModal.playerB)}</option>
+                      </select>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-2">
