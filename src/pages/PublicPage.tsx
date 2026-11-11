@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-11-10-filtros-partidos
+// PUBLIC_BUILD = pub-public-2026-11-10-hora-uruguay
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
@@ -426,7 +426,7 @@ function SeccionPublicaciones({ torneoSel, lista }: { torneoSel: number | null; 
               <img src={urlImg(p)} alt={p.titulo} loading="lazy" className="w-full h-auto block" />
               <div className="px-3 py-2">
                 <p className="text-silver-light text-sm font-semibold">{p.titulo}</p>
-                <p className="text-silver-dark text-xs">{p.circuito} · {new Date(p.updatedAt).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
+                <p className="text-silver-dark text-xs">{p.circuito} · {new Date(p.updatedAt).toLocaleString('es-UY', { timeZone: 'America/Montevideo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
               </div>
             </button>
           ))}
@@ -593,7 +593,7 @@ export default function PublicPage() {
               <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse inline-block" />
               En vivo
             </div>
-            <p className="text-silver-dark text-xs font-mono">{lastUpdate.toLocaleTimeString('es-UY')}</p>
+            <p className="text-silver-dark text-xs font-mono">{lastUpdate.toLocaleTimeString('es-UY', { timeZone: 'America/Montevideo' })}</p>
           </div>
         </div>
       </header>

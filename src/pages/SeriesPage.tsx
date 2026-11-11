@@ -224,7 +224,7 @@ export default function SeriesPage() {
                           )}
                           {partido.scheduledAt && (
                             <span className="text-chalk/40 text-xs font-mono hidden sm:inline">
-                              {new Date(partido.scheduledAt).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
+                              {new Date(partido.scheduledAt).toLocaleString('es-UY', { timeZone: 'America/Montevideo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
                             </span>
                           )}
                           <button

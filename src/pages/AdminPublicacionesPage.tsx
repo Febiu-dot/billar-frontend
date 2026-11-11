@@ -2421,7 +2421,7 @@ export default function AdminPublicacionesPage() {
                 <div className="space-y-1">
                   {publicadas.map((p: any) => (
                     <div key={p.id} className="flex items-center justify-between gap-3 bg-felt-dark/40 rounded px-3 py-2 text-sm">
-                      <span className="text-chalk/80 truncate">{p.titulo} <span className="text-chalk/30 text-xs">· {new Date(p.updatedAt).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span></span>
+                      <span className="text-chalk/80 truncate">{p.titulo} <span className="text-chalk/30 text-xs">· {new Date(p.updatedAt).toLocaleString('es-UY', { timeZone: 'America/Montevideo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span></span>
                       <button className="text-red-400 text-xs hover:underline shrink-0" onClick={() => quitarPublicada(p.id)}>Quitar</button>
                     </div>
                   ))}

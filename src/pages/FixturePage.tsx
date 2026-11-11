@@ -572,7 +572,7 @@ export default function FixturePage() {
                                       <div key={round} className="flex-shrink-0 w-64">
                                         <p className="text-chalk/40 text-xs uppercase tracking-widest mb-2 font-mono">
                                           {matchesByRound[round][0]?.scheduledAt
-                                            ? new Date(matchesByRound[round][0].scheduledAt!).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
+                                            ? new Date(matchesByRound[round][0].scheduledAt!).toLocaleString('es-UY', { timeZone: 'America/Montevideo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
                                             : getNacRoundLabel(round)}
                                         </p>
                                         <div className="space-y-2">

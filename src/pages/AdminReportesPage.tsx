@@ -86,7 +86,7 @@ export default function AdminReportesPage() {
     }
   };
 
-  const formatFecha = (d: string) => new Date(d).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+  const formatFecha = (d: string) => new Date(d).toLocaleString('es-UY', { timeZone: 'America/Montevideo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
 
   if (loading) return <LoadingSpinner />;
 

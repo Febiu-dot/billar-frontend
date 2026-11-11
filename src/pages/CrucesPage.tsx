@@ -391,7 +391,7 @@ export default function CrucesPage() {
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
                           {cruce.scheduledAt
-                            ? <span className="text-chalk/60 text-xs font-mono">{new Date(cruce.scheduledAt).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}</span>
+                            ? <span className="text-chalk/60 text-xs font-mono">{new Date(cruce.scheduledAt).toLocaleString('es-UY', { timeZone: 'America/Montevideo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}</span>
                             : <span className="text-chalk/20 text-xs">Sin fecha</span>}
                         </td>
                         <td className="px-4 py-3 text-right">

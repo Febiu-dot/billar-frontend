@@ -228,7 +228,7 @@ export default function JudgePage() {
   // Jornada (día) de un partido. Sin fecha programada = continuación de una serie
   // ya empezada (partidos 3/4/5) o asignado sin fecha: va PRIMERO ('0000').
   const claveDia = (m: Match) =>
-    m.scheduledAt ? new Date(m.scheduledAt).toLocaleDateString('en-CA') : '0000';
+    m.scheduledAt ? new Date(m.scheduledAt).toLocaleDateString('en-CA', { timeZone: 'America/Montevideo' }) : '0000';
   const todosLosPartidos: Match[] = tables.flatMap(t => t.matches ?? []);
   // Jornada actual de la sede = el día más antiguo que todavía tiene partidos sin cerrar.
   const jornadaActual = todosLosPartidos.map(claveDia).sort()[0];
@@ -388,7 +388,7 @@ export default function JudgePage() {
 
                       <p className="text-chalk/30 text-xs text-center font-mono">
                         {match.phase?.name} · Ronda {match.round}
-                        {match.scheduledAt && ` · ${new Date(match.scheduledAt).toLocaleDateString('es-UY', { day: '2-digit', month: '2-digit' })} ${new Date(match.scheduledAt).toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' })}`}
+                        {match.scheduledAt && ` · ${new Date(match.scheduledAt).toLocaleDateString('es-UY', { timeZone: 'America/Montevideo', day: '2-digit', month: '2-digit' })} ${new Date(match.scheduledAt).toLocaleTimeString('es-UY', { timeZone: 'America/Montevideo', hour: '2-digit', minute: '2-digit' })}`}
                       </p>
 
                       <div className="flex gap-2">
@@ -443,7 +443,7 @@ export default function JudgePage() {
                       {m.result?.isWO && <span className="text-red-400 text-xs">W.O.</span>}
                     </div>
                     <span className="text-chalk/40 text-xs font-mono">
-                      {m.finishedAt ? new Date(m.finishedAt).toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' }) : ''}
+                      {m.finishedAt ? new Date(m.finishedAt).toLocaleTimeString('es-UY', { timeZone: 'America/Montevideo', hour: '2-digit', minute: '2-digit' }) : ''}
                       {m.table ? ` · Mesa ${m.table.number}` : ''}
                     </span>
                   </div>

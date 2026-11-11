@@ -33,7 +33,7 @@ export default function ReportesPage() {
     setTimeout(() => setCopiado(null), 2000);
   };
 
-  const formatFecha = (d: string) => new Date(d).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+  const formatFecha = (d: string) => new Date(d).toLocaleString('es-UY', { timeZone: 'America/Montevideo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
 
   if (loading) return (
     <div className="min-h-screen bg-carbon-100 flex items-center justify-center">
@@ -178,7 +178,7 @@ function NextMatchInfo({ nm }: { nm: any }) {
     <div className="text-sm space-y-0.5">
       <p className="text-chalk/80">{nm.jugadorA} <span className="text-chalk/30">vs</span> {nm.jugadorB}</p>
       {nm.sede && <p className="text-chalk/40 text-xs font-mono">🏛 {nm.sede}{nm.mesa ? ` · Mesa ${nm.mesa}` : ''}</p>}
-      {nm.scheduledAt && <p className="text-chalk/40 text-xs font-mono">📅 {new Date(nm.scheduledAt).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}hs</p>}
+      {nm.scheduledAt && <p className="text-chalk/40 text-xs font-mono">📅 {new Date(nm.scheduledAt).toLocaleString('es-UY', { timeZone: 'America/Montevideo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}hs</p>}
     </div>
   );
 }
