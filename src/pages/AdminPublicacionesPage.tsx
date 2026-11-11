@@ -441,7 +441,7 @@ function PlantillaReduccion({ data, tema }: { data: any; tema: any }) {
           {par.map((c, ci) => c ? (
             <div key={ci} style={{ flex: 1, border: `2px solid ${tema.accent}`, borderRadius: 8, background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
               <div style={{ background: tema.accent, color: '#fff', padding: '7px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: '6px 6px 0 0' }}>
-                <span style={{ fontWeight: 900, fontSize: 17, letterSpacing: 1 }}>{c.esRepechaje ? 'REPECHAJE' : `CRUCE ${c.numero}`}</span>
+                <span style={{ fontWeight: 900, fontSize: 17, letterSpacing: 1 }}>{c.esRepechaje ? 'REPECHAJE' : `CRUCE ${c.numero}${c.clasificaComo ? ` (CLASIFICADO ${c.clasificaComo})` : ''}`}</span>
                 {c.resultado && <span style={{ fontWeight: 900, fontSize: 19 }}>{c.resultado}</span>}
               </div>
               <JRow j={c.jugadorA} tema={tema} border /><JRow j={c.jugadorB} tema={tema} />
