@@ -1,4 +1,4 @@
-// BUILD_TAG = judge-2026-11-10-doble-wo
+// BUILD_TAG = judge-2026-11-11-todas-las-mesas
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
@@ -230,13 +230,22 @@ export default function JudgePage() {
   const claveDia = (m: Match) =>
     m.scheduledAt ? new Date(m.scheduledAt).toLocaleDateString('en-CA', { timeZone: 'America/Montevideo' }) : '0000';
   const todosLosPartidos: Match[] = tables.flatMap(t => t.matches ?? []);
-  // Jornada actual de la sede = el día más antiguo que todavía tiene partidos sin cerrar.
-  const jornadaActual = todosLosPartidos.map(claveDia).sort()[0];
-  const esDeJornadaActual = (m: Match) => m.status === 'en_juego' || claveDia(m) === jornadaActual;
+  // Jornada actual de la sede = HOY (corte 05:00 hora de Uruguay) mas todo lo atrasado que siga sin cerrar.
+  // Asi un partido viejo que quedo abierto no esconde los partidos de hoy de las demas mesas.
+  // Solo quedan ocultas las jornadas futuras. Si no hay nada de hoy ni atrasado, se muestra el proximo dia con partidos.
+  const hoyJornada = new Date(Date.now() - 5 * 60 * 60 * 1000).toLocaleDateString('en-CA', { timeZone: 'America/Montevideo' });
+  const diasConPartidos = Array.from(new Set(todosLosPartidos.map(claveDia))).sort();
+  const hayHoyOAtrasados = diasConPartidos.some(d => d <= hoyJornada);
+  const limiteJornada = hayHoyOAtrasados ? hoyJornada : diasConPartidos[0];
+  const hayAtrasados = diasConPartidos.some(d => d < hoyJornada);
+  const esDeJornadaActual = (m: Match) => m.status === 'en_juego' || claveDia(m) <= limiteJornada;
   const proximasOcultas = todosLosPartidos.filter(m => !esDeJornadaActual(m)).length;
-  const textoJornada = jornadaActual === '0000' || !jornadaActual
-    ? 'Pendientes de días anteriores'
-    : new Date(jornadaActual + 'T12:00:00').toLocaleDateString('es-UY', { weekday: 'long', day: '2-digit', month: '2-digit' });
+  const textoJornada = !limiteJornada
+    ? ''
+    : !hayHoyOAtrasados
+      ? new Date(limiteJornada + 'T12:00:00').toLocaleDateString('es-UY', { weekday: 'long', day: '2-digit', month: '2-digit' })
+      : 'Hoy, ' + new Date(hoyJornada + 'T12:00:00').toLocaleDateString('es-UY', { weekday: 'long', day: '2-digit', month: '2-digit' })
+        + (hayAtrasados ? ' (incluye pendientes de días anteriores)' : '');
 
   // Cola de la mesa en orden cronológico: en juego primero, luego por día y hora.
   // Por defecto solo la jornada actual; las siguientes se ven con el botón.

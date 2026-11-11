@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-11-11-clasificado-reduccion
+// PUBLIC_BUILD = pub-public-2026-11-11-juez-todas-las-mesas
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
