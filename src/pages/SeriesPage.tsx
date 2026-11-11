@@ -71,19 +71,19 @@ export default function SeriesPage() {
     });
   };
 
-  const handleCircuitChange = async (circuitId: string) => {
+  const handleCircuitChange = async (circuitId: string, silent = false) => {
     setSelectedCircuit(circuitId);
-    setSeries([]);
+    if (!silent) setSeries([]);
     if (!circuitId) return;
-    setLoadingMatches(true);
+    if (!silent) setLoadingMatches(true);
     try {
       const res = await api.get(`/matches?circuitId=${circuitId}`);
       setSeries(filtrarSeries(res.data));
       // Departamento para filtrar sedes
       const torneo = tournaments.find(t => t.id === Number(selectedTournament)) as any;
       setTorneoDepId(torneo?.departamentoId ?? null);
-    } catch { setSeries([]); }
-    finally { setLoadingMatches(false); }
+    } catch { if (!silent) setSeries([]); }
+    finally { if (!silent) setLoadingMatches(false); }
   };
 
   const handleTournamentChange = (tournamentId: string) => {
@@ -109,13 +109,18 @@ export default function SeriesPage() {
     setSaving(true);
     try {
       const { partido } = asignandoModal;
+      // proximo partido sin asignar, siguiendo el orden de la pantalla
+      const todos = series.flatMap(s => s.partidos);
+      const idx = todos.findIndex(p => p.id === partido.id);
+      const proximoId = todos.slice(idx + 1).find(p => !(p.tableId || p.scheduledAt))?.id;
       const scheduledAt = form.scheduledAt && form.hora
         ? isoDesdeUY(form.scheduledAt, form.hora, form.minutos)
         : undefined;
       if (form.tableId) await api.put(`/matches/${partido.id}/assign`, { tableId: parseInt(form.tableId) });
       if (scheduledAt) await api.put(`/matches/${partido.id}`, { scheduledAt });
       setAsignandoModal(null);
-      await handleCircuitChange(selectedCircuit);
+      await handleCircuitChange(selectedCircuit, true);
+      if (proximoId) setTimeout(() => document.getElementById(`fila-${proximoId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
     } catch (err: any) {
       alert(err?.response?.data?.error ?? 'Error al asignar');
     } finally { setSaving(false); }
@@ -204,7 +209,7 @@ export default function SeriesPage() {
                   {serie.partidos.map((partido: any) => {
                     const asignado = partido.tableId || partido.scheduledAt;
                     return (
-                      <div key={partido.id} className={`flex items-center justify-between rounded-lg px-3 py-2 border ${asignado ? 'border-green-700/30 bg-green-900/10' : 'border-felt-light/10 bg-felt-dark/30'}`}>
+                      <div key={partido.id} id={`fila-${partido.id}`} className={`flex items-center justify-between rounded-lg px-3 py-2 border ${asignado ? 'border-green-700/30 bg-green-900/10' : 'border-felt-light/10 bg-felt-dark/30'}`}>
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           <span className="text-chalk/30 text-xs font-mono w-14 shrink-0">
                             {labelPartido(partido.round, serie.serieId)}

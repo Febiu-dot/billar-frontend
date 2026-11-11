@@ -89,11 +89,11 @@ export default function CrucesPage() {
     setCruces([]); setPhases([]); setDisparoMsg(''); setFiltroFase('todas');
   };
 
-  const handleCircuitChange = async (circuitId: string) => {
+  const handleCircuitChange = async (circuitId: string, silent = false) => {
     setSelectedCircuit(circuitId);
-    setCruces([]); setPhases([]); setDisparoMsg('');
+    if (!silent) { setCruces([]); setPhases([]); setDisparoMsg(''); }
     if (!circuitId) return;
-    setLoadingMatches(true);
+    if (!silent) setLoadingMatches(true);
     try {
       const [mRes, cRes] = await Promise.all([
         api.get(`/matches?circuitId=${circuitId}`),
@@ -111,8 +111,8 @@ export default function CrucesPage() {
       setPhases((cRes.data.phases ?? []).map((p: any) => ({ id: p.id, type: p.type })));
 
       setCruces(filtrarCruces(mRes.data, esNac));
-    } catch { setCruces([]); }
-    finally { setLoadingMatches(false); }
+    } catch { if (!silent) setCruces([]); }
+    finally { if (!silent) setLoadingMatches(false); }
   };
 
   const getPhaseId = (type: string): number | null =>
@@ -146,13 +146,17 @@ export default function CrucesPage() {
     if (!asignandoModal) return;
     setSaving(true);
     try {
+      // proximo cruce sin asignar, siguiendo el orden de la pantalla
+      const idx = crucesFiltrados.findIndex(c => c.id === asignandoModal.id);
+      const proximoId = crucesFiltrados.slice(idx + 1).find(c => !(c.tableId || c.scheduledAt))?.id;
       const scheduledAt = form.scheduledAt && form.hora
         ? isoDesdeUY(form.scheduledAt, form.hora, form.minutos)
         : undefined;
       if (form.tableId) await api.put(`/matches/${asignandoModal.id}/assign`, { tableId: parseInt(form.tableId) });
       if (scheduledAt) await api.put(`/matches/${asignandoModal.id}`, { scheduledAt });
       setAsignandoModal(null);
-      await handleCircuitChange(selectedCircuit);
+      await handleCircuitChange(selectedCircuit, true);
+      if (proximoId) setTimeout(() => document.getElementById(`fila-${proximoId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
     } catch (err: any) {
       alert(err?.response?.data?.error ?? 'Error al asignar');
     } finally { setSaving(false); }
@@ -380,7 +384,7 @@ export default function CrucesPage() {
                   {crucesFiltrados.map(cruce => {
                     const asignado = cruce.tableId || cruce.scheduledAt;
                     return (
-                      <tr key={cruce.id} className={`border-b border-felt-light/5 ${asignado ? 'bg-green-900/5' : ''}`}>
+                      <tr key={cruce.id} id={`fila-${cruce.id}`} className={`border-b border-felt-light/5 ${asignado ? 'bg-green-900/5' : ''}`}>
                         <td className="px-4 py-3">
                           <span className={`badge-status text-xs ${badgeColor(cruce)}`}>{labelFase(cruce)}</span>
                         </td>
