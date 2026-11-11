@@ -166,6 +166,9 @@ export default function CrucesPage() {
     if (slot) return slot;
     return '—';
   };
+  const pc = (player: any) => player?.club
+    ? <span className="text-chalk/40 text-xs ml-1">({player.club})</span>
+    : null;
 
   // ── Labels para departamental y Nacional ──────────────────────────
   const labelFase = (cruce: Cruce): string => {
@@ -382,8 +385,8 @@ export default function CrucesPage() {
                           <span className={`badge-status text-xs ${badgeColor(cruce)}`}>{labelFase(cruce)}</span>
                         </td>
                         <td className="px-4 py-3 text-chalk/40 text-xs font-mono">{numeroCruce(cruce)}</td>
-                        <td className="px-4 py-3 text-chalk/80">{pn(cruce.playerA, cruce.slotA)}</td>
-                        <td className="px-4 py-3 text-chalk/80">{pn(cruce.playerB, cruce.slotB)}</td>
+                        <td className="px-4 py-3 text-chalk/80">{pn(cruce.playerA, cruce.slotA)}{pc(cruce.playerA)}</td>
+                        <td className="px-4 py-3 text-chalk/80">{pn(cruce.playerB, cruce.slotB)}{pc(cruce.playerB)}</td>
                         <td className="px-4 py-3 hidden md:table-cell">
                           {cruce.table
                             ? <span className="text-green-400/60 text-xs font-mono">{cruce.table.venue?.name} — Mesa {cruce.table.number}</span>
@@ -416,7 +419,7 @@ export default function CrucesPage() {
           <div className="space-y-4">
             <div>
               <p className="text-chalk/60 text-xs uppercase tracking-widest mb-1">Partido</p>
-              <p className="text-chalk/80 text-sm">{pn(asignandoModal.playerA, asignandoModal.slotA)} vs {pn(asignandoModal.playerB, asignandoModal.slotB)}</p>
+              <p className="text-chalk/80 text-sm">{pn(asignandoModal.playerA, asignandoModal.slotA)}{pc(asignandoModal.playerA)} vs {pn(asignandoModal.playerB, asignandoModal.slotB)}{pc(asignandoModal.playerB)}</p>
             </div>
             <div>
               <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">

@@ -552,7 +552,7 @@ export default function MatchesPage() {
       {/* Modal asignar mesa */}
       {assignModal && (
         <Modal title="ASIGNAR MESA" onClose={() => setAssignModal(null)}>
-          <p className="text-chalk/60 text-sm mb-4">{playerName(assignModal.playerA)} vs {playerName(assignModal.playerB)}</p>
+          <p className="text-chalk/60 text-sm mb-4">{playerName(assignModal.playerA)}{assignModal.playerA?.club ? ` [${assignModal.playerA.club}]` : ''} vs {playerName(assignModal.playerB)}{assignModal.playerB?.club ? ` [${assignModal.playerB.club}]` : ''}</p>
           <form onSubmit={handleAssign} className="space-y-4">
             <div>
               <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Mesa libre</label>

@@ -129,6 +129,9 @@ export default function SeriesPage() {
     if (slot) return slot;
     return '—';
   };
+  const pc = (player: any) => player?.club
+    ? <span className="text-chalk/40 text-xs ml-1">({player.club})</span>
+    : null;
 
   const formatSerieId = (id: string) =>
     id
@@ -208,11 +211,11 @@ export default function SeriesPage() {
                           </span>
                           <div className="flex-1 min-w-0">
                             <span className={`text-sm ${partido.playerA ? 'text-chalk/80' : 'text-gold/60 italic'}`}>
-                              {pn(partido.playerA, partido.slotA)}
+                              {pn(partido.playerA, partido.slotA)}{pc(partido.playerA)}
                             </span>
                             <span className="text-chalk/30 text-xs mx-2">vs</span>
                             <span className={`text-sm ${partido.playerB ? 'text-chalk/80' : 'text-gold/60 italic'}`}>
-                              {pn(partido.playerB, partido.slotB)}
+                              {pn(partido.playerB, partido.slotB)}{pc(partido.playerB)}
                             </span>
                           </div>
                         </div>
@@ -251,7 +254,7 @@ export default function SeriesPage() {
             <div>
               <p className="text-chalk/60 text-xs uppercase tracking-widest mb-1">Partido</p>
               <p className="text-chalk/80 text-sm">
-                {pn(asignandoModal.partido.playerA, asignandoModal.partido.slotA)} vs {pn(asignandoModal.partido.playerB, asignandoModal.partido.slotB)}
+                {pn(asignandoModal.partido.playerA, asignandoModal.partido.slotA)}{pc(asignandoModal.partido.playerA)} vs {pn(asignandoModal.partido.playerB, asignandoModal.partido.slotB)}{pc(asignandoModal.partido.playerB)}
               </p>
             </div>
             <div>
