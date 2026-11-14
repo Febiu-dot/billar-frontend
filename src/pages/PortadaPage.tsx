@@ -140,11 +140,14 @@ export default function PortadaPage() {
             <span className="font-display font-extrabold uppercase tracking-wide text-white text-xl md:text-2xl leading-tight">Federación de Billar del Uruguay</span>
           </Link>
           <nav aria-label="Principal" className="flex gap-1 w-full md:w-auto overflow-x-auto whitespace-nowrap -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <a href="#en-vivo" className={btnNav}>En vivo</a>
-            <a href="#temporada" className={btnNav}>Temporada</a>
+            <a href="#en-vivo" className={btnNav}>Inicio</a>
+            <a href="#en-vivo" className={btnNav}>Torneos</a>
             <a href="#ranking" className={btnNav}>Rankings</a>
+            <a href="#ranking" className={btnNav}>Jugadores</a>
+            <a href="#temporada" className={btnNav}>Clubes</a>
             {VIDEOS.length > 0 && <a href="#videos" className={btnNav}>Videos</a>}
             {NOTAS.length > 0 && <a href="#notas" className={btnNav}>Notas</a>}
+            <a href="#temporada" className={btnNav}>Panamericano</a>
             <a href="#mundial" className={`${btnNav} !text-orange-light`}>Mundial 2027</a>
           </nav>
         </div>
