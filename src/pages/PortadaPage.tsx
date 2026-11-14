@@ -42,12 +42,22 @@ export default function PortadaPage() {
   const [rankingCargado, setRankingCargado] = useState(false);
   const [cat, setCat] = useState('general');
   const [catPartidos, setCatPartidos] = useState('todas');
+  const [txs, setTxs] = useState<any[]>([]);
+  const [txSel, setTxSel] = useState<number | null>(null);
   // Modo prueba: /portada?canal=UCxxxxxxxxxxxxxxxxxxxxxx muestra el directo de ese canal.
   const [params] = useSearchParams();
   const canalPrueba = params.get('canal') ?? '';
+  const txActual = txs.find(x => x.tableId === txSel) ?? txs[0] ?? null;
   const embedUrl = /^UC[\w-]{22}$/.test(canalPrueba)
     ? `https://www.youtube.com/embed/live_stream?channel=${canalPrueba}`
-    : YOUTUBE_EMBED_URL;
+    : txActual
+      ? `https://www.youtube.com/embed/live_stream?channel=${txActual.canal}`
+      : YOUTUBE_EMBED_URL;
+  const partidoDeMesa = (tableId: number) => enJuego.find(m => m?.table?.id === tableId);
+  const textoPartido = (tableId: number) => {
+    const m = partidoDeMesa(tableId);
+    return m ? `${nombre(m.playerA)} vs ${nombre(m.playerB)}` : 'Transmisión en vivo';
+  };
 
   useEffect(() => { document.title = 'Federación de Billar del Uruguay'; }, []);
 
@@ -66,12 +76,16 @@ export default function PortadaPage() {
     }).catch(() => setLoading(false));
   };
 
+  const cargarTx = () => { api.get('/transmisiones').then(r => setTxs(r.data ?? [])).catch(() => setTxs([])); };
+
   useEffect(() => {
     cargarPartidos();
+    cargarTx();
     socket.emit('join:public');
+    socket.on('transmision:updated', cargarTx);
     socket.on('match:updated', cargarPartidos);
     socket.on('table:updated', cargarPartidos);
-    return () => { socket.off('match:updated', cargarPartidos); socket.off('table:updated', cargarPartidos); };
+    return () => { socket.off('transmision:updated', cargarTx); socket.off('match:updated', cargarPartidos); socket.off('table:updated', cargarPartidos); };
   }, []);
 
   // Torneo por defecto: el que tiene partidos en juego; si no, el primero activo.
@@ -131,6 +145,27 @@ export default function PortadaPage() {
       <section id="en-vivo" aria-labelledby="envivo" className="max-w-6xl mx-auto px-4 pt-6 pb-10">
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           <div className="w-full lg:flex-[2] min-w-0 flex flex-col gap-4">
+            {txs.length > 1 && (
+              <div role="group" aria-label="Transmisiones en vivo" className="flex flex-col gap-2">
+                <span className="text-xs font-semibold tracking-widest uppercase text-silver-dark">Transmisiones en vivo ({txs.length})</span>
+                <div className="flex flex-wrap gap-2">
+                  {txs.map(x => {
+                    const sel = txActual?.tableId === x.tableId;
+                    return (
+                      <div key={x.tableId} className={`flex-1 basis-[240px] min-w-0 flex items-center justify-between gap-3 px-3 py-3 rounded-xl border-[1.5px] ${sel ? 'border-orange bg-orange/10' : 'border-silver/30 bg-carbon-100'}`}>
+                        <div className="min-w-0">
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-white bg-[#cc0000] px-2 py-0.5 rounded-full"><span className="w-1.5 h-1.5 rounded-full bg-white" />EN VIVO</span>
+                          <div className="font-bold text-white mt-1.5 truncate">{x.sede} · Mesa {x.mesa}</div>
+                          <div className="text-sm text-silver truncate">{textoPartido(x.tableId)}</div>
+                        </div>
+                        {sel ? <span className="min-h-[44px] inline-flex items-center px-4 rounded-lg bg-orange text-carbon font-bold text-sm whitespace-nowrap">Viendo ahora</span>
+                             : <button type="button" onClick={() => setTxSel(x.tableId)} className="min-h-[44px] px-4 rounded-lg border border-silver/40 text-white font-semibold text-sm">Ver</button>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <div className="relative w-full aspect-video bg-black border border-silver/15 rounded-2xl overflow-hidden">
               {embedUrl ? (
                 <iframe
@@ -149,8 +184,8 @@ export default function PortadaPage() {
               )}
             </div>
             <div>
-              <h1 id="envivo" className="font-display font-extrabold uppercase tracking-wide text-white text-3xl md:text-5xl leading-tight">{torneoNombre || 'Torneos FEBIU'}</h1>
-              {enJuegoF.length > 0 && <p className="mt-1 text-lg text-silver-light">Partidos en juego ahora</p>}
+              <h1 id="envivo" className="font-display font-extrabold uppercase tracking-wide text-white text-3xl md:text-5xl leading-tight">{txActual && !canalPrueba ? `${txActual.sede} · Mesa ${txActual.mesa}` : (torneoNombre || 'Torneos FEBIU')}</h1>
+              {txActual && !canalPrueba ? <p className="mt-1 text-lg text-silver-light">{textoPartido(txActual.tableId)}</p> : enJuegoF.length > 0 && <p className="mt-1 text-lg text-silver-light">Partidos en juego ahora</p>}
             </div>
             {TRANSMISION_PRESENTADA_POR && (
               <div className="flex flex-col gap-2">

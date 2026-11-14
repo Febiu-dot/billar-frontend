@@ -1,10 +1,11 @@
-// BUILD_TAG = judge-2026-11-11-todas-las-mesas
+// BUILD_TAG = judge-2026-11-14-transmisiones
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
 import { Match, Table } from '../types';
 import { MatchStatusBadge, playerName, LoadingSpinner, Modal, EmptyState } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
+import PanelTransmisiones from '../components/PanelTransmisiones';
 
 interface SetScore { a: string; b: string; saved: boolean; }
 
@@ -280,6 +281,7 @@ export default function JudgePage() {
       </div>
 
       <div className="p-6 space-y-4">
+        <PanelTransmisiones venueId={user?.venueId ?? undefined} />
         {pendingMatches.length > 0 && (
           <div className="card space-y-3 border-gold/30">
             <p className="text-gold text-sm font-semibold uppercase tracking-widest">
