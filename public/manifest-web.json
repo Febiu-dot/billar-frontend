@@ -1,0 +1,24 @@
+{
+  "id": "/portada",
+  "name": "Federación de Billar del Uruguay — Web",
+  "short_name": "FEBIU Web",
+  "description": "Portada web de la Federación de Billar del Uruguay: transmisiones en vivo, torneos, rankings y noticias",
+  "start_url": "/portada",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "orientation": "any",
+  "scope": "/portada",
+  "lang": "es",
+  "icons": [
+    { "src": "/icons/web-72.png",  "sizes": "72x72",   "type": "image/png", "purpose": "any" },
+    { "src": "/icons/web-96.png",  "sizes": "96x96",   "type": "image/png", "purpose": "any" },
+    { "src": "/icons/web-128.png", "sizes": "128x128", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/web-144.png", "sizes": "144x144", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/web-152.png", "sizes": "152x152", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/web-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/web-384.png", "sizes": "384x384", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/web-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ],
+  "categories": ["sports", "news"]
+}

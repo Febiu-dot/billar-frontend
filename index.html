@@ -11,6 +11,15 @@
     <meta name="apple-mobile-web-app-title" content="FBU Torneos" />
     <link rel="apple-touch-icon" href="/icons/icon-152.png" />
     <link rel="icon" type="image/png" sizes="96x96" href="/icons/icon-96.png" />
+    <script>
+      /* La portada web se instala como app aparte ("FEBIU Web"), con su propio icono y su propia direccion de inicio. */
+      if (location.pathname.indexOf('/portada') === 0) {
+        document.querySelector('link[rel="manifest"]').setAttribute('href', '/manifest-web.json');
+        document.querySelector('link[rel="apple-touch-icon"]').setAttribute('href', '/icons/web-152.png');
+        document.querySelector('link[rel="icon"]').setAttribute('href', '/icons/web-96.png');
+        document.querySelector('meta[name="apple-mobile-web-app-title"]').setAttribute('content', 'FEBIU Web');
+      }
+    </script>
     <title>Federación de Billar del Uruguay — Sistema de Torneos</title>
     <meta name="description" content="Sistema de gestión de torneos de billar — Federación de Billar del Uruguay" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
