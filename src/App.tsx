@@ -8,6 +8,7 @@ import PlayersPage from './pages/PlayersPage';
 import MatchesPage from './pages/MatchesPage';
 import JudgePage from './pages/JudgePage';
 import PublicPage from './pages/PublicPage';
+import PortadaPage from './pages/PortadaPage';
 import FixturePage from './pages/FixturePage';
 import BotonInstalar from './components/BotonInstalar';
 import SeriesPage from './pages/SeriesPage';
@@ -37,6 +38,7 @@ function AppRoutes() {
       {/* Rutas públicas */}
       <Route path="/login"         element={<LoginPage />} />
       <Route path="/publico"       element={<PublicPage />} />
+      <Route path="/portada"       element={<PortadaPage />} />
       <Route path="/fixture"       element={<FixturePage />} />
       <Route path="/ranking"       element={<RankingPage />} />
       <Route path="/ranking-final" element={<RankingFinalPage />} />
