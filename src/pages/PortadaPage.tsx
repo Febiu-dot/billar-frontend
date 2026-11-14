@@ -35,6 +35,8 @@ const H2 = 'font-display font-extrabold uppercase tracking-wide text-white text-
 export default function PortadaPage() {
   const [loading, setLoading] = useState(true);
   const [torneos, setTorneos] = useState<{ id: number; name: string }[]>([]);
+  const [todosTorneos, setTodosTorneos] = useState<{ id: number; name: string; year: number; active: boolean }[]>([]);
+  const [panaTop, setPanaTop] = useState<Record<number, any[]>>({});
   const [torneoSel, setTorneoSel] = useState<number | null>(null);
   const [enJuego, setEnJuego] = useState<any[]>([]);
   const [proximos, setProximos] = useState<any[]>([]);
@@ -81,6 +83,7 @@ export default function PortadaPage() {
       setProximos([...b.data, ...c.data]);
       const act = (t.data as any[]).filter(x => x.active === true).map(x => ({ id: x.id, name: x.name }));
       setTorneos(act);
+      setTodosTorneos((t.data as any[]).map(x => ({ id: x.id, name: x.name, year: x.year, active: x.active === true })));
       setLoading(false);
     }).catch(() => setLoading(false));
   };
@@ -113,6 +116,21 @@ export default function PortadaPage() {
       .finally(() => setRankingCargado(true));
   }, [torneoSel]);
 
+  const esPana = (n: string) => /panamericano/i.test(n);
+  const panas = todosTorneos.filter(x => esPana(x.name));
+  const panasKey = panas.map(x => x.id).join(',');
+  useEffect(() => {
+    panas.forEach(x => {
+      api.get(`/acumulado/${x.id}`).then(r => setPanaTop(prev => ({ ...prev, [x.id]: (r.data ?? []).slice(0, 5) }))).catch(() => {});
+    });
+  }, [panasKey]);
+  const torneosActivos = todosTorneos.filter(x => x.active && !esPana(x.name));
+  const torneosPasados = todosTorneos.filter(x => !x.active && !esPana(x.name));
+  const irATorneo = (id: number) => {
+    setTorneoSel(id); setCatPartidos('todas');
+    document.getElementById('en-vivo')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   const torneoNombre = torneos.find(t => t.id === torneoSel)?.name ?? '';
   const delTorneo = (m: any) => torneoSel != null && m?.phase?.circuit?.tournament?.id === torneoSel;
   const delaCat = (m: any) => catPartidos === 'todas' ||
@@ -141,13 +159,13 @@ export default function PortadaPage() {
           </Link>
           <nav aria-label="Principal" className="flex gap-1 w-full md:w-auto overflow-x-auto whitespace-nowrap -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <a href="#en-vivo" className={btnNav}>Inicio</a>
-            <a href="#en-vivo" className={btnNav}>Torneos</a>
+            <a href="#torneos" className={btnNav}>Torneos</a>
             <a href="#ranking" className={btnNav}>Rankings</a>
             <a href="#ranking" className={btnNav}>Jugadores</a>
             <a href="#temporada" className={btnNav}>Clubes</a>
             {VIDEOS.length > 0 && <a href="#videos" className={btnNav}>Videos</a>}
             {NOTAS.length > 0 && <a href="#notas" className={btnNav}>Notas</a>}
-            <a href="#temporada" className={btnNav}>Panamericano</a>
+            <a href="#panamericano" className={btnNav}>Panamericano</a>
             <a href="#mundial" className={`${btnNav} !text-orange-light`}>Mundial 2027</a>
           </nav>
         </div>
@@ -272,6 +290,30 @@ export default function PortadaPage() {
         </div>
       </section>
 
+      {/* Torneos */}
+      <section id="torneos" style={{ scrollMarginTop: 120 }} aria-labelledby="torneos-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
+        <h2 id="torneos-t" className={H2}>Torneos</h2>
+        {torneosActivos.length === 0 ? <p className="text-silver-dark">No hay torneos en juego en este momento.</p> : (
+          <div className="flex flex-wrap gap-4">
+            {torneosActivos.map(x => (
+              <div key={x.id} className={`${card} flex-1 basis-[260px] min-w-0 p-5 flex flex-col gap-3 items-start`}>
+                <span className="inline-flex items-center min-h-[28px] px-3 rounded-full text-xs font-bold tracking-wider uppercase bg-orange text-carbon">En juego</span>
+                <h3 className="font-display font-bold text-2xl text-white leading-tight">{x.name}</h3>
+                <button type="button" onClick={() => irATorneo(x.id)} className="min-h-[48px] px-5 rounded-lg border border-silver/40 text-white font-semibold hover:border-orange-light">Ver partidos y ranking</button>
+              </div>
+            ))}
+          </div>
+        )}
+        {torneosPasados.length > 0 && (
+          <div>
+            <p className="text-sm font-semibold tracking-widest uppercase text-silver-dark mb-2">Torneos ya jugados</p>
+            <div className="flex flex-wrap gap-2">
+              {torneosPasados.map(x => <span key={x.id} className="inline-flex items-center min-h-[36px] px-4 rounded-full border border-silver/25 text-silver-light text-sm">{x.name} · {x.year}</span>)}
+            </div>
+          </div>
+        )}
+      </section>
+
       {/* Temporada */}
       <section id="temporada" style={{ scrollMarginTop: 120 }} aria-labelledby="temporada-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
         <h2 id="temporada-t" className={H2}>La temporada</h2>
@@ -368,6 +410,31 @@ export default function PortadaPage() {
           </div>
         </section>
       )}
+
+      {/* Panamericano */}
+      <section id="panamericano" style={{ scrollMarginTop: 120 }} aria-labelledby="pana-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
+        <div>
+          <h2 id="pana-t" className={H2}>Panamericano de Billar</h2>
+          <p className="text-silver-dark mt-1">Próxima edición: {PANAMERICANO_PROXIMO}</p>
+        </div>
+        {panas.length > 0 && (
+          <div className="flex flex-wrap gap-4">
+            {panas.map(x => (
+              <div key={x.id} className={`${card} flex-1 basis-[260px] min-w-0 p-5 flex flex-col gap-2`}>
+                <span className="text-xs font-semibold tracking-widest uppercase text-orange-light">Edición {x.year}</span>
+                <h3 className="font-display font-bold text-2xl text-white leading-tight">{x.name}</h3>
+                {(panaTop[x.id] ?? []).length > 0 && (
+                  <ol className="mt-2 flex flex-col gap-1">
+                    {panaTop[x.id].map((e: any, i: number) => (
+                      <li key={i} className="flex gap-3 text-silver-light"><span className="w-6 text-silver-dark font-bold">{e.position ?? i + 1}</span><span>{nombre(e.player)}</span></li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* Auspiciantes */}
       {(hayAuspiciantes || hrefAuspiciar) && (
