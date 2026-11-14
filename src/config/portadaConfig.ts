@@ -38,7 +38,9 @@ export const TRANSMISION_PRESENTADA_POR: Auspiciante | null = null;
 export const AUSPICIANTE_PRINCIPAL: Auspiciante | null = null;
 export const AUSPICIANTES_OFICIALES: Auspiciante[] = [];
 
-export const VIDEOS: VideoItem[] = [];
+export const VIDEOS: VideoItem[] = [
+  { titulo: 'Video de prueba del canal', tipo: 'Campeonato', youtubeId: 'LmH1rnet3AY' },
+];
 export const NOTAS: NotaItem[] = [];
 
 export const PANAMERICANO_PROXIMO = 'Julio 2027';
