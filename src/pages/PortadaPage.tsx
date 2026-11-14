@@ -127,19 +127,19 @@ export default function PortadaPage() {
 
   if (loading) return <div className="min-h-screen bg-carbon flex items-center justify-center"><LoadingSpinner /></div>;
 
-  const btnNav = 'min-h-[44px] inline-flex items-center px-3 rounded-lg font-semibold text-sm text-silver-light hover:text-orange-light';
+  const btnNav = 'min-h-[44px] shrink-0 inline-flex items-center px-3 rounded-lg font-semibold text-sm text-silver-light hover:text-orange-light';
   const card = 'bg-carbon-100 border border-silver/15 rounded-2xl';
 
   return (
     <div className="min-h-screen bg-carbon text-silver-light font-body">
       {/* Encabezado */}
-      <header className="border-b border-silver/15">
+      <header className="sticky top-0 z-40 bg-carbon/95 backdrop-blur border-b border-silver/15">
         <div className="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <Link to="/portada" className="flex items-center gap-3 min-w-0">
             <img src="/logo-febiu.png" alt="Logo de la Federación de Billar del Uruguay" className="w-12 h-12 md:w-14 md:h-14 rounded-full object-cover" />
             <span className="font-display font-extrabold uppercase tracking-wide text-white text-xl md:text-2xl leading-tight">Federación de Billar del Uruguay</span>
           </Link>
-          <nav aria-label="Principal" className="flex flex-wrap gap-1">
+          <nav aria-label="Principal" className="flex gap-1 w-full md:w-auto overflow-x-auto whitespace-nowrap -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <a href="#en-vivo" className={btnNav}>En vivo</a>
             <a href="#temporada" className={btnNav}>Temporada</a>
             <a href="#ranking" className={btnNav}>Rankings</a>
@@ -151,7 +151,7 @@ export default function PortadaPage() {
       </header>
 
       {/* En vivo */}
-      <section id="en-vivo" aria-labelledby="envivo" className="max-w-6xl mx-auto px-4 pt-6 pb-10">
+      <section id="en-vivo" style={{ scrollMarginTop: 120 }} aria-labelledby="envivo" className="max-w-6xl mx-auto px-4 pt-6 pb-10">
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           <div className="w-full lg:flex-[2] min-w-0 flex flex-col gap-4">
             {txs.length > 1 && (
@@ -270,7 +270,7 @@ export default function PortadaPage() {
       </section>
 
       {/* Temporada */}
-      <section id="temporada" aria-labelledby="temporada-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
+      <section id="temporada" style={{ scrollMarginTop: 120 }} aria-labelledby="temporada-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
         <h2 id="temporada-t" className={H2}>La temporada</h2>
         <div className="flex flex-wrap gap-4">
           {[
@@ -288,7 +288,7 @@ export default function PortadaPage() {
       </section>
 
       {/* Ranking */}
-      <section id="ranking" aria-labelledby="ranking-t" className="bg-[#0e0e0e] border-y border-silver/15">
+      <section id="ranking" style={{ scrollMarginTop: 120 }} aria-labelledby="ranking-t" className="bg-[#0e0e0e] border-y border-silver/15">
         <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col gap-5">
           <div>
             <h2 id="ranking-t" className={H2}>Ranking acumulado</h2>
@@ -327,7 +327,7 @@ export default function PortadaPage() {
 
       {/* Videos */}
       {VIDEOS.length > 0 && (
-        <section id="videos" aria-labelledby="videos-t" className="max-w-6xl mx-auto px-4 py-10 flex flex-col gap-5">
+        <section id="videos" style={{ scrollMarginTop: 120 }} aria-labelledby="videos-t" className="max-w-6xl mx-auto px-4 py-10 flex flex-col gap-5">
           <h2 id="videos-t" className={H2}>Videos</h2>
           <div className="flex flex-wrap gap-5">
             {VIDEOS.map(v => (
@@ -348,7 +348,7 @@ export default function PortadaPage() {
 
       {/* Notas */}
       {NOTAS.length > 0 && (
-        <section id="notas" aria-labelledby="notas-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
+        <section id="notas" style={{ scrollMarginTop: 120 }} aria-labelledby="notas-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
           <h2 id="notas-t" className={H2}>Notas y entrevistas</h2>
           <div className="flex flex-wrap gap-5">
             {NOTAS.map(n => (
@@ -391,7 +391,7 @@ export default function PortadaPage() {
       )}
 
       {/* Mundial 2027 (al final) */}
-      <section id="mundial" aria-labelledby="mundial-t" className="max-w-6xl mx-auto px-4 py-10">
+      <section id="mundial" style={{ scrollMarginTop: 120 }} aria-labelledby="mundial-t" className="max-w-6xl mx-auto px-4 py-10">
         <div className="bg-carbon-50 border border-silver/15 rounded-3xl p-6 md:p-10 flex flex-col gap-3 items-start">
           <div aria-hidden="true" className="flex gap-2">
             <span className="w-4 h-4 rounded-full" style={{ background: '#e02a2a' }} />
