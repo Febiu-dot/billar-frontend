@@ -38,8 +38,6 @@ export default function PortadaPage() {
   const [todosTorneos, setTodosTorneos] = useState<{ id: number; name: string; year: number; active: boolean }[]>([]);
   const [jugadores, setJugadores] = useState<{ id: number; nombre: string; categoria: string; club: string; departamento: string }[]>([]);
   const [busca, setBusca] = useState('');
-  const [clubSel, setClubSel] = useState('');
-  const [verTodos, setVerTodos] = useState(false);
   const [panaTop, setPanaTop] = useState<Record<number, any[]>>({});
   const [torneoSel, setTorneoSel] = useState<number | null>(null);
   const [enJuego, setEnJuego] = useState<any[]>([]);
@@ -122,19 +120,16 @@ export default function PortadaPage() {
 
   useEffect(() => { api.get('/portada/jugadores').then(r => setJugadores(r.data ?? [])).catch(() => setJugadores([])); }, []);
   const quitar = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  const clubes = useMemo(() => {
-    const m = new Map<string, number>();
-    jugadores.forEach(j => { if (j.club) m.set(j.club, (m.get(j.club) ?? 0) + 1); });
-    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  }, [jugadores]);
-  const jugadoresF = useMemo(() => {
+  const gruposF = useMemo(() => {
     const q = quitar(busca.trim());
-    return jugadores.filter(j => (!clubSel || j.club === clubSel) && (!q || quitar(j.nombre).includes(q)));
-  }, [jugadores, busca, clubSel]);
-  const irAClub = (c: string) => {
-    setClubSel(c); setBusca(''); setVerTodos(false);
-    document.getElementById('jugadores')?.scrollIntoView({ behavior: 'smooth' });
-  };
+    const m = new Map<string, typeof jugadores>();
+    jugadores.forEach(j => {
+      const club = j.club || 'Sin club';
+      if (q && !quitar(j.nombre).includes(q) && !quitar(club).includes(q)) return;
+      m.set(club, [...(m.get(club) ?? []), j]);
+    });
+    return [...m.entries()].sort((x, y) => (x[0] === 'Sin club' ? 1 : y[0] === 'Sin club' ? -1 : x[0].localeCompare(y[0])));
+  }, [jugadores, busca]);
   const esPana = (n: string) => /panamericano/i.test(n);
   const panas = todosTorneos.filter(x => esPana(x.name));
   const panasKey = panas.map(x => x.id).join(',');
@@ -180,7 +175,7 @@ export default function PortadaPage() {
             <a href="#en-vivo" className={btnNav}>Inicio</a>
             <a href="#torneos" className={btnNav}>Torneos</a>
             <a href="#ranking" className={btnNav}>Rankings</a>
-            <a href="#jugadores" className={btnNav}>Jugadores</a>
+            <a href="#clubes" className={btnNav} onClick={() => setTimeout(() => document.getElementById('buscar-jugador')?.focus({ preventScroll: true }), 400)}>Jugadores</a>
             <a href="#clubes" className={btnNav}>Clubes</a>
             {VIDEOS.length > 0 && <a href="#videos" className={btnNav}>Videos</a>}
             {NOTAS.length > 0 && <a href="#notas" className={btnNav}>Notas</a>}
@@ -389,43 +384,31 @@ export default function PortadaPage() {
         </div>
       </section>
 
-      {/* Jugadores */}
-      <section id="jugadores" style={{ scrollMarginTop: 120 }} aria-labelledby="jug-t" className="max-w-6xl mx-auto px-4 py-10 flex flex-col gap-5">
-        <h2 id="jug-t" className={H2}>Jugadores</h2>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <label className="flex-1">
-            <span className="sr-only">Buscar jugador por nombre</span>
-            <input type="search" value={busca} onChange={e => { setBusca(e.target.value); setVerTodos(false); }} placeholder="Buscar jugador por nombre" className="input w-full min-h-[52px] text-base" />
-          </label>
-          {clubSel && (
-            <button type="button" onClick={() => setClubSel('')} className="min-h-[52px] px-4 rounded-lg border border-orange/60 text-orange-light font-semibold">Club: {clubSel} ✕</button>
-          )}
-        </div>
-        <p className="text-silver-dark">{jugadoresF.length} {jugadoresF.length === 1 ? 'jugador' : 'jugadores'}</p>
-        <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {(verTodos || busca || clubSel ? jugadoresF : jugadoresF.slice(0, 12)).slice(0, 200).map(j => (
-            <li key={j.id} className={`${card} px-4 py-3 flex flex-col`}>
-              <span className="font-semibold text-white">{j.nombre}</span>
-              <span className="text-sm text-silver">{[j.categoria, j.club].filter(Boolean).join(' · ')}</span>
-            </li>
-          ))}
-        </ul>
-        {!verTodos && !busca && !clubSel && jugadoresF.length > 12 && (
-          <button type="button" onClick={() => setVerTodos(true)} className="self-start min-h-[48px] px-5 rounded-lg border border-silver/40 text-white font-semibold">Ver todos</button>
-        )}
-      </section>
-
-      {/* Clubes */}
-      {clubes.length > 0 && (
-        <section id="clubes" style={{ scrollMarginTop: 120 }} aria-labelledby="clubes-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
-          <h2 id="clubes-t" className={H2}>Clubes</h2>
-          <div className="flex flex-wrap gap-2">
-            {clubes.map(([c, n]) => (
-              <button key={c} type="button" onClick={() => irAClub(c)} className="min-h-[48px] px-4 rounded-full border border-silver/30 text-silver-light font-semibold hover:border-orange-light">{c} <span className="text-silver-dark font-normal">· {n}</span></button>
+      {/* Clubes y jugadores */}
+      <section id="clubes" style={{ scrollMarginTop: 120 }} aria-labelledby="clubes-t" className="max-w-6xl mx-auto px-4 py-10 flex flex-col gap-5">
+        <h2 id="clubes-t" className={H2}>Clubes y jugadores</h2>
+        <label>
+          <span className="sr-only">Buscar jugador o club</span>
+          <input id="buscar-jugador" type="search" value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar jugador o club" className="input w-full min-h-[52px] text-base" />
+        </label>
+        {gruposF.length === 0 ? <p className="text-silver-dark">No se encontró ningún jugador ni club con ese nombre.</p> : (
+          <div className="flex flex-col gap-2">
+            {gruposF.map(([club, lista]) => (
+              <details key={club} open={!!busca.trim()} className={`${card} group`}>
+                <summary className="min-h-[56px] px-4 py-3 flex items-center justify-between gap-3 cursor-pointer list-none">
+                  <span className="font-display font-bold text-xl text-white">{club}</span>
+                  <span className="text-silver-dark text-sm shrink-0">{lista.length} {lista.length === 1 ? 'jugador' : 'jugadores'} ▾</span>
+                </summary>
+                <ul className="px-4 pb-4 grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
+                  {lista.map(j => (
+                    <li key={j.id} className="py-1 text-silver-light"><span className="font-semibold text-white">{j.nombre}</span> <span className="text-sm text-silver">· {j.categoria}</span></li>
+                  ))}
+                </ul>
+              </details>
             ))}
           </div>
-        </section>
-      )}
+        )}
+      </section>
 
       {/* Videos */}
       {VIDEOS.length > 0 && (
