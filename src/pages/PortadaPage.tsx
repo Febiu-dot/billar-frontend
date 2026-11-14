@@ -53,6 +53,15 @@ export default function PortadaPage() {
     : txActual
       ? `https://www.youtube.com/embed/live_stream?channel=${txActual.canal}`
       : YOUTUBE_EMBED_URL;
+  const sedes = useMemo(() => {
+    const mapa = new Map<number, { venueId: number; sede: string; mesas: any[] }>();
+    txs.forEach(x => {
+      if (!mapa.has(x.venueId)) mapa.set(x.venueId, { venueId: x.venueId, sede: x.sede, mesas: [] });
+      mapa.get(x.venueId)!.mesas.push(x);
+    });
+    return [...mapa.values()];
+  }, [txs]);
+  const sedeActual = txActual?.venueId ?? null;
   const partidoDeMesa = (tableId: number) => enJuego.find(m => m?.table?.id === tableId);
   const textoPartido = (tableId: number) => {
     const m = partidoDeMesa(tableId);
@@ -146,23 +155,42 @@ export default function PortadaPage() {
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           <div className="w-full lg:flex-[2] min-w-0 flex flex-col gap-4">
             {txs.length > 1 && (
-              <div role="group" aria-label="Transmisiones en vivo" className="flex flex-col gap-2">
-                <span className="text-xs font-semibold tracking-widest uppercase text-silver-dark">Transmisiones en vivo ({txs.length})</span>
-                <div className="flex flex-wrap gap-2">
-                  {txs.map(x => {
-                    const sel = txActual?.tableId === x.tableId;
-                    return (
-                      <div key={x.tableId} className={`flex-1 basis-[240px] min-w-0 flex items-center justify-between gap-3 px-3 py-3 rounded-xl border-[1.5px] ${sel ? 'border-orange bg-orange/10' : 'border-silver/30 bg-carbon-100'}`}>
-                        <div className="min-w-0">
-                          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-white bg-[#cc0000] px-2 py-0.5 rounded-full"><span className="w-1.5 h-1.5 rounded-full bg-white" />EN VIVO</span>
-                          <div className="font-bold text-white mt-1.5 truncate">{x.sede} · Mesa {x.mesa}</div>
+              <div role="group" aria-label="Transmisiones en vivo" className="flex flex-col gap-3">
+                <span className="inline-flex items-center gap-2 text-xs font-semibold tracking-widest uppercase text-silver-dark">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-white bg-[#cc0000] px-2 py-0.5 rounded-full"><span className="w-1.5 h-1.5 rounded-full bg-white" />EN VIVO</span>
+                  {txs.length} transmisiones
+                </span>
+                {sedes.length > 1 && (
+                  <div>
+                    <div className="text-xs font-semibold tracking-widest uppercase text-silver-dark mb-1.5">1. Elegí la sede</div>
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {sedes.map(s => (
+                        <button key={s.venueId} type="button" aria-pressed={s.venueId === sedeActual}
+                          onClick={() => setTxSel(s.mesas[0].tableId)}
+                          className={`flex-none min-h-[48px] px-4 rounded-full border font-semibold text-[15px] whitespace-nowrap ${s.venueId === sedeActual ? 'bg-orange border-orange text-carbon font-bold' : 'border-silver/30 text-silver-light'}`}>
+                          {s.sede} ({s.mesas.length})
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div>
+                  <div className="text-xs font-semibold tracking-widest uppercase text-silver-dark mb-1.5">{sedes.length > 1 ? '2. Elegí la mesa' : 'Elegí la mesa'}</div>
+                  <div className="flex flex-wrap gap-2">
+                    {(sedes.find(s => s.venueId === sedeActual)?.mesas ?? []).map(x => {
+                      const sel = txActual?.tableId === x.tableId;
+                      return (
+                        <button key={x.tableId} type="button" aria-pressed={sel} onClick={() => setTxSel(x.tableId)}
+                          className={`flex-1 basis-[200px] min-w-0 min-h-[56px] text-left px-3 py-2 rounded-xl border-[1.5px] ${sel ? 'border-orange bg-orange/10' : 'border-silver/30 bg-carbon-100'}`}>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-bold text-white">Mesa {x.mesa}</span>
+                            {sel && <span className="text-xs font-bold text-orange-light uppercase tracking-wider">Viendo</span>}
+                          </div>
                           <div className="text-sm text-silver truncate">{textoPartido(x.tableId)}</div>
-                        </div>
-                        {sel ? <span className="min-h-[44px] inline-flex items-center px-4 rounded-lg bg-orange text-carbon font-bold text-sm whitespace-nowrap">Viendo ahora</span>
-                             : <button type="button" onClick={() => setTxSel(x.tableId)} className="min-h-[44px] px-4 rounded-lg border border-silver/40 text-white font-semibold text-sm">Ver</button>}
-                      </div>
-                    );
-                  })}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             )}
