@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-11-14-portada-vista-previa-whatsapp
+// PUBLIC_BUILD = pub-public-2026-11-14-app-vista-previa-whatsapp
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
