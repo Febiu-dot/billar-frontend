@@ -82,3 +82,4 @@ Sitio público de la Federación de Billar del Uruguay, construido sobre el mism
 - 14/11/2026: primera versión de la portada; transmisiones por sede y mesa; apagado automático a las 14 horas; menú completo y fijo en celular; secciones Torneos, Panamericano, Clubes y jugadores; video de prueba; app "FEBIU Web" instalable con icono propio; vistas previas de WhatsApp distintas para la web y la app.
 
 - 15/11: nueva sección "Campeonatos de los clubes" (afiches). Admin: menú "Campeonatos de clubes" (/admin/afiches); portada: #campeonatos, aparece sola si hay afiches vigentes y se oculta al terminar el campeonato. Backend: /api/afiches (tabla Afiche autocreada).
+- 15/11: transmisiones por link de video en vivo (varios lives de un mismo canal) probadas con 2 mesas de Libertad Billar Club. El panel de transmisiones también está en el Panel Principal del admin, con la sede de cada mesa. El link de cada live hay que cargarlo antes de cada transmisión.
