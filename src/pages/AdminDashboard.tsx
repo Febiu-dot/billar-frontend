@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import PanelTransmisiones from '../components/PanelTransmisiones';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
 import { Match, Tournament } from '../types';
@@ -77,6 +78,9 @@ export default function AdminDashboard() {
             </div>
           )}
         </div>
+
+        {/* Transmisiones en vivo de todas las sedes */}
+        <PanelTransmisiones />
 
         {/* Partidos en juego */}
         <div>
