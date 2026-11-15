@@ -8,6 +8,7 @@ import PlayersPage from './pages/PlayersPage';
 import MatchesPage from './pages/MatchesPage';
 import JudgePage from './pages/JudgePage';
 import PublicPage from './pages/PublicPage';
+import AdminAfichesPage from './pages/AdminAfichesPage';
 import PortadaPage from './pages/PortadaPage';
 import FixturePage from './pages/FixturePage';
 import BotonInstalar from './components/BotonInstalar';
@@ -67,6 +68,7 @@ function AppRoutes() {
         <Route path="ranking-acumulado" element={<RankingAcumuladoPage />} />
         <Route path="ranking-carga"     element={<RankingCargaPage />} />
         <Route path="publicaciones"     element={<AdminPublicacionesPage />} />
+        <Route path="afiches"           element={<AdminAfichesPage />} />
         <Route path="config-torneo"     element={<ConfigTorneoPage />} />
       </Route>
 

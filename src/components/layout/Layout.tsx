@@ -39,6 +39,7 @@ export default function Layout() {
 { a: '/admin/ranking-final',      etiqueta: 'Ranking del Circuito',  icono: '🏆' },
 { a: '/admin/ranking-acumulado',  etiqueta: 'Ranking Acumulado',     icono: '📊' },
     { a: '/admin/publicaciones', etiqueta: 'Publicaciones',        icono: '📢' },
+    { a: '/admin/afiches',       etiqueta: 'Campeonatos de clubes', icono: '🎯' },
     { a: '/admin/config-torneo', etiqueta: 'Config. Torneo',       icono: '⚙️' },
     { a: '/admin/ranking-carga', etiqueta: 'Carga de Ranking',     icono: '📊' },
     { a: '/admin/usuarios',      etiqueta: 'Jueces',               icono: 'u' },
