@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-11-15-memorias-portada
+// PUBLIC_BUILD = pub-public-2026-11-15-dominio-febiu-org
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';

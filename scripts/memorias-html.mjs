@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('esbuild');
-const BASE = 'https://billar-frontend-blue.vercel.app';
+const BASE = 'https://www.febiu.org';
 const INSTITUCION = 'Federación de Billar del Uruguay (FEBIU)';
 const SERIE = 'Memorias del Billar Uruguayo';
 

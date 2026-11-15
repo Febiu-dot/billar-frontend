@@ -192,7 +192,7 @@ export default function UsersPage() {
         <div className="bg-felt-dark/20 border border-felt-light/10 rounded-lg p-4 text-xs text-chalk/40 space-y-1">
           <p>• El usuario debe escribirse exactamente igual (sin espacios, sin mayúsculas extra).</p>
           <p>• Si un juez no puede entrar, usá "🔑 Cambiar contraseña" y avisale la nueva.</p>
-          <p>• El juez entra en: <span className="text-chalk/60 font-mono">billar-frontend-blue.vercel.app/login</span></p>
+          <p>• El juez entra en: <span className="text-chalk/60 font-mono">www.febiu.org/login</span></p>
         </div>
       </div>
 

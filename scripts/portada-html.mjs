@@ -2,7 +2,7 @@
 // para que al compartir el link /portada por WhatsApp se vea distinto al link de la app de torneos.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 
-const BASE = 'https://billar-frontend-blue.vercel.app';
+const BASE = 'https://www.febiu.org';
 const TITULO = 'FEBIU Web — Federación de Billar del Uruguay';
 const DESC = 'Transmisiones en vivo, torneos, rankings, clubes y jugadores del billar uruguayo.';
 
