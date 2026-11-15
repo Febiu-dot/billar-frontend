@@ -9,7 +9,7 @@ export interface Auspiciante {
 
 export interface VideoItem {
   titulo: string;
-  tipo: 'Campeonato' | 'Clase' | 'Jugadas' | 'Entrevista';
+  tipo: 'Campeonato' | 'Clase' | 'Jugadas' | 'Entrevista' | 'Histórico';
   youtubeId: string; // ej: dQw4w9WgXcQ
   fecha?: string;
 }
@@ -39,7 +39,7 @@ export const AUSPICIANTE_PRINCIPAL: Auspiciante | null = null;
 export const AUSPICIANTES_OFICIALES: Auspiciante[] = [];
 
 export const VIDEOS: VideoItem[] = [
-  { titulo: 'Video de prueba del canal', tipo: 'Campeonato', youtubeId: 'LmH1rnet3AY' },
+  { titulo: 'Joyita del billar uruguayo: Eliomar Berruti vs Néstor Gómez', tipo: 'Histórico', youtubeId: 'LmH1rnet3AY', fecha: '6ª Prueba Mundial · Sarnano, Italia · 1993' },
 ];
 export const NOTAS: NotaItem[] = [];
 
