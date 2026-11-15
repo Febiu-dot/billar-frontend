@@ -46,6 +46,7 @@ export default function AdminAfichesPage() {
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
   const base = api.defaults.baseURL ?? '/api';
 
   const cargar = () => api.get('/afiches/admin/todos').then(r => setLista(r.data)).finally(() => setCargando(false));
@@ -86,7 +87,8 @@ export default function AdminAfichesPage() {
     setForm({ titulo: a.titulo, club: a.club, tipo: a.tipo, fechaInicio: a.fechaInicio, fechaFin: a.fechaFin ?? '', lugar: a.lugar ?? '', contacto: a.contacto ?? '' });
     setImagen(''); setImagenActual(`${base}/afiches/admin/${a.id}/imagen?v=${a.version}`);
     if (fileRef.current) fileRef.current.value = '';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // la pantalla se desplaza dentro de un contenedor, no la ventana: se lleva el formulario a la vista
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
 
   const cambiarVisible = async (a: Afiche) => {
@@ -132,7 +134,7 @@ export default function AdminAfichesPage() {
     <div>
       <PageHeader title="Campeonatos de los clubes" subtitle="Cargá el afiche que manda cada club. Se ve en la portada web hasta que termina el campeonato." />
       <div className="p-6 space-y-8 max-w-4xl">
-        <div className="card space-y-4">
+        <div ref={formRef} className="card space-y-4 scroll-mt-4">
           <h2 className="font-display text-xl font-bold text-silver-light uppercase tracking-wide">{editId ? 'Editar afiche' : 'Cargar un afiche nuevo'}</h2>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
