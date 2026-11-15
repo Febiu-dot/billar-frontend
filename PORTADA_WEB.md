@@ -30,6 +30,12 @@ Sitio público de la Federación de Billar del Uruguay, construido sobre el mism
 - La portada se instala como "FEBIU Web" con icono naranja propio y abre siempre la portada. La app de torneos sigue como "FBU Torneos".
 - Al compartir por WhatsApp cada link muestra su propio título, descripción e imagen.
 
+**Panamericano 2026 (4 y 5 de julio, Willy Billar Club)**
+- Los resultados no están en la base de datos del sistema (el torneo se borró; hay una sola copia de seguridad de hace 2 meses en Railway que no se tocó). Se guardaron como contenido fijo: `src/config/panamericano2026.ts` e imágenes en `public/panamericano-2026/`.
+- Segunda, Tercera, Juvenil y Femenino con campeón, subcampeón, semifinalistas, fixture inicial y cruces finales. Máxima: solo fixture inicial (falta el resultado).
+- Campeones: Segunda Guido Isaia (ARG), Tercera Julio Duarte (URU), Juvenil Matías Fonsalía (URU), Femenino Verónica Gutiérrez (URU).
+- Pendiente de decidir: cambiar el botón "Eliminar torneo" de la app por "Archivar" para que no se pierdan datos, y contratar Railway Pro para copias de seguridad diarias.
+
 **Datos públicos**
 - Endpoint nuevo `/api/portada/jugadores`: nombre, categoría, club y departamento (sin datos internos). Excluye los jugadores de relleno "Qualy".
 
@@ -39,7 +45,7 @@ Sitio público de la Federación de Billar del Uruguay, construido sobre el mism
 ## 3. Lo que falta
 
 **Para vos (datos y decisiones)**
-1. Resultados del Panamericano 2026 (planilla, documento o fotos): en el sistema no están guardados; solo existen los torneos Juvenil y Femenino vacíos. Se cargarían solo para mostrarlos en la web.
+1. Resultado final de la categoría Máxima del Panamericano 2026: la imagen de cruces que tenemos está sin resultados. Falta el podio (campeón, subcampeón, semifinalistas) y, si existe, la imagen de los cruces completos.
 2. Códigos o links de los canales de YouTube de cada mesa de las otras sedes (San Bautista, etc.). Yo los convierto a código y los dejo listos para pegar.
 3. Tus comentarios (y los de la otra persona) sobre secciones y textos de la portada.
 4. Link del canal de YouTube para el botón "Canal" (`CANAL_YOUTUBE_URL`), WhatsApp o email público para auspiciantes (no se publica el email personal), logos de auspiciantes, primeras notas y videos definitivos (título, tipo y fecha de cada uno).
@@ -47,7 +53,6 @@ Sitio público de la Federación de Billar del Uruguay, construido sobre el mism
 
 **Para mí (cuando lo pidas)**
 - Reemplazar el video de prueba por los reales.
-- Sección propia para el Panamericano con histórico (cuando tengamos los datos).
 - Pantalla para cargar notas y entrevistas sin pasar por mí (hoy me pasás el texto y lo cargo).
 - Probar el selector de sedes con varias sedes transmitiendo a la vez.
 - Cambiar "/" por la portada cuando la apruebes.
@@ -73,4 +78,5 @@ Sitio público de la Federación de Billar del Uruguay, construido sobre el mism
 
 ## 6. Registro de cambios
 
+- 15/11/2026: Panamericano 2026 cargado como contenido fijo con resultados, fixtures y cruces (falta resultado de Máxima).
 - 14/11/2026: primera versión de la portada; transmisiones por sede y mesa; apagado automático a las 14 horas; menú completo y fijo en celular; secciones Torneos, Panamericano, Clubes y jugadores; video de prueba; app "FEBIU Web" instalable con icono propio; vistas previas de WhatsApp distintas para la web y la app.
