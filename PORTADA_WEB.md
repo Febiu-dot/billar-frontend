@@ -83,3 +83,4 @@ Sitio público de la Federación de Billar del Uruguay, construido sobre el mism
 
 - 15/11: nueva sección "Campeonatos de los clubes" (afiches). Admin: menú "Campeonatos de clubes" (/admin/afiches); portada: #campeonatos, aparece sola si hay afiches vigentes y se oculta al terminar el campeonato. Backend: /api/afiches (tabla Afiche autocreada).
 - 15/11: transmisiones por link de video en vivo (varios lives de un mismo canal) probadas con 2 mesas de Libertad Billar Club. El panel de transmisiones también está en el Panel Principal del admin, con la sede de cada mesa. El link de cada live hay que cargarlo antes de cada transmisión.
+- 15/11: sección "Memorias del Billar Uruguayo" (/portada/memorias). Datos en src/config/memorias.ts; entrega N.º 1 cargada como BORRADOR (no visible en índice ni portada; vista previa en /portada/memorias/1?borrador=1) hasta confirmar créditos y permisos de las fotos. Contenido histórico sin modificar.

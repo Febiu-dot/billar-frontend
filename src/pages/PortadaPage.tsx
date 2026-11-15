@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
 import { LoadingSpinner } from '../components/ui';
+import { publicadas } from '../config/memorias';
 import { PANAMERICANO_2026 } from '../config/panamericano2026';
 import {
   YOUTUBE_EMBED_URL, CANAL_YOUTUBE_URL, CONTACTO, TRANSMISION_PRESENTADA_POR,
@@ -178,6 +179,7 @@ export default function PortadaPage() {
             <a href="#clubes" className={btnNav}>Clubes</a>
             {VIDEOS.length > 0 && <a href="#videos" className={btnNav}>Videos</a>}
             {NOTAS.length > 0 && <a href="#notas" className={btnNav}>Notas</a>}
+            {publicadas().length > 0 && <Link to="/portada/memorias" className={btnNav}>Memorias</Link>}
             <a href="#panamericano" className={btnNav}>Panamericano</a>
             <a href="#mundial" className={`${btnNav} !text-orange-light`}>Mundial 2027</a>
           </nav>

@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-11-15-tx-link-live
+// PUBLIC_BUILD = pub-public-2026-11-15-memorias-borrador
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
