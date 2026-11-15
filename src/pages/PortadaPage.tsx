@@ -53,9 +53,9 @@ export default function PortadaPage() {
   const canalPrueba = params.get('canal') ?? '';
   const txActual = txs.find(x => x.tableId === txSel) ?? txs[0] ?? null;
   const embedUrl = /^UC[\w-]{22}$/.test(canalPrueba)
-    ? `https://www.youtube.com/embed/live_stream?channel=${canalPrueba}`
+    ? `https://www.youtube.com/embed/live_stream?channel=${canalPrueba}&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`
     : txActual
-      ? `https://www.youtube.com/embed/live_stream?channel=${txActual.canal}`
+      ? `https://www.youtube.com/embed/live_stream?channel=${txActual.canal}&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`
       : YOUTUBE_EMBED_URL;
   const sedes = useMemo(() => {
     const mapa = new Map<number, { venueId: number; sede: string; mesas: any[] }>();
@@ -411,7 +411,7 @@ export default function PortadaPage() {
             {VIDEOS.map(v => (
               <article key={v.youtubeId} className={`${card} flex-1 basis-[260px] min-w-0 overflow-hidden`}>
                 <div className="relative aspect-video bg-black">
-                  <iframe src={`https://www.youtube.com/embed/${v.youtubeId}`} referrerPolicy="strict-origin-when-cross-origin" title={v.titulo} className="absolute inset-0 w-full h-full" loading="lazy" allowFullScreen />
+                  <iframe src={`https://www.youtube.com/embed/${v.youtubeId}?rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`} referrerPolicy="strict-origin-when-cross-origin" title={v.titulo} className="absolute inset-0 w-full h-full" loading="lazy" allowFullScreen />
                 </div>
                 <div className="p-4 flex flex-col gap-1">
                   <span className="text-xs font-semibold tracking-widest uppercase text-orange-light">{v.tipo}</span>
