@@ -2138,9 +2138,13 @@ export default function AdminPublicacionesPage() {
     finally { setPublicando(false); }
   };
 
+  // Publicación de la vista pública que corresponde a lo que está elegido ahora (mismo circuito y misma fase)
+  const publicadaActual = publicadas.find((p: any) => p.tipoFase === tipoFase) ?? null;
+
   const quitarPublicada = async (id: number) => {
-    if (!window.confirm('¿Quitar esta publicación de la vista pública?')) return;
-    try { await api.delete(`/publicaciones-publicas/${id}`); cargarPublicadas(); }
+    const pub = publicadas.find((p: any) => p.id === id);
+    if (!window.confirm(`¿Quitar${pub ? ` "${pub.titulo}"` : ' esta publicación'} de la vista pública?\n\nDeja de verse en /publico. Después podés volver a publicarla.`)) return;
+    try { await api.delete(`/publicaciones-publicas/${id}`); cargarPublicadas(); alert('✅ Quitada de la vista pública.'); }
     catch { alert('No se pudo quitar.'); }
   };
 
@@ -2422,7 +2426,7 @@ export default function AdminPublicacionesPage() {
                   {publicadas.map((p: any) => (
                     <div key={p.id} className="flex items-center justify-between gap-3 bg-felt-dark/40 rounded px-3 py-2 text-sm">
                       <span className="text-chalk/80 truncate">{p.titulo} <span className="text-chalk/30 text-xs">· {new Date(p.updatedAt).toLocaleString('es-UY', { timeZone: 'America/Montevideo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span></span>
-                      <button className="text-red-400 text-xs hover:underline shrink-0" onClick={() => quitarPublicada(p.id)}>Quitar</button>
+                      <button className="text-red-300 text-xs border border-red-700/50 rounded px-2 py-1 hover:bg-red-900/30 shrink-0" onClick={() => quitarPublicada(p.id)}>🗑 Quitar</button>
                     </div>
                   ))}
                 </div>
@@ -2449,8 +2453,14 @@ export default function AdminPublicacionesPage() {
                 )}
                 <button className="btn-primary px-8" disabled={publicando || exportando} onClick={publicarEnVistaPublica}
                   style={{ background: 'linear-gradient(135deg, #1b5e20, #2e7d32)', border: '1px solid #66bb6a55' }}>
-                  {publicando ? 'Publicando...' : '📢 Publicar en vista pública'}
+                  {publicando ? 'Publicando...' : publicadaActual ? '📢 Volver a publicar (reemplaza)' : '📢 Publicar en vista pública'}
                 </button>
+                {publicadaActual && (
+                  <button className="btn-primary px-8" disabled={publicando || exportando} onClick={() => quitarPublicada(publicadaActual.id)}
+                    style={{ background: 'linear-gradient(135deg, #7f1d1d, #b91c1c)', border: '1px solid #f8717155' }}>
+                    🗑 Quitar de la vista pública
+                  </button>
+                )}
                 <span className="text-chalk/30 text-xs">Alta resolución · WhatsApp y redes</span>
               </div>
             </>
