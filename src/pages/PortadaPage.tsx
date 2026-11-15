@@ -179,7 +179,7 @@ export default function PortadaPage() {
             <a href="#clubes" className={btnNav}>Clubes</a>
             {VIDEOS.length > 0 && <a href="#videos" className={btnNav}>Videos</a>}
             {NOTAS.length > 0 && <a href="#notas" className={btnNav}>Notas</a>}
-            {publicadas().length > 0 && <Link to="/portada/memorias" className={btnNav}>Memorias</Link>}
+            {publicadas().length > 0 && <a href="#memorias" className={btnNav}>Memorias</a>}
             <a href="#panamericano" className={btnNav}>Panamericano</a>
             <a href="#mundial" className={`${btnNav} !text-orange-light`}>Mundial 2027</a>
           </nav>
@@ -485,6 +485,31 @@ export default function PortadaPage() {
           </div>
         </section>
       )}
+
+      {/* Memorias del Billar Uruguayo: aparece sola cuando hay una entrega publicada */}
+      {publicadas().length > 0 && (() => {
+        const e = publicadas()[0];
+        return (
+          <section id="memorias" style={{ scrollMarginTop: 120 }} aria-labelledby="memorias-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold tracking-[.19em] uppercase text-orange-light">Archivo histórico</p>
+                <h2 id="memorias-t" className={H2}>Memorias del Billar Uruguayo</h2>
+              </div>
+              <Link to="/portada/memorias" className="min-h-[44px] inline-flex items-center font-semibold text-orange-light">Ver todas las entregas</Link>
+            </div>
+            <Link to={`/portada/memorias/${e.numero}`} className={`${card} overflow-hidden flex flex-col md:flex-row hover:border-orange-light/60`}>
+              <img src={e.portada} alt={e.portadaAlt} loading="lazy" className="w-full md:w-1/2 h-56 md:h-auto object-cover" />
+              <div className="p-6 flex flex-col gap-2 justify-center">
+                <span className="text-xs font-bold tracking-[.19em] uppercase text-orange-light">Entrega n.º {e.numero}</span>
+                <h3 className="font-display font-bold text-3xl text-white leading-tight">{e.titulo}</h3>
+                <p className="text-silver-light">{e.resumen}</p>
+                <span className="min-h-[44px] inline-flex items-center font-semibold text-orange-light">Leer la entrega →</span>
+              </div>
+            </Link>
+          </section>
+        );
+      })()}
 
       {/* Panamericano */}
       <section id="panamericano" style={{ scrollMarginTop: 120 }} aria-labelledby="pana-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
