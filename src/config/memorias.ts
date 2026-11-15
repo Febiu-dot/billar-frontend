@@ -3,6 +3,8 @@
 // el texto, las imagenes (carpeta public/memorias/NN/) y las fuentes. Mientras diga estado: 'borrador' NO se ve en
 // el indice ni en la portada; se puede revisar entrando a /portada/memorias/N?borrador=1.
 // Para publicarla: cambiar estado a 'publicado' y poner la fecha ('AAAA-MM-DD').
+// Cada entrega tiene: numero, titulo, bajada, resumen, cuerpo, fuentes, compartir (WhatsApp/Facebook) y registroInterno (creditos/permisos, no se muestra).
+// Enlace permanente de cada entrega: /portada/memorias/N
 // Formato del texto: *cursiva* y **negrita**. El contenido historico no se modifica sin consulta.
 
 export type Bloque =
@@ -25,6 +27,10 @@ export interface Entrega {
   cuerpo: Bloque[];
   fuentes: Fuente[];
   proxima?: string;
+  // Datos para compartir por WhatsApp / Facebook (van en el HTML inicial de la pagina)
+  compartir: { descripcion: string; imagen: string; imagenAutorizada: boolean };
+  // Registro interno: NO se muestra en la web. Creditos, permisos y verificaciones pendientes.
+  registroInterno: string[];
 }
 
 export const ENTREGAS: Entrega[] = [
@@ -39,7 +45,7 @@ export const ENTREGAS: Entrega[] = [
     portadaAlt: 'Fachada histórica del Café Independencia, con la palabra Billares en el vidrio',
     cuerpo: [
       { t: 'fig', src: '/memorias/01/cafe-independencia.jpg', alt: 'Fachada histórica del Café Independencia, con la palabra Billares en el vidrio',
-        pie: '**Café Independencia, Montevideo.** En la fachada puede leerse «BILLARES», testimonio visual del vínculo entre los cafés y la práctica del juego. Imagen aportada al proyecto; crédito original atribuido al Centro de Fotografía de Montevideo, pendiente de comprobación y autorización de reproducción.' },
+        pie: '**Café Independencia, Montevideo.** En la fachada puede leerse «BILLARES», testimonio visual del vínculo entre los cafés y la práctica del juego. Procedencia documental: Centro de Fotografía de Montevideo (CdF). Atribución pendiente de confirmación.' },
       { t: 'p', inicial: true, texto: 'Mucho antes de los campeonatos nacionales y de las grandes actuaciones internacionales, el billar ya tenía un lugar en la vida social montevideana. Los cafés reunían a vecinos, viajeros y aficionados alrededor de sus mesas, en espacios donde el entretenimiento convivía con la conversación y el intercambio de noticias.' },
       { t: 'h2', texto: 'Una pista documental de 1841' },
       { t: 'p', texto: 'El historiador Juan Antonio Varese, al estudiar los antiguos cafés de Montevideo, recuperó anuncios de prensa que permiten rastrear la presencia del billar en la primera mitad del siglo XIX. En *El Nacional* del 14 de abril de 1841 figura el aviso de un establecimiento de «Billar y Café» en la calle San Luis, número 57, a cargo del señor Bernard.' },
@@ -50,7 +56,7 @@ export const ENTREGAS: Entrega[] = [
       { t: 'h2', texto: 'El recuerdo del Café Vaccaro' },
       { t: 'p', texto: 'Entre los nombres asociados a la memoria del billar montevideano aparece el Café Vaccaro, en el barrio Goes. Un reportaje de la revista *Ahora*, publicado en octubre de 1972, evocó a jugadores de comienzos del siglo XX y recuperó testimonios vinculados con ese establecimiento.' },
       { t: 'fig', src: '/memorias/01/cafe-vaccaro.jpg', alt: 'Vista moderna del edificio del Café Vaccaro en Montevideo',
-        pie: '**El edificio del histórico Café Vaccaro, en Goes.** Fotografía contemporánea: no representa el café durante las partidas de comienzos del siglo XX. Autor y permiso de reproducción pendientes de confirmar.' },
+        pie: '**El edificio del histórico Café Vaccaro, en Goes.** Fotografía contemporánea del edificio histórico, localizada a través de una publicación de la revista *Raíces*. No representa el café durante las partidas de comienzos del siglo XX. Autoría pendiente de confirmar.' },
       { t: 'p', texto: 'Esos relatos nos acercan a una etapa en la que la fama de los buenos billaristas se construía ante quienes observaban sus partidas. Son recuerdos que merecen conservarse, pero también contrastarse con otras fuentes para distinguir con precisión fechas, nombres y resultados.' },
       { t: 'h2', texto: '1936: un hito de la organización federativa' },
       { t: 'p', texto: 'El reportaje de *Ahora* de 1972 señala el año 1936 como fecha de fundación de la Federación Uruguaya de Billar y menciona entre sus impulsores a Francisco Ferraro, Doroteo Sena, Favaro, Luis Adami, Daniel Silva Corres, Sarda Folle y José Alzpuru.' },
@@ -66,6 +72,16 @@ export const ENTREGAS: Entrega[] = [
       { texto: '**Revista Ahora.** Reportaje sobre el billar uruguayo, 8 de octubre de 1972. Documento histórico utilizado para las referencias al Café Vaccaro y a la Federación de 1936.',
         enlace: { url: 'https://sitiosdememoria.uy/sites/default/files/2025-07/10/ahora.-revista-de-los-domingos_n16_f8-10-1972.pdf', etiqueta: 'Consultar facsímil' } },
       { texto: '**Imágenes:** archivos fotográficos aportados para el proyecto. Los créditos, fechas y permisos deberán verificarse antes de su publicación pública.' },
+    ],
+    compartir: {
+      descripcion: 'Un recorrido por los antiguos cafés montevideanos, los primeros jugadores y los antecedentes de la organización federativa del billar uruguayo.',
+      imagen: '/memorias/01/cafe-independencia.jpg',
+      imagenAutorizada: false, // pasar a true cuando se confirme el permiso de reproduccion; mientras tanto se comparte el logo de FEBIU
+    },
+    registroInterno: [
+      'Café Independencia (cafe-independencia.jpg): fotografía localizada durante la investigación histórica y guardada en el material del proyecto. Procedencia documental: Centro de Fotografía de Montevideo (CdF). Atribución, fecha y autorización de reproducción PENDIENTES de confirmar. No publicar como confirmada.',
+      'Café Vaccaro (cafe-vaccaro.jpg): fotografía contemporánea del edificio histórico, localizada a través de una publicación de la revista Raíces. Autoría y permiso de reproducción PENDIENTES de confirmar.',
+      'Mientras no se confirmen los permisos, la entrega se mantiene en borrador y la imagen para compartir en redes es el logo de FEBIU (compartir.imagenAutorizada = false).',
     ],
     proxima: 'Los grandes maestros de los antiguos cafés: protagonistas y recuerdos de los primeros años del billar uruguayo.',
   },

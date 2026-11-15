@@ -7,6 +7,8 @@ const TITULO = 'FEBIU Web — Federación de Billar del Uruguay';
 const DESC = 'Transmisiones en vivo, torneos, rankings, clubes y jugadores del billar uruguayo.';
 
 let h = readFileSync('dist/index.html', 'utf8');
+// Saca las etiquetas para compartir de la app de torneos para que no queden duplicadas con las de la portada
+h = h.replace(/\s*<meta\s+(?:property|name)="(?:og:|twitter:)[^"]*"[^>]*>/g, '');
 h = h.replace(/<title>.*?<\/title>/s, `<title>${TITULO}</title>`);
 h = h.replace(/<meta name="description" content=".*?"\s*\/?>/s, `<meta name="description" content="${DESC}" />`);
 const og = [
