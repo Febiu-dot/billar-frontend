@@ -55,6 +55,7 @@ export default function PanelTransmisiones({ venueId }: { venueId?: number }) {
             <div key={m.tableId} className="rounded-lg border border-felt-light/20 p-3 space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
+                  {!venueId && <div className="text-orange-400 text-xs font-bold uppercase tracking-widest mb-1">{m.sede}</div>}
                   <div className="font-display text-2xl text-chalk leading-none">MESA {m.mesa}</div>
                   <div className={`text-sm ${m.activa ? 'text-red-400 font-semibold' : m.canal ? 'text-chalk/50' : 'text-yellow-400'}`}>
                     {m.activa ? '● En vivo' : m.canal ? 'Apagada' : 'Falta cargar el canal'}
