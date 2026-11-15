@@ -32,8 +32,8 @@ Sitio público de la Federación de Billar del Uruguay, construido sobre el mism
 
 **Panamericano 2026 (4 y 5 de julio, Willy Billar Club)**
 - Los resultados no están en la base de datos del sistema (el torneo se borró; hay una sola copia de seguridad de hace 2 meses en Railway que no se tocó). Se guardaron como contenido fijo: `src/config/panamericano2026.ts` e imágenes en `public/panamericano-2026/`.
-- Segunda, Tercera, Juvenil y Femenino con campeón, subcampeón, semifinalistas, fixture inicial y cruces finales. Máxima: solo fixture inicial (falta el resultado).
-- Campeones: Segunda Guido Isaia (ARG), Tercera Julio Duarte (URU), Juvenil Matías Fonsalía (URU), Femenino Verónica Gutiérrez (URU).
+- Máxima, Segunda, Tercera, Juvenil y Femenino con campeón, subcampeón, semifinalistas, fixture inicial y cruces finales. Máxima también completa (campeón José Oliva, ARG).
+- Campeones: Máxima José Oliva (ARG), Segunda Guido Isaia (ARG), Tercera Julio Duarte (URU), Juvenil Matías Fonsalía (URU), Femenino Verónica Gutiérrez (URU).
 - Pendiente de decidir: cambiar el botón "Eliminar torneo" de la app por "Archivar" para que no se pierdan datos, y contratar Railway Pro para copias de seguridad diarias.
 
 **Datos públicos**
@@ -45,7 +45,7 @@ Sitio público de la Federación de Billar del Uruguay, construido sobre el mism
 ## 3. Lo que falta
 
 **Para vos (datos y decisiones)**
-1. Resultado final de la categoría Máxima del Panamericano 2026: la imagen de cruces que tenemos está sin resultados. Falta el podio (campeón, subcampeón, semifinalistas) y, si existe, la imagen de los cruces completos.
+1. (Resuelto 15/11) Máxima del Panamericano 2026 ya está cargada.
 2. Códigos o links de los canales de YouTube de cada mesa de las otras sedes (San Bautista, etc.). Yo los convierto a código y los dejo listos para pegar.
 3. Tus comentarios (y los de la otra persona) sobre secciones y textos de la portada.
 4. Link del canal de YouTube para el botón "Canal" (`CANAL_YOUTUBE_URL`), WhatsApp o email público para auspiciantes (no se publica el email personal), logos de auspiciantes, primeras notas y videos definitivos (título, tipo y fecha de cada uno).

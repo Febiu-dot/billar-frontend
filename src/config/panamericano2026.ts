@@ -18,8 +18,14 @@ export const PANAMERICANO_2026 = {
   fecha: '4 y 5 de julio de 2026',
   categorias: [
     {
-      id: 'maxima', nombre: 'Máxima', posiciones: [],
-      fixture: '/panamericano-2026/maxima-fixture.jpg',
+      id: 'maxima', nombre: 'Máxima',
+      posiciones: [
+        { puesto: 'Campeón', nombre: 'José Oliva', pais: 'ARG' },
+        { puesto: 'Subcampeón', nombre: 'Walter Ingenieri', pais: 'ARG' },
+        { puesto: 'Semifinalista', nombre: 'Eduardo Cortés', pais: 'ARG' },
+        { puesto: 'Semifinalista', nombre: 'Andrés Lajuni', pais: 'URU' },
+      ],
+      fixture: '/panamericano-2026/maxima-fixture.jpg', bracket: '/panamericano-2026/maxima-bracket.jpg',
     },
     {
       id: 'segunda', nombre: 'Segunda',
