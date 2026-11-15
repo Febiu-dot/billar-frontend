@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-11-15-quitar-publicacion
+// PUBLIC_BUILD = pub-public-2026-11-15-panamericano-2026
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';

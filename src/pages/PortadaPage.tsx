@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
 import { LoadingSpinner } from '../components/ui';
+import { PANAMERICANO_2026 } from '../config/panamericano2026';
 import {
   YOUTUBE_EMBED_URL, CANAL_YOUTUBE_URL, CONTACTO, TRANSMISION_PRESENTADA_POR,
   AUSPICIANTE_PRINCIPAL, AUSPICIANTES_OFICIALES, VIDEOS, NOTAS,
@@ -38,7 +39,6 @@ export default function PortadaPage() {
   const [todosTorneos, setTodosTorneos] = useState<{ id: number; name: string; year: number; active: boolean }[]>([]);
   const [jugadores, setJugadores] = useState<{ id: number; nombre: string; categoria: string; club: string; departamento: string }[]>([]);
   const [busca, setBusca] = useState('');
-  const [panaTop, setPanaTop] = useState<Record<number, any[]>>({});
   const [torneoSel, setTorneoSel] = useState<number | null>(null);
   const [enJuego, setEnJuego] = useState<any[]>([]);
   const [proximos, setProximos] = useState<any[]>([]);
@@ -131,13 +131,6 @@ export default function PortadaPage() {
     return [...m.entries()].sort((x, y) => (x[0] === 'Sin club' ? 1 : y[0] === 'Sin club' ? -1 : x[0].localeCompare(y[0])));
   }, [jugadores, busca]);
   const esPana = (n: string) => /panamericano/i.test(n);
-  const panas = todosTorneos.filter(x => esPana(x.name));
-  const panasKey = panas.map(x => x.id).join(',');
-  useEffect(() => {
-    panas.forEach(x => {
-      api.get(`/acumulado/${x.id}`).then(r => setPanaTop(prev => ({ ...prev, [x.id]: (r.data ?? []).slice(0, 5) }))).catch(() => {});
-    });
-  }, [panasKey]);
   const torneosActivos = todosTorneos.filter(x => x.active && !esPana(x.name));
   const torneosPasados = todosTorneos.filter(x => !x.active && !esPana(x.name));
   const irATorneo = (id: number) => {
@@ -457,23 +450,49 @@ export default function PortadaPage() {
           <h2 id="pana-t" className={H2}>Panamericano de Billar</h2>
           <p className="text-silver-dark mt-1">Próxima edición: {PANAMERICANO_PROXIMO}</p>
         </div>
-        {panas.length > 0 && (
-          <div className="flex flex-wrap gap-4">
-            {panas.map(x => (
-              <div key={x.id} className={`${card} flex-1 basis-[260px] min-w-0 p-5 flex flex-col gap-2`}>
-                <span className="text-xs font-semibold tracking-widest uppercase text-orange-light">Edición {x.year}</span>
-                <h3 className="font-display font-bold text-2xl text-white leading-tight">{x.name}</h3>
-                {(panaTop[x.id] ?? []).length > 0 && (
-                  <ol className="mt-2 flex flex-col gap-1">
-                    {panaTop[x.id].map((e: any, i: number) => (
-                      <li key={i} className="flex gap-3 text-silver-light"><span className="w-6 text-silver-dark font-bold">{e.position ?? i + 1}</span><span>{nombre(e.player)}</span></li>
+        <div className={`${card} p-5 flex flex-col gap-1`}>
+          <span className="text-xs font-semibold tracking-widest uppercase text-orange-light">Edición {PANAMERICANO_2026.fecha}</span>
+          <h3 className="font-display font-bold text-3xl text-white leading-tight">{PANAMERICANO_2026.titulo}</h3>
+          <span className="text-silver">{PANAMERICANO_2026.lugar}</span>
+        </div>
+        <div className="flex flex-col gap-3">
+          {PANAMERICANO_2026.categorias.map(c => (
+            <details key={c.id} className={card}>
+              <summary className="min-h-[56px] px-4 py-3 flex items-center justify-between gap-3 cursor-pointer list-none">
+                <span className="font-display font-bold text-2xl text-white">{c.nombre}</span>
+                <span className="text-silver text-sm text-right">
+                  {c.posiciones.length > 0 ? `${c.posiciones[0].puesto}: ${c.posiciones[0].nombre}` : 'Ver fixture'} ▾
+                </span>
+              </summary>
+              <div className="px-4 pb-5 flex flex-col gap-4">
+                {c.posiciones.length > 0 ? (
+                  <ol className="flex flex-col gap-1">
+                    {c.posiciones.map((p, i) => (
+                      <li key={i} className="flex flex-wrap items-baseline gap-x-3 text-silver-light">
+                        <span className={`w-28 text-sm font-semibold tracking-wide uppercase ${i === 0 ? 'text-orange-light' : 'text-silver-dark'}`}>{p.puesto}</span>
+                        <span className={i === 0 ? 'font-bold text-white text-lg' : 'font-semibold'}>{p.nombre}</span>
+                        <span className="text-xs text-silver-dark">{p.pais}</span>
+                      </li>
                     ))}
                   </ol>
-                )}
+                ) : <p className="text-silver-dark">El resultado final de esta categoría se publicará próximamente.</p>}
+                <div className="flex flex-col gap-4">
+                  <figure className="flex flex-col gap-1">
+                    <figcaption className="text-xs font-semibold tracking-widest uppercase text-silver-dark">Fixture inicial</figcaption>
+                    <a href={c.fixture} target="_blank" rel="noopener noreferrer"><img src={c.fixture} alt={`Fixture inicial del Panamericano 2026, categoría ${c.nombre}`} loading="lazy" className="w-full rounded-xl border border-silver/15" /></a>
+                  </figure>
+                  {c.bracket && (
+                    <figure className="flex flex-col gap-1">
+                      <figcaption className="text-xs font-semibold tracking-widest uppercase text-silver-dark">Cruces finales</figcaption>
+                      <a href={c.bracket} target="_blank" rel="noopener noreferrer"><img src={c.bracket} alt={`Cruces finales del Panamericano 2026, categoría ${c.nombre}`} loading="lazy" className="w-full rounded-xl border border-silver/15" /></a>
+                    </figure>
+                  )}
+                  <span className="text-sm text-silver-dark">Tocá una imagen para verla en grande.</span>
+                </div>
               </div>
-            ))}
-          </div>
-        )}
+            </details>
+          ))}
+        </div>
       </section>
 
       {/* Auspiciantes */}
