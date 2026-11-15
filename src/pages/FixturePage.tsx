@@ -51,7 +51,9 @@ function getNacRoundLabel(round: number): string {
 }
 
 export default function FixturePage() {
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [todosTorneos, setTodosTorneos] = useState<Tournament[]>([]);
+  const [verArchivados, setVerArchivados] = useState(false);
+  const tournaments = todosTorneos.filter(t => verArchivados || t.active);
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -100,13 +102,13 @@ export default function FixturePage() {
   const rankingFileRef = useRef<HTMLInputElement>(null);
 
   const fetchTournaments = () =>
-    api.get('/tournaments').then(r => { setTournaments((r.data as any[]).filter(t => t.active)); setLoading(false); });
+    api.get('/tournaments').then(r => { setTodosTorneos(r.data as any[]); setLoading(false); });
 
   useEffect(() => {
     api.get('/departamentos').then(r => setDepartamentos(r.data));
     api.get('/tournaments').then(r => {
       const activos = (r.data as any[]).filter(t => t.active);
-      setTournaments(activos);
+      setTodosTorneos(r.data as any[]);
       if (activos.length > 0) {
         loadTournament(activos[0].id);
       }
@@ -171,9 +173,31 @@ export default function FixturePage() {
   };
 
   const handleDeleteTournament = async (t: Tournament) => {
-    if (!confirm(`¿Eliminar el torneo "${t.name}"?`)) return;
+    const escrito = window.prompt(
+      `ATENCION: eliminar el torneo "${t.name}" borra para siempre todos sus circuitos, partidos y rankings. No se puede deshacer.\n\n` +
+      `Si solo querés sacarlo de la vista de trabajo, usá "Archivar".\n\n` +
+      `Para eliminarlo igual, escribí ELIMINAR en mayúsculas:`
+    );
+    if (escrito !== 'ELIMINAR') { if (escrito !== null) alert('No se eliminó nada: la palabra no coincide.'); return; }
     try { await api.delete(`/tournaments/${t.id}`); setSelectedTournament(null); fetchTournaments(); }
     catch (err: any) { alert(err?.response?.data?.error ?? 'Error al eliminar el torneo'); }
+  };
+
+  const handleArchivarTournament = async (t: Tournament) => {
+    const archivar = t.active;
+    if (archivar && !confirm(`¿Archivar el torneo "${t.name}"?\n\nNo se borra nada: deja de aparecer en las pantallas de trabajo y en la portada pasa a \"Torneos ya jugados\". Se puede recuperar con "Ver archivados" y "Desarchivar".`)) return;
+    try {
+      await api.put(`/tournaments/${t.id}`, { name: t.name, year: t.year, description: t.description, active: !archivar, departamentoId: t.departamentoId ?? null });
+      const r = await api.get('/tournaments');
+      const lista = r.data as any[];
+      setTodosTorneos(lista);
+      if (archivar && !verArchivados) {
+        const sig = lista.find(x => x.active);
+        if (sig) loadTournament(sig.id); else setSelectedTournament(null);
+      } else {
+        loadTournament(t.id);
+      }
+    } catch (err: any) { alert(err?.response?.data?.error ?? 'No se pudo cambiar el estado del torneo'); }
   };
 
   const openEditCircuit = (circuit: Circuit) => {
@@ -222,7 +246,7 @@ export default function FixturePage() {
   };
 
   const handleDeleteCircuit = async (circuit: Circuit) => {
-    if (!confirm(`¿Eliminar el circuito "${circuit.name}"?`)) return;
+    if (!confirm(`¿Eliminar el circuito "${circuit.name}"?\n\nSe borran para siempre sus partidos, inscriptos y rankings. No se puede deshacer.`)) return;
     try { await api.delete(`/tournaments/circuits/${circuit.id}`); refreshSelected(); }
     catch (err: any) { alert(err?.response?.data?.error ?? 'Error al eliminar el circuito'); }
   };
@@ -458,12 +482,13 @@ export default function FixturePage() {
       </div>
 
       <div className="p-6 space-y-6">
-        {tournaments.length > 0 && (
+        {todosTorneos.length > 0 && (
           <div className="flex items-center gap-3 flex-wrap">
             <label className="text-chalk/50 text-xs uppercase tracking-widest">Torneo:</label>
             <select className="input w-auto" onChange={e => loadTournament(Number(e.target.value))} value={selectedTournament?.id ?? ''}>
-              {tournaments.map(t => <option key={t.id} value={t.id}>{t.name} ({t.year})</option>)}
+              {tournaments.map(t => <option key={t.id} value={t.id}>{t.name} ({t.year}){t.active ? '' : ' - archivado'}</option>)}
             </select>
+            <label className="flex items-center gap-2 text-chalk/60 text-xs cursor-pointer"><input type="checkbox" checked={verArchivados} onChange={e => setVerArchivados(e.target.checked)} className="w-4 h-4 accent-gold" />Ver archivados</label>
           </div>
         )}
 
@@ -480,9 +505,10 @@ export default function FixturePage() {
               </div>
               <div className="flex items-center gap-2 flex-wrap justify-end">
                 <span className={`badge-status ${selectedTournament.active ? 'bg-green-900/40 text-green-400' : 'bg-chalk/10 text-chalk/40'}`}>
-                  {selectedTournament.active ? 'Activo' : 'Finalizado'}
+                  {selectedTournament.active ? 'Activo' : 'Archivado'}
                 </span>
                 <button className="btn-secondary py-1 px-3 text-xs" onClick={() => openEditTournament(selectedTournament)}>Editar</button>
+                <button className="btn-secondary py-1 px-3 text-xs" onClick={() => handleArchivarTournament(selectedTournament)}>{selectedTournament.active ? 'Archivar' : 'Desarchivar'}</button>
                 <button className="py-1 px-3 text-xs rounded-lg border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-all" onClick={() => handleDeleteTournament(selectedTournament)}>Eliminar</button>
                 <button className="btn-primary py-1 px-3 text-xs" onClick={() => openAddCircuit(selectedTournament)}>+ Circuito</button>
               </div>
