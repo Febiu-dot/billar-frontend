@@ -57,7 +57,9 @@ export default function PortadaPage() {
   const embedUrl = /^UC[\w-]{22}$/.test(canalPrueba)
     ? `https://www.youtube.com/embed/live_stream?channel=${canalPrueba}&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`
     : txActual
-      ? `https://www.youtube.com/embed/live_stream?channel=${txActual.canal}&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`
+      ? (String(txActual.canal).startsWith('v:')
+          ? `https://www.youtube.com/embed/${String(txActual.canal).slice(2)}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`
+          : `https://www.youtube.com/embed/live_stream?channel=${txActual.canal}&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`)
       : YOUTUBE_EMBED_URL;
   const sedes = useMemo(() => {
     const mapa = new Map<number, { venueId: number; sede: string; mesas: any[] }>();

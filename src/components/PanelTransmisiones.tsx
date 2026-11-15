@@ -75,8 +75,8 @@ export default function PanelTransmisiones({ venueId }: { venueId?: number }) {
               </div>
               {editando === m.tableId && (
                 <div className="space-y-2">
-                  <label className="block text-xs uppercase tracking-widest text-chalk/50" htmlFor={`canal-${m.tableId}`}>Código del canal de YouTube (empieza con UC)</label>
-                  <input id={`canal-${m.tableId}`} className="input w-full min-h-[48px]" value={valor} onChange={e => setValor(e.target.value)} placeholder="UC..." autoCapitalize="off" autoCorrect="off" />
+                  <label className="block text-xs uppercase tracking-widest text-chalk/50" htmlFor={`canal-${m.tableId}`}>Código del canal (empieza con UC) o link de la transmisión en vivo</label>
+                  <input id={`canal-${m.tableId}`} className="input w-full min-h-[48px]" value={valor} onChange={e => setValor(e.target.value)} placeholder="UC... o https://youtube.com/live/..." autoCapitalize="off" autoCorrect="off" />
                   <div className="flex flex-wrap gap-2">
                     <button type="button" className="btn-primary min-h-[48px]" disabled={guardando === m.tableId} onClick={() => guardar(m.tableId, { canal: valor })}>Guardar</button>
                     {m.canal && <button type="button" className="btn-danger min-h-[48px]" disabled={guardando === m.tableId} onClick={() => guardar(m.tableId, { canal: '' })}>Quitar canal</button>}
