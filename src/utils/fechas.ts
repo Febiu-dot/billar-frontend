@@ -20,3 +20,15 @@ export const isoDesdeUY = (fecha: string, hora: string, minutos = '00'): string 
 /** Fechas "de calendario" (inicio/fin de circuito): se toma el dia calendario guardado, sin convertir zona. */
 export const diaCalendario = (iso?: string | null): string => (iso ? String(iso).slice(0, 10) : '');
 export const diaCalendarioFmt = (iso?: string | null): string => { const d = diaCalendario(iso); if (!d) return ''; const [y, m, dd] = d.split('-'); return `${dd}/${m}/${y}`; };
+
+/** Ultima fecha usada al asignar mesas (series y cruces): se recuerda para precargarla en la siguiente asignacion. */
+const CLAVE_ULTIMA_FECHA = 'febiu_ultima_fecha_asignada';
+let ultimaFechaMemoria = '';
+export const getUltimaFechaAsignada = (): string => {
+  try { return localStorage.getItem(CLAVE_ULTIMA_FECHA) || ultimaFechaMemoria; } catch { return ultimaFechaMemoria; }
+};
+export const setUltimaFechaAsignada = (fecha: string): void => {
+  if (!fecha) return;
+  ultimaFechaMemoria = fecha;
+  try { localStorage.setItem(CLAVE_ULTIMA_FECHA, fecha); } catch { /* sin almacenamiento: queda en memoria */ }
+};

@@ -1,4 +1,4 @@
-import { fechaUY, horaUY, isoDesdeUY } from '../utils/fechas';
+import { fechaUY, horaUY, isoDesdeUY, getUltimaFechaAsignada, setUltimaFechaAsignada } from '../utils/fechas';
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { LoadingSpinner, EmptyState, Modal } from '../components/ui';
@@ -98,7 +98,7 @@ export default function SeriesPage() {
     setForm({
       venueId: partido.table?.venue?.id?.toString() ?? '',
       tableId: partido.tableId?.toString() ?? '',
-      scheduledAt: fechaUY(partido.scheduledAt),
+      scheduledAt: fechaUY(partido.scheduledAt) || getUltimaFechaAsignada(),
       hora: hl.hora,
       minutos: hl.minutos || '00',
     });
@@ -118,6 +118,7 @@ export default function SeriesPage() {
         : undefined;
       if (form.tableId) await api.put(`/matches/${partido.id}/assign`, { tableId: parseInt(form.tableId) });
       if (scheduledAt) await api.put(`/matches/${partido.id}`, { scheduledAt });
+      if (scheduledAt) setUltimaFechaAsignada(form.scheduledAt);
       setAsignandoModal(null);
       await handleCircuitChange(selectedCircuit, true);
       if (proximoId) setTimeout(() => document.getElementById(`fila-${proximoId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
