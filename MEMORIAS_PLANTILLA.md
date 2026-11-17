@@ -24,3 +24,7 @@ El diseño de la entrega N.º 1 es la plantilla oficial. No se cambia entrega a 
 - Café Independencia: VERIFICADO (17/11/2026). Es la ficha CdF 0574FMHB.CDF.IMO.UY; el CdF libera su archivo histórico municipal (FMH) bajo CC0 1.0 (https://cdf.montevideo.gub.uy/articulo/el-archivo-historico-disponible-en-alta-resolucion). Epígrafe definitivo aplicado.
 - Libros de Varese (Planeta 2018, 2020, 2023, 2025) quedan como fuente para futuras entregas, citando libro, autor y edición.
 - Entrega N.º 1 sigue en borrador; /vista-previa sincronizada.
+
+## 17/11/2026 - Pendiente anulado
+- Se anula la gestión de permiso ante la IMM por la foto del Café Independencia: no hace falta, la foto está bajo CC0 1.0 (CdF, archivo 0574FMHB). Ver verificación más arriba.
+- Mapa de espacios para auspiciantes (artefacto de diseño) creado; la presentación de venta va después de su aprobación.
