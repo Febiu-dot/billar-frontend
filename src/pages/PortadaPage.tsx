@@ -123,6 +123,8 @@ export default function PortadaPage() {
       .finally(() => setRankingCargado(true));
   }, [torneoSel]);
 
+  const [docs, setDocs] = useState<{ id: number; titulo: string; descripcion: string | null; bytes: number; actualizado: string; version: string }[]>([]);
+  useEffect(() => { api.get('/documentos').then(r => setDocs(r.data ?? [])).catch(() => setDocs([])); }, []);
   useEffect(() => { api.get('/afiches').then(r => setAfiches(r.data ?? [])).catch(() => setAfiches([])); }, []);
   useEffect(() => { api.get('/portada/jugadores').then(r => setJugadores(r.data ?? [])).catch(() => setJugadores([])); }, []);
   const quitar = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -179,6 +181,7 @@ export default function PortadaPage() {
             <a href="#clubes" className={btnNav}>Clubes</a>
             {VIDEOS.length > 0 && <a href="#videos" className={btnNav}>Videos</a>}
             {NOTAS.length > 0 && <a href="#notas" className={btnNav}>Notas</a>}
+            {docs.length > 0 && <a href="#reglamento" className={btnNav}>Reglamento</a>}
             {publicadas().length > 0 && <a href="#memorias" className={btnNav}>Memorias</a>}
             <a href="#panamericano" className={btnNav}>Panamericano</a>
             <a href="#mundial" className={`${btnNav} !text-orange-light`}>Mundial 2027</a>
@@ -482,6 +485,33 @@ export default function PortadaPage() {
                 </div>
               </article>
             ))}
+          </div>
+        </section>
+      )}
+
+      {/* Reglamento y documentos oficiales (PDF): aparece solo cuando hay documentos cargados */}
+      {docs.length > 0 && (
+        <section id="reglamento" style={{ scrollMarginTop: 120 }} aria-labelledby="reglamento-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
+          <h2 id="reglamento-t" className={H2}>Reglamento</h2>
+          <p className="text-silver-dark -mt-2">Documentos oficiales de la Federación de Billar del Uruguay.</p>
+          <div className="flex flex-col gap-4">
+            {docs.map(d => {
+              const url = `${api.defaults.baseURL}/documentos/${d.id}/archivo?v=${d.version}`;
+              return (
+                <div key={d.id} className={`${card} p-5 flex flex-col md:flex-row md:items-center gap-4`}>
+                  <div className="text-5xl" aria-hidden>📄</div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-display font-bold text-2xl text-white leading-tight">{d.titulo}</h3>
+                    {d.descripcion && <p className="text-silver-light mt-1">{d.descripcion}</p>}
+                    <p className="text-silver-dark text-sm mt-1">PDF · {(d.bytes / 1024 / 1024).toFixed(1).replace('.', ',')} MB · actualizado el {d.actualizado.split('-').reverse().join('/')}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <a href={url} target="_blank" rel="noopener noreferrer" className="min-h-[48px] inline-flex items-center px-5 rounded-lg bg-orange text-carbon font-bold">Leer</a>
+                    <a href={`${url}&descargar=1`} className="min-h-[48px] inline-flex items-center px-5 rounded-lg border border-silver/40 text-white font-semibold hover:border-orange-light">Descargar PDF</a>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
