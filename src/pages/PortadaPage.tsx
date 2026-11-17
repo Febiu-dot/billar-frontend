@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
 import { LoadingSpinner } from '../components/ui';
-import { publicadas } from '../config/memorias';
+import { ENTREGAS, publicadas } from '../config/memorias';
 import { PANAMERICANO_2026 } from '../config/panamericano2026';
 import {
   YOUTUBE_EMBED_URL, CANAL_YOUTUBE_URL, CONTACTO, TRANSMISION_PRESENTADA_POR,
@@ -54,6 +54,15 @@ export default function PortadaPage() {
   // Modo prueba: /portada?canal=UCxxxxxxxxxxxxxxxxxxxxxx muestra el directo de ese canal.
   const [params] = useSearchParams();
   const canalPrueba = params.get('canal') ?? '';
+  // Vista previa (?borrador=1): muestra tambien las entregas de Memorias en borrador, solo para quien tiene el enlace
+  const vistaPrevia = params.get('borrador') === '1';
+  const qv = vistaPrevia ? '?borrador=1' : '';
+  const entregasVisibles = vistaPrevia ? [...ENTREGAS].sort((a, b) => b.numero - a.numero) : publicadas();
+  useEffect(() => {
+    if (!vistaPrevia) return;
+    const m = document.createElement('meta'); m.name = 'robots'; m.content = 'noindex'; document.head.appendChild(m);
+    return () => { m.remove(); };
+  }, [vistaPrevia]);
   const txActual = txs.find(x => x.tableId === txSel) ?? txs[0] ?? null;
   const embedUrl = /^UC[\w-]{22}$/.test(canalPrueba)
     ? `https://www.youtube.com/embed/live_stream?channel=${canalPrueba}&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`
@@ -166,6 +175,7 @@ export default function PortadaPage() {
   return (
     <div className="min-h-screen bg-carbon text-silver-light font-body">
       {/* Encabezado */}
+      {vistaPrevia && <div className="bg-orange text-carbon text-center font-bold py-2 px-4 text-sm">VISTA PREVIA · Así se ve la portada con las entregas en borrador. Solo la ves vos con este enlace.</div>}
       <header className="sticky top-0 z-40 bg-carbon/95 backdrop-blur border-b border-silver/15">
         <div className="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <Link to="/portada" className="flex items-center gap-3 min-w-0">
@@ -182,7 +192,7 @@ export default function PortadaPage() {
             {VIDEOS.length > 0 && <a href="#videos" className={btnNav}>Videos</a>}
             {NOTAS.length > 0 && <a href="#notas" className={btnNav}>Notas</a>}
             {docs.length > 0 && <a href="#reglamento" className={btnNav}>Reglamento</a>}
-            {publicadas().length > 0 && <a href="#memorias" className={btnNav}>Memorias</a>}
+            {entregasVisibles.length > 0 && <a href="#memorias" className={btnNav}>Memorias</a>}
             <a href="#panamericano" className={btnNav}>Panamericano</a>
             <a href="#mundial" className={`${btnNav} !text-orange-light`}>Mundial 2027</a>
           </nav>
@@ -517,8 +527,8 @@ export default function PortadaPage() {
       )}
 
       {/* Memorias del Billar Uruguayo: aparece sola cuando hay una entrega publicada */}
-      {publicadas().length > 0 && (() => {
-        const e = publicadas()[0];
+      {entregasVisibles.length > 0 && (() => {
+        const e = entregasVisibles[0];
         return (
           <section id="memorias" style={{ scrollMarginTop: 120 }} aria-labelledby="memorias-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
             <div className="flex flex-wrap items-end justify-between gap-3">
@@ -526,12 +536,12 @@ export default function PortadaPage() {
                 <p className="text-xs font-bold tracking-[.19em] uppercase text-orange-light">Archivo histórico</p>
                 <h2 id="memorias-t" className={H2}>Memorias del Billar Uruguayo</h2>
               </div>
-              <Link to="/portada/memorias" className="min-h-[44px] inline-flex items-center font-semibold text-orange-light">Ver todas las entregas</Link>
+              <Link to={`/portada/memorias${qv}`} className="min-h-[44px] inline-flex items-center font-semibold text-orange-light">Ver todas las entregas</Link>
             </div>
-            <Link to={`/portada/memorias/${e.numero}`} className={`${card} overflow-hidden flex flex-col md:flex-row hover:border-orange-light/60`}>
+            <Link to={`/portada/memorias/${e.numero}${qv}`} className={`${card} overflow-hidden flex flex-col md:flex-row hover:border-orange-light/60`}>
               <img src={e.portada} alt={e.portadaAlt} loading="lazy" className="w-full md:w-1/2 h-56 md:h-auto object-cover" />
               <div className="p-6 flex flex-col gap-2 justify-center">
-                <span className="text-xs font-bold tracking-[.19em] uppercase text-orange-light">Entrega n.º {e.numero}</span>
+                <span className="text-xs font-bold tracking-[.19em] uppercase text-orange-light">Entrega n.º {e.numero}{e.estado !== 'publicado' ? ' · BORRADOR' : ''}</span>
                 <h3 className="font-display font-bold text-3xl text-white leading-tight">{e.titulo}</h3>
                 <p className="text-silver-light">{e.resumen}</p>
                 <span className="min-h-[44px] inline-flex items-center font-semibold text-orange-light">Leer la entrega →</span>

@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-11-17-reglamento-documentos
+// PUBLIC_BUILD = pub-public-2026-11-17-portada-vista-previa
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
