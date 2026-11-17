@@ -9,6 +9,15 @@ const fmtFecha = (f: string | null) => {
   return `${d} de ${meses[m - 1]} de ${y}`;
 };
 
+// Modo vista previa (?borrador=1): muestra tambien los borradores y conserva el modo al navegar
+function useVista() {
+  const [sp] = useSearchParams();
+  const vista = sp.get('borrador') === '1';
+  const q = vista ? '?borrador=1' : '';
+  const lista = vista ? [...ENTREGAS].sort((a, b) => b.numero - a.numero) : publicadas();
+  return { vista, q, lista };
+}
+
 // *cursiva* y **negrita**
 function Texto({ s }: { s: string }) {
   const partes = s.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g).filter(Boolean);
@@ -19,6 +28,7 @@ function Texto({ s }: { s: string }) {
 }
 
 function Marco({ children }: { children: React.ReactNode }) {
+  const { q } = useVista();
   return (
     <div className="min-h-screen bg-carbon text-silver-light font-body">
       <header className="sticky top-0 z-40 bg-carbon/95 backdrop-blur border-b border-silver/15">
@@ -29,7 +39,7 @@ function Marco({ children }: { children: React.ReactNode }) {
           </Link>
           <nav aria-label="Principal" className="flex gap-1">
             <Link to="/portada" className="min-h-[44px] inline-flex items-center px-3 rounded-lg font-semibold text-sm text-silver-light hover:text-orange-light">Portada</Link>
-            <Link to="/portada/memorias" className="min-h-[44px] inline-flex items-center px-3 rounded-lg font-semibold text-sm text-orange-light">Memorias</Link>
+            <Link to={`/portada/memorias${q}`} className="min-h-[44px] inline-flex items-center px-3 rounded-lg font-semibold text-sm text-orange-light">Memorias</Link>
           </nav>
         </div>
       </header>
@@ -43,8 +53,14 @@ function Marco({ children }: { children: React.ReactNode }) {
 }
 
 function Indice() {
-  const lista = publicadas();
-  useEffect(() => { document.title = 'Memorias del Billar Uruguayo — FEBIU'; }, []);
+  const { vista, q, lista } = useVista();
+  useEffect(() => {
+    document.title = 'Memorias del Billar Uruguayo — FEBIU';
+    if (vista) {
+      const m = document.createElement('meta'); m.name = 'robots'; m.content = 'noindex'; document.head.appendChild(m);
+      return () => { m.remove(); };
+    }
+  }, [vista]);
   return (
     <Marco>
       <main className="max-w-5xl mx-auto px-4 py-10 flex flex-col gap-8">
@@ -61,10 +77,10 @@ function Indice() {
           <ol className="flex flex-col gap-4">
             {lista.map(e => (
               <li key={e.numero}>
-                <Link to={`/portada/memorias/${e.numero}`} className="group flex flex-col sm:flex-row gap-4 bg-carbon-100 border border-silver/15 rounded-2xl overflow-hidden hover:border-orange-light/60">
+                <Link to={`/portada/memorias/${e.numero}${q}`} className="group flex flex-col sm:flex-row gap-4 bg-carbon-100 border border-silver/15 rounded-2xl overflow-hidden hover:border-orange-light/60">
                   <img src={e.portada} alt={e.portadaAlt} loading="lazy" className="w-full sm:w-64 h-48 sm:h-auto object-cover" />
                   <div className="p-5 flex flex-col gap-2">
-                    <span className="text-xs font-bold tracking-[.19em] uppercase text-orange-light">Entrega n.º {e.numero}{e.fecha ? ` · ${fmtFecha(e.fecha)}` : ''}</span>
+                    <span className="text-xs font-bold tracking-[.19em] uppercase text-orange-light">Entrega n.º {e.numero}{e.fecha ? ` · ${fmtFecha(e.fecha)}` : ''}{e.estado !== 'publicado' ? ' · BORRADOR' : ''}</span>
                     <h2 className="font-display font-bold text-2xl md:text-3xl text-white leading-tight group-hover:text-orange-light">{e.titulo}</h2>
                     <p className="text-silver-light">{e.resumen}</p>
                   </div>
@@ -94,7 +110,7 @@ function Pieza({ b }: { b: Bloque }) {
 }
 
 function Articulo({ e, vistaPrevia }: { e: Entrega; vistaPrevia: boolean }) {
-  const lista = publicadas();
+  const { q, lista } = useVista();
   const i = lista.findIndex(x => x.numero === e.numero);
   const anterior = i >= 0 ? lista[i + 1] : undefined;
   const siguiente = i > 0 ? lista[i - 1] : undefined;
@@ -136,9 +152,9 @@ function Articulo({ e, vistaPrevia }: { e: Entrega; vistaPrevia: boolean }) {
           </div>
         </article>
         <nav aria-label="Entregas" className="flex flex-wrap justify-between gap-3 mt-6">
-          {anterior ? <Link to={`/portada/memorias/${anterior.numero}`} className="min-h-[48px] inline-flex items-center px-5 rounded-lg border border-silver/40 text-white font-semibold hover:border-orange-light">← N.º {anterior.numero}: {anterior.titulo}</Link> : <span />}
-          <Link to="/portada/memorias" className="min-h-[48px] inline-flex items-center px-5 rounded-lg border border-silver/40 text-white font-semibold hover:border-orange-light">Todas las entregas</Link>
-          {siguiente ? <Link to={`/portada/memorias/${siguiente.numero}`} className="min-h-[48px] inline-flex items-center px-5 rounded-lg border border-silver/40 text-white font-semibold hover:border-orange-light">N.º {siguiente.numero}: {siguiente.titulo} →</Link> : <span />}
+          {anterior ? <Link to={`/portada/memorias/${anterior.numero}${q}`} className="min-h-[48px] inline-flex items-center px-5 rounded-lg border border-silver/40 text-white font-semibold hover:border-orange-light">← N.º {anterior.numero}: {anterior.titulo}</Link> : <span />}
+          <Link to={`/portada/memorias${q}`} className="min-h-[48px] inline-flex items-center px-5 rounded-lg border border-silver/40 text-white font-semibold hover:border-orange-light">Todas las entregas</Link>
+          {siguiente ? <Link to={`/portada/memorias/${siguiente.numero}${q}`} className="min-h-[48px] inline-flex items-center px-5 rounded-lg border border-silver/40 text-white font-semibold hover:border-orange-light">N.º {siguiente.numero}: {siguiente.titulo} →</Link> : <span />}
         </nav>
       </main>
     </Marco>
@@ -156,7 +172,7 @@ export default function MemoriasPage() {
       <Marco>
         <main className="max-w-3xl mx-auto px-4 py-16 text-center flex flex-col gap-4 items-center">
           <h1 className="font-display font-extrabold uppercase text-white text-3xl">Esta entrega todavía no está disponible</h1>
-          <Link to="/portada/memorias" className="min-h-[48px] inline-flex items-center px-5 rounded-lg border border-silver/40 text-white font-semibold hover:border-orange-light">Ver todas las entregas</Link>
+          <Link to={`/portada/memorias`} className="min-h-[48px] inline-flex items-center px-5 rounded-lg border border-silver/40 text-white font-semibold hover:border-orange-light">Ver todas las entregas</Link>
         </main>
       </Marco>
     );
