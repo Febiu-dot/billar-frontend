@@ -4,6 +4,7 @@ import { api } from '../services/api';
 import { socket } from '../services/socket';
 import { LoadingSpinner } from '../components/ui';
 import { ENTREGAS, publicadas } from '../config/memorias';
+import { NOTAS as NOTAS_WEB, publicadasNotas } from '../config/notas';
 import { PANAMERICANO_2026 } from '../config/panamericano2026';
 import {
   YOUTUBE_EMBED_URL, CANAL_YOUTUBE_URL, CONTACTO, TRANSMISION_PRESENTADA_POR,
@@ -57,6 +58,7 @@ export default function PortadaPage() {
   // Vista previa (?borrador=1): muestra tambien las entregas de Memorias en borrador, solo para quien tiene el enlace
   const vistaPrevia = params.get('borrador') === '1';
   const qv = vistaPrevia ? '?borrador=1' : '';
+  const notasWeb = vistaPrevia ? [...NOTAS_WEB] : publicadasNotas();
   const entregasVisibles = vistaPrevia ? [...ENTREGAS].sort((a, b) => b.numero - a.numero) : publicadas();
   useEffect(() => {
     if (!vistaPrevia) return;
@@ -190,7 +192,7 @@ export default function PortadaPage() {
             <a href="#clubes" className={btnNav} onClick={() => setTimeout(() => document.getElementById('buscar-jugador')?.focus({ preventScroll: true }), 400)}>Jugadores</a>
             <a href="#clubes" className={btnNav}>Clubes</a>
             {VIDEOS.length > 0 && <a href="#videos" className={btnNav}>Videos</a>}
-            {NOTAS.length > 0 && <a href="#notas" className={btnNav}>Notas</a>}
+            {(NOTAS.length > 0 || notasWeb.length > 0) && <a href="#notas" className={btnNav}>Notas</a>}
             {docs.length > 0 && <a href="#reglamento" className={btnNav}>Reglamento</a>}
             {entregasVisibles.length > 0 && <a href="#memorias" className={btnNav}>Memorias</a>}
             <a href="#panamericano" className={btnNav}>Panamericano</a>
@@ -480,10 +482,22 @@ export default function PortadaPage() {
       )}
 
       {/* Notas */}
-      {NOTAS.length > 0 && (
+      {(NOTAS.length > 0 || notasWeb.length > 0) && (
         <section id="notas" style={{ scrollMarginTop: 120 }} aria-labelledby="notas-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
           <h2 id="notas-t" className={H2}>Notas y entrevistas</h2>
           <div className="flex flex-wrap gap-5">
+            {notasWeb.map(n => (
+              <Link key={n.slug} to={`/portada/notas/${n.slug}${qv}`} className={`${card} flex-1 basis-[300px] min-w-0 overflow-hidden hover:border-orange-light/60`}>
+                <img src={n.imagen} alt={n.imagenAlt} loading="lazy" className="w-full h-44 object-cover" />
+                <div className="p-5 flex flex-col gap-2">
+                  <span className="text-xs font-semibold tracking-widest uppercase text-orange-light">{n.tipo}{n.estado !== 'publicado' ? ' · BORRADOR' : ''}</span>
+                  <h3 className="font-display font-bold text-2xl text-white leading-tight">{n.titulo}</h3>
+                  <p className="text-silver">{n.resumen}</p>
+                  <span className="text-sm text-silver-dark">{[n.fecha ? n.fecha.split('-').reverse().join('/') : '', n.autor].filter(Boolean).join(' · ')}</span>
+                  <span className="min-h-[44px] inline-flex items-center font-semibold text-orange-light">Leer la nota completa →</span>
+                </div>
+              </Link>
+            ))}
             {NOTAS.map(n => (
               <article key={n.titulo} className={`${card} flex-1 basis-[300px] min-w-0 overflow-hidden`}>
                 {n.imagen && <img src={n.imagen} alt="" className="w-full h-44 object-cover" />}

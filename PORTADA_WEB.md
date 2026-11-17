@@ -108,3 +108,9 @@ Sitio público de la Federación de Billar del Uruguay, construido sobre el mism
 - 15/11: dominio propio febiu.org comprado (Vercel, renovación automática, vence nov 2027) y conectado al proyecto billar-frontend; dirección principal https://www.febiu.org (febiu.org redirige). La dirección anterior billar-frontend-blue.vercel.app sigue funcionando (no se redirige para no romper la app instalada). Datos para compartir (WhatsApp/Facebook) apuntan a www.febiu.org. Plan Vercel Pro: 20 USD/mes (cobro el día 15).
 - 15/11: factura de Vercel Pro (20 USD) y dominio febiu.org (9,99 USD) pagadas. Pro cubre uso comercial (auspiciantes). Próximo cobro: 15/12.
 - 15/11: afiche de Artigas cargado y corregido (tilde); botón Editar lleva el formulario a la vista; corregido error al listar afiches; jugadores sin club fuera de la web; título del video histórico.
+
+## 17/11/2026 - Notas y entrevistas (nota Diego Capote)
+- Datos en src/config/notas.ts (separado de Memorias). Páginas: /portada/notas y /portada/notas/<slug>. Borrador visible con ?borrador=1 (también en /portada?borrador=1, con etiqueta BORRADOR).
+- Nota "diego-capote": borrador, fotos en public/notas/diego-capote/. FALTA pegar el texto aprobado (cada apartado dice [TEXTO PENDIENTE]).
+- Entrevista exclusiva futura (video): agregar otra entrada con tipo Entrevista y bloque { t: video, youtubeId }.
+- Etiquetas para compartir: scripts/notas-html.mjs (se ejecuta en el build).

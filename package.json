@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/portada-html.mjs && node scripts/memorias-html.mjs",
+    "build": "vite build && node scripts/portada-html.mjs && node scripts/memorias-html.mjs && node scripts/notas-html.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -11,6 +11,7 @@ import PublicPage from './pages/PublicPage';
 import AdminAfichesPage from './pages/AdminAfichesPage';
 import AdminDocumentosPage from './pages/AdminDocumentosPage';
 import MemoriasPage from './pages/MemoriasPage';
+import NotasPage from './pages/NotasPage';
 import PortadaPage from './pages/PortadaPage';
 import FixturePage from './pages/FixturePage';
 import BotonInstalar from './components/BotonInstalar';
@@ -44,6 +45,8 @@ function AppRoutes() {
       <Route path="/portada"       element={<PortadaPage />} />
       <Route path="/portada/memorias"          element={<MemoriasPage />} />
       <Route path="/portada/memorias/:numero"  element={<MemoriasPage />} />
+      <Route path="/portada/notas"             element={<NotasPage />} />
+      <Route path="/portada/notas/:slug"      element={<NotasPage />} />
       <Route path="/fixture"       element={<FixturePage />} />
       <Route path="/ranking"       element={<RankingPage />} />
       <Route path="/ranking-final" element={<RankingFinalPage />} />
