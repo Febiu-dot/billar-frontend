@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-11-16-ultima-fecha-asignacion
+// PUBLIC_BUILD = pub-public-2026-11-17-memorias-creditos
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
