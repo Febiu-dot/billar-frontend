@@ -36,7 +36,7 @@ export interface Entrega {
 export const ENTREGAS: Entrega[] = [
   {
     numero: 1,
-    estado: 'borrador', // pendiente: creditos y permisos de las fotografias
+    estado: 'borrador', // creditos de las imagenes resueltos el 17/11/2026; publicar solo con autorizacion expresa de Capo
     fecha: null,
     titulo: 'Los orígenes del billar en Uruguay',
     bajada: 'De los antiguos cafés montevideanos a los primeros pasos de la organización deportiva.',
@@ -45,7 +45,7 @@ export const ENTREGAS: Entrega[] = [
     portadaAlt: 'Fachada histórica del Café Independencia, con la palabra Billares en el vidrio',
     cuerpo: [
       { t: 'fig', src: '/memorias/01/cafe-independencia.jpg', alt: 'Fachada histórica del Café Independencia, con la palabra Billares en el vidrio',
-        pie: '**Café Independencia, Montevideo.** En la fachada puede leerse «BILLARES», testimonio visual del vínculo entre los cafés y la práctica del juego. Procedencia documental: Centro de Fotografía de Montevideo (CdF). Atribución pendiente de confirmación.' },
+        pie: '**Café Independencia, Plaza Independencia, Montevideo, década de 1920 (aprox.). Fotografía de autores municipales. Centro de Fotografía de Montevideo – Intendencia de Montevideo. Archivo N.º 0574FMHB.CDF.IMO.UY.**' },
       { t: 'p', inicial: true, texto: 'Mucho antes de los campeonatos nacionales y de las grandes actuaciones internacionales, el billar ya tenía un lugar en la vida social montevideana. Los cafés reunían a vecinos, viajeros y aficionados alrededor de sus mesas, en espacios donde el entretenimiento convivía con la conversación y el intercambio de noticias.' },
       { t: 'h2', texto: 'Una pista documental de 1841' },
       { t: 'p', texto: 'El historiador Juan Antonio Varese, al estudiar los antiguos cafés de Montevideo, recuperó anuncios de prensa que permiten rastrear la presencia del billar en la primera mitad del siglo XIX. En *El Nacional* del 14 de abril de 1841 figura el aviso de un establecimiento de «Billar y Café» en la calle San Luis, número 57, a cargo del señor Bernard.' },
@@ -71,7 +71,8 @@ export const ENTREGAS: Entrega[] = [
         enlace: { url: 'https://raicesuruguay.com/raices/varese05.html', etiqueta: 'Consultar investigación' } },
       { texto: '**Revista Ahora.** Reportaje sobre el billar uruguayo, 8 de octubre de 1972. Documento histórico utilizado para las referencias al Café Vaccaro y a la Federación de 1936.',
         enlace: { url: 'https://sitiosdememoria.uy/sites/default/files/2025-07/10/ahora.-revista-de-los-domingos_n16_f8-10-1972.pdf', etiqueta: 'Consultar facsímil' } },
-      { texto: '**Imágenes:** la obra del Café Vaccaro se reproduce con autorización de Juan Antonio Varese, con mención del pintor Álvaro Saralegui Rosé. La fotografía del Café Independencia procede del Centro de Fotografía de Montevideo; su atribución y condiciones de reproducción están pendientes de verificación.' },
+      { texto: '**Imágenes:** la fotografía del Café Independencia pertenece al archivo histórico del Centro de Fotografía de Montevideo (Intendencia de Montevideo), liberado bajo licencia CC0 1.0 Universal. La obra del Café Vaccaro, del pintor Álvaro Saralegui Rosé, se reproduce con autorización de Juan Antonio Varese.',
+        enlace: { url: 'https://cdf.montevideo.gub.uy/fotografias/bares-y-almacenes', etiqueta: 'Ver ficha en el CdF' } },
     ],
     compartir: {
       descripcion: 'Un recorrido por los antiguos cafés montevideanos, los primeros jugadores y los antecedentes de la organización federativa del billar uruguayo.',
@@ -79,11 +80,10 @@ export const ENTREGAS: Entrega[] = [
       imagenAutorizada: false, // pasar a true cuando se confirme el permiso de reproduccion; mientras tanto se comparte el logo de FEBIU
     },
     registroInterno: [
-      'Café Independencia (cafe-independencia.jpg): fotografía localizada durante la investigación histórica y guardada en el material del proyecto. Procedencia documental: Centro de Fotografía de Montevideo (CdF). Atribución, fecha y autorización de reproducción PENDIENTES de confirmar. No publicar como confirmada.',
+      'Café Independencia (cafe-independencia.jpg): VERIFICADO el 17/11/2026. Es la misma fotografía de la ficha del Centro de Fotografía de Montevideo, archivo 0574FMHB.CDF.IMO.UY (Café Independencia, Plaza Independencia, década de 1920 aprox.; autoría: fotógrafos municipales). Ficha: https://cdf.montevideo.gub.uy/fotografias/bares-y-almacenes . Condiciones: el CdF libera su archivo histórico municipal (FMH) bajo licencia CC0 1.0 Universal (https://cdf.montevideo.gub.uy/articulo/el-archivo-historico-disponible-en-alta-resolucion). Nota del CdF: las fotos ingresadas por donación de particulares se rigen por otro reglamento; esta es del fondo municipal (código FMH). Mantener el crédito del epígrafe.',
       'Café Vaccaro (cafe-vaccaro.jpg): NO es una fotografía; es una obra del pintor Álvaro Saralegui Rosé, localizada en la revista Raíces. Juan Antonio Varese autorizó por correo electrónico su uso en la web institucional de FEBIU, con la condición de mencionar su nombre y el del pintor (17/11/2026). Autorización resuelta; conservar el correo.',
-      'Café Independencia: posible ficha del Centro de Fotografía de Montevideo, archivo 0574FMHB.CDF.IMO.UY (década de 1920 aprox., fotógrafos municipales). Referencia: https://cdf.montevideo.gub.uy/fotografias/bares-y-almacenes . El CdF informa que su archivo histórico dispone de imágenes bajo licencia CC0 1.0. PENDIENTE: comprobar que la foto del artículo es exactamente esa ficha y que la CC0 aplica a ella (no se pudo abrir el sitio del CdF). Hasta entonces no usar el epígrafe definitivo ni presentar los derechos como resueltos.',
       'Fuente documental disponible para futuras entregas: Juan Antonio Varese ofreció textos y dibujos de sus libros, citando libro, autor y edición: Personajes y tertulias en cafés y bares de Montevideo (Planeta, 2018); Crónicas del tiempo libre (Planeta, 2020); Cafés montevideanos con historias (Planeta, 2023); Cafés & cafeterías (Planeta, 2025). Los de 2018 y 2023 tienen referencias útiles a billares y cafés antiguos. Comprobar en cada uso que esté comprendido en su autorización. No se incorporó nada a la entrega N.º 1.',
-      'Mientras no se confirmen los permisos, la entrega se mantiene en borrador y la imagen para compartir en redes es el logo de FEBIU (compartir.imagenAutorizada = false).',
+      'La entrega sigue en borrador hasta autorización expresa. La imagen para compartir en redes se mantiene como está (logo de FEBIU, compartir.imagenAutorizada = false): no se tocó la configuración de WhatsApp/Facebook.',
     ],
     proxima: 'Los grandes maestros de los antiguos cafés: protagonistas y recuerdos de los primeros años del billar uruguayo.',
   },

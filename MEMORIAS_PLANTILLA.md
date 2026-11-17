@@ -21,6 +21,6 @@ El diseño de la entrega N.º 1 es la plantilla oficial. No se cambia entrega a 
 
 ## 17/11/2026 - Créditos Memorias N.º 1
 - Café Vaccaro: es una obra del pintor Álvaro Saralegui Rosé (no una fotografía); uso autorizado por correo por Juan Antonio Varese, con mención de su nombre y del pintor. Resuelto.
-- Café Independencia: posible ficha CdF 0574FMHB.CDF.IMO.UY (CC0 1.0 según el CdF). PENDIENTE verificar que sea la misma foto y que la licencia aplique; epígrafe definitivo NO aplicado.
+- Café Independencia: VERIFICADO (17/11/2026). Es la ficha CdF 0574FMHB.CDF.IMO.UY; el CdF libera su archivo histórico municipal (FMH) bajo CC0 1.0 (https://cdf.montevideo.gub.uy/articulo/el-archivo-historico-disponible-en-alta-resolucion). Epígrafe definitivo aplicado.
 - Libros de Varese (Planeta 2018, 2020, 2023, 2025) quedan como fuente para futuras entregas, citando libro, autor y edición.
 - Entrega N.º 1 sigue en borrador; /vista-previa sincronizada.
