@@ -97,6 +97,7 @@ export default function ConfigTorneoPage() {
   const [configDep, setConfigDep]               = useState<ConfigDepartamental>({ tipo: 'departamental', cantMaster: 8, cantPrimera: 24, cantSegunda: 32, cuposDesdeClasif: 16 });
   const [categoriaFederal, setCategoriaFederal] = useState<'primera' | 'segunda' | 'tercera'>('primera');
   const [formatoNac, setFormatoNac]             = useState<'32' | '16'>('32');
+  const [nac2027, setNac2027]                   = useState(false); // formato nuevo de los circuitos nacionales 2026-27
   const [totalInscriptos, setTotalInscriptos]   = useState(0);
   const [loading, setLoading]                   = useState(true);
   const [saving, setSaving]                     = useState(false);
@@ -125,11 +126,16 @@ export default function ConfigTorneoPage() {
     ]).then(([cfgRes, circRes]) => {
       const cfg = cfgRes.data;
       if (cfg.tipo === 'nacional' || cfg.tipo === 'panamericano') {
+        setNac2027(false);
         setTipoConfig(cfg.tipo);
         setCategoriaFederal(cfg.categoriaFederal ?? 'primera');
         setFormatoNac(cfg.formato === '16' ? '16' : '32');
+      } else if (cfg.esquema === 'nacional-2027') {
+        setTipoConfig('departamental');
+        setNac2027(true);
       } else {
         setTipoConfig('departamental');
+        setNac2027(false);
         setConfigDep({ tipo: 'departamental', cantMaster: cfg.cantMaster ?? 8, cantPrimera: cfg.cantPrimera ?? 24, cantSegunda: cfg.cantSegunda ?? 32, cuposDesdeClasif: cfg.cuposDesdeClasif ?? 16 });
       }
       const jugadores = (circRes.data.players ?? []).filter((cp: any) => cp.player?.dni !== 'FEBIU000');
@@ -152,7 +158,9 @@ export default function ConfigTorneoPage() {
     if (!circuitId) return;
     setSaving(true); setError(''); setSaved(false);
     try {
-      const payload = esFormatoNac
+      const payload = nac2027
+        ? { esquema: 'nacional-2027' }
+        : esFormatoNac
         ? { tipo: tipoConfig, categoriaFederal, formato: formatoNac }
         : { ...configDep, tipo: 'departamental' };
       await api.put(`/circuits/${circuitId}/config-torneo`, payload);
@@ -163,7 +171,7 @@ export default function ConfigTorneoPage() {
     } finally { setSaving(false); }
   };
 
-  const canSave = esFormatoNac ? true : val.ok;
+  const canSave = (esFormatoNac || nac2027) ? true : val.ok;
 
   if (loading) return <LoadingSpinner />;
 
@@ -190,21 +198,26 @@ export default function ConfigTorneoPage() {
         {/* Tipo de torneo */}
         <div className="card space-y-3">
           <h2 className="font-display text-lg text-silver-light">Tipo de torneo</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <button onClick={() => { setTipoConfig('departamental'); setSaved(false); }}
-              className={`py-3 px-4 rounded-lg border transition-all text-sm font-semibold ${tipoConfig === 'departamental' ? 'border-orange/50 bg-orange/10 text-orange' : 'border-silver-muted/20 text-silver-light/50 hover:border-silver/30'}`}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <button onClick={() => { setTipoConfig('departamental'); setNac2027(false); setSaved(false); }}
+              className={`py-3 px-4 rounded-lg border transition-all text-sm font-semibold ${tipoConfig === 'departamental' && !nac2027 ? 'border-orange/50 bg-orange/10 text-orange' : 'border-silver-muted/20 text-silver-light/50 hover:border-silver/30'}`}>
               🏠 Departamental
               <p className="text-xs font-normal mt-1 opacity-70">Clasificatorio → Segunda → Primera → Máster</p>
             </button>
-            <button onClick={() => { setTipoConfig('nacional'); setSaved(false); }}
+            <button onClick={() => { setTipoConfig('nacional'); setNac2027(false); setSaved(false); }}
               className={`py-3 px-4 rounded-lg border transition-all text-sm font-semibold ${tipoConfig === 'nacional' ? 'border-blue-500/50 bg-blue-900/20 text-blue-400' : 'border-silver-muted/20 text-silver-light/50 hover:border-silver/30'}`}>
               🏆 Nacional
               <p className="text-xs font-normal mt-1 opacity-70">Series + bracket eliminación directa</p>
             </button>
-            <button onClick={() => { setTipoConfig('panamericano'); setSaved(false); }}
+            <button onClick={() => { setTipoConfig('panamericano'); setNac2027(false); setSaved(false); }}
               className={`py-3 px-4 rounded-lg border transition-all text-sm font-semibold ${tipoConfig === 'panamericano' ? 'border-emerald-500/50 bg-emerald-900/20 text-emerald-400' : 'border-silver-muted/20 text-silver-light/50 hover:border-silver/30'}`}>
               🌎 Panamericano
               <p className="text-xs font-normal mt-1 opacity-70">Regional — mismo formato que el Nacional</p>
+            </button>
+            <button onClick={() => { setTipoConfig('departamental'); setNac2027(true); setSaved(false); }}
+              className={`py-3 px-4 rounded-lg border transition-all text-sm font-semibold ${nac2027 ? 'border-yellow-500/50 bg-yellow-900/20 text-yellow-300' : 'border-silver-muted/20 text-silver-light/50 hover:border-silver/30'}`}>
+              🇺🇾 Circuito Nacional 2026-27
+              <p className="text-xs font-normal mt-1 opacity-70">Nuevo formato: series, reducción, cruces a 64, Primera y Máster Nacional</p>
             </button>
           </div>
         </div>
@@ -301,7 +314,22 @@ export default function ConfigTorneoPage() {
         )}
 
         {/* ─── DEPARTAMENTAL ────────────────────────────────────────── */}
-        {tipoConfig === 'departamental' && (
+        {nac2027 && (
+          <div className="card space-y-3">
+            <h2 className="font-display text-lg text-silver-light">Circuito Nacional 2026-27</h2>
+            <ul className="text-sm text-silver-light/70 space-y-1 list-disc pl-5">
+              <li><b>Puestos 1 al 16</b> (ranking inicial): Máster Nacional, esperan al cuadro final de 32.</li>
+              <li><b>Puestos 17 al 32</b>: Primera Nacional, esperan al cruce con los 16 sobrevivientes.</li>
+              <li><b>Del 33 en adelante</b>: series de 4 (doble eliminación); pasan el 1º y el 2º de cada serie.</li>
+              <li>Reducción de 68 a 64 en espejo, cruces 64→32 y 32→16 a 3 sets.</li>
+              <li>Desde el cruce con Primera Nacional hasta la final se juega a 5 sets.</li>
+              <li>Puntos: series 8/6/4/2 · cruces 5 y 1 · final 7 y 2 · reducción 0.</li>
+            </ul>
+            <p className="text-silver-light/40 text-xs font-mono">{totalInscriptos} jugadores inscriptos en este circuito. Hace falta cargar el ranking inicial antes de generar los partidos.</p>
+          </div>
+        )}
+
+        {tipoConfig === 'departamental' && !nac2027 && (
           <>
             <div className="card space-y-3">
               <h2 className="font-display text-lg text-silver-light">Plantillas predefinidas</h2>
@@ -386,7 +414,7 @@ export default function ConfigTorneoPage() {
           <button className="btn-primary px-10" disabled={saving || !canSave || !circuitId} onClick={handleSave}>
             {saving ? 'Guardando...' : saved ? '✅ Guardado' : '💾 Guardar configuración'}
           </button>
-          {tipoConfig === 'departamental' && !val.ok && <p className="text-silver-light/40 text-sm">Corregí los errores antes de guardar</p>}
+          {tipoConfig === 'departamental' && !nac2027 && !val.ok && <p className="text-silver-light/40 text-sm">Corregí los errores antes de guardar</p>}
           {saved && <p className="text-green-400 text-sm">La configuración se aplicará al generar los partidos</p>}
         </div>
 
