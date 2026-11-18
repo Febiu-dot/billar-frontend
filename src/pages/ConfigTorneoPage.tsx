@@ -154,6 +154,26 @@ export default function ConfigTorneoPage() {
   const clasificanNac = es16 ? 8 : 16;
   const partidosBracketNac = es16 ? 7 : 15;
 
+  const [creando, setCreando] = useState(false);
+  const crearCircuitoNuevo = async () => {
+    const existente = circuitos.find((c: any) => c.torneoNombre === 'CIRCUITOS FEBIU 2026-27');
+    const mensaje = existente
+      ? 'Ya existe el torneo "CIRCUITOS FEBIU 2026-27". ¿Agregar el siguiente circuito con el formato nuevo?'
+      : '¿Crear el torneo "CIRCUITOS FEBIU 2026-27" con el Circuito 1 del formato nuevo (con sus 4 fases ya configuradas)?';
+    if (!window.confirm(mensaje)) return;
+    setCreando(true); setError('');
+    try {
+      const r = await api.post('/tournaments/nacional-2027', existente ? { tournamentId: existente.tournamentId ?? existente.torneoId } : {});
+      const t = await api.get('/tournaments');
+      const todos = t.data.flatMap((x: any) => (x.circuits ?? []).map((c: any) => ({ ...c, torneoNombre: x.name, torneoYear: x.year, tournamentId: x.id })));
+      setCircuitos(todos);
+      setCircuitId(String(r.data.circuitId));
+      setNac2027(true); setTipoConfig('departamental');
+    } catch (e: any) {
+      setError(e?.response?.data?.error ?? 'No se pudo crear el circuito');
+    } finally { setCreando(false); }
+  };
+
   const handleSave = async () => {
     if (!circuitId) return;
     setSaving(true); setError(''); setSaved(false);
@@ -193,6 +213,14 @@ export default function ConfigTorneoPage() {
           {totalInscriptos > 0 && (
             <p className="text-silver-light/40 text-xs mt-2 font-mono">{totalInscriptos} jugadores inscriptos en este circuito</p>
           )}
+        </div>
+
+        <div className="card space-y-2">
+          <h2 className="font-display text-lg text-silver-light">Circuito nuevo</h2>
+          <p className="text-silver-light/50 text-sm">Crea el torneo "CIRCUITOS FEBIU 2026-27" con el circuito del formato nuevo y sus 4 fases. Después: cargá el ranking inicial en "Carga de Ranking" y generá los partidos desde Fixture.</p>
+          <button className="btn-primary px-6" disabled={creando} onClick={crearCircuitoNuevo}>
+            {creando ? 'Creando...' : '➕ Crear circuito del formato nuevo (2026-27)'}
+          </button>
         </div>
 
         {/* Tipo de torneo */}
