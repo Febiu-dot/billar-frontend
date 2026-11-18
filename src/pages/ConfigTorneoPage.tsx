@@ -174,6 +174,18 @@ export default function ConfigTorneoPage() {
     } finally { setCreando(false); }
   };
 
+  const restaurarFases = async () => {
+    if (!circuitId) return;
+    setCreando(true); setError('');
+    try {
+      const r = await api.post(`/tournaments/circuits/${circuitId}/restaurar-fases-2027`);
+      const faltaban: string[] = r.data.creadas ?? [];
+      window.alert(faltaban.length ? `Fases restauradas: ${faltaban.join(', ')}. Si ya habías generado los partidos, generalos de nuevo desde Fixture.` : 'El circuito ya tiene sus 4 fases.');
+    } catch (e: any) {
+      setError(e?.response?.data?.error ?? 'No se pudieron restaurar las fases');
+    } finally { setCreando(false); }
+  };
+
   const handleSave = async () => {
     if (!circuitId) return;
     setSaving(true); setError(''); setSaved(false);
@@ -220,6 +232,9 @@ export default function ConfigTorneoPage() {
           <p className="text-silver-light/50 text-sm">Crea el torneo "CIRCUITOS FEBIU 2026-27" con el circuito del formato nuevo y sus 4 fases. Después: cargá el ranking inicial en "Carga de Ranking" y generá los partidos desde Fixture.</p>
           <button className="btn-primary px-6" disabled={creando} onClick={crearCircuitoNuevo}>
             {creando ? 'Creando...' : '➕ Crear circuito del formato nuevo (2026-27)'}
+          </button>
+          <button className="btn-secondary px-6 ml-3" disabled={creando || !circuitId || !nac2027} onClick={restaurarFases}>
+            🔧 Restaurar fases que falten del circuito seleccionado
           </button>
         </div>
 
