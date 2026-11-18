@@ -28,6 +28,9 @@ const banderaPaisG = (pais?: string | null): string | null => {
 
 const TEMAS: Record<string, { header: string; accent: string; light: string; badge: string }> = {
   clasificatorio:   { header: '#1a5c2a', accent: '#2d8a3e', light: '#edf7ef', badge: '#1a5c2a' },
+  'clasificatorio-parte-1': { header: '#1a5c2a', accent: '#2d8a3e', light: '#edf7ef', badge: '#1a5c2a' },
+  'clasificatorio-parte-2': { header: '#1a5c2a', accent: '#2d8a3e', light: '#edf7ef', badge: '#1a5c2a' },
+  'clasificatorio-parte-3': { header: '#1a5c2a', accent: '#2d8a3e', light: '#edf7ef', badge: '#1a5c2a' },
   reduccion:        { header: '#1a5c2a', accent: '#388e3c', light: '#f1f8e9', badge: '#1a5c2a' },
   'ranking-clasificatorio': { header: '#1a5c2a', accent: '#2d8a3e', light: '#edf7ef', badge: '#1a5c2a' },
   segunda:          { header: '#6B2737', accent: '#8a3447', light: '#fbeef1', badge: '#6B2737' },
@@ -100,6 +103,9 @@ const getSeccionColor = (seccion: string): { text: string; badge: string; light:
 
 const FASES = [
   { value: 'clasificatorio',    label: '🟢 Series Clasificatorio' },
+  { value: 'clasificatorio-parte-1', label: '🟢 Series Clasificatorio — Parte 1 de 3' },
+  { value: 'clasificatorio-parte-2', label: '🟢 Series Clasificatorio — Parte 2 de 3' },
+  { value: 'clasificatorio-parte-3', label: '🟢 Series Clasificatorio — Parte 3 de 3' },
   { value: 'reduccion',         label: '🟢 Reducción Clasificatorio' },
   { value: 'ranking-clasificatorio', label: '📋 Ranking del Clasificatorio (22)' },
   { value: 'segunda',           label: '🟠 Series Segunda' },
