@@ -210,6 +210,16 @@ export default function PortadaPage() {
           </nav>
         </div>
       </header>
+      {/* Espacio 1: auspiciante principal, enseguida del encabezado (lo primero que ve el visitante) */}
+      {(AUSPICIANTE_PRINCIPAL || vistaPrevia) && (
+        <section aria-label="Auspiciante principal" className="max-w-6xl mx-auto px-4 pt-4">
+          {AUSPICIANTE_PRINCIPAL ? (
+            <div className="w-full h-[110px] md:h-[140px] bg-carbon-100 border border-silver/15 rounded-xl p-3"><Logo a={AUSPICIANTE_PRINCIPAL} /></div>
+          ) : (
+            <Espacio n={1} texto="Espacio 1 · Auspiciante principal (banner grande, lo primero que se ve)" className="w-full h-[110px] md:h-[140px]" />
+          )}
+        </section>
+      )}
 
       {/* En vivo */}
       <section id="en-vivo" style={{ scrollMarginTop: 120 }} aria-labelledby="envivo" className="max-w-6xl mx-auto px-4 pt-6 pb-10">
@@ -634,9 +644,7 @@ export default function PortadaPage() {
       {(hayAuspiciantes || hrefAuspiciar || vistaPrevia) && (
         <section aria-labelledby="ausp-t" className="bg-[#0e0e0e] border-t border-silver/15">
           <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col gap-5">
-            {(hayAuspiciantes || vistaPrevia) && <h2 id="ausp-t" className={H2}>Nos acompañan</h2>}
-            {vistaPrevia && !AUSPICIANTE_PRINCIPAL && <Espacio n={1} texto="Espacio 1 · Auspiciante principal (logo grande)" className="w-full max-w-[520px] h-[200px] md:h-[220px] self-center" />}
-            {AUSPICIANTE_PRINCIPAL && <div className="w-full max-w-[520px] h-[200px] md:h-[220px] self-center"><Logo a={AUSPICIANTE_PRINCIPAL} /></div>}
+            {(AUSPICIANTES_OFICIALES.length > 0 || vistaPrevia) && <h2 id="ausp-t" className={H2}>Nos acompañan</h2>}
             {vistaPrevia && AUSPICIANTES_OFICIALES.length === 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[0, 1, 2, 3].map(i => <Espacio key={i} n={2} texto="Espacio 2 · Auspiciante oficial" className="h-[100px]" />)}
