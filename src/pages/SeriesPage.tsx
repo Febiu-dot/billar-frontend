@@ -44,6 +44,7 @@ export default function SeriesPage() {
       // Excluir no-series
       if (sid.includes('reduccion') || sid.includes('repechaje')) continue;
       if (sid.includes('primera-cruce') || sid.includes('master')) continue;
+      if (/^cruce(64|32)-/.test(sid)) continue; // cruces del formato nuevo: se ven en Cruces
       if (sid.startsWith('nac-oct') || sid.startsWith('nac-cua') ||
           sid.startsWith('nac-semi') || sid === 'nac-final') continue;
 

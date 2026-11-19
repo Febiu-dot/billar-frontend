@@ -47,6 +47,8 @@ export default function CrucesPage() {
 
   // ── Filtrar cruces según tipo de torneo ───────────────────────────
   const filtrarCruces = (matches: any[], esNac: boolean): Cruce[] => {
+    // Formato nuevo (2026-27): todo se ordena por número de cruce, no por fecha.
+    const formatoNuevo = matches.some((m: any) => /^cruce64-/.test(m.serieId ?? ''));
     return matches
       .filter((m: any) => {
         const tipo = m.phase?.type;
@@ -60,12 +62,16 @@ export default function CrucesPage() {
         } else {
           // Departamental: reduccion, primera, master
           return tipo === 'primera' || tipo === 'master' ||
+            /^cruce(64|32)-\d+$/.test(sid) ||
             (sid.includes('reduccion') || sid.includes('repechaje'));
         }
       })
       .map((m: any) => ({
         id: m.id, round: m.round, serieId: m.serieId,
-        fase: m.serieId?.includes('reduccion') || m.serieId?.includes('repechaje') ? 'reduccion' : m.phase?.type ?? '',
+        fase: m.serieId?.includes('reduccion') || m.serieId?.includes('repechaje') ? 'reduccion'
+          : /^cruce64-/.test(m.serieId ?? '') ? 'cruces64'
+          : /^cruce32-/.test(m.serieId ?? '') ? 'cruces32'
+          : m.phase?.type ?? '',
         phaseId: m.phaseId,
         circuitId: m.phase?.circuit?.id ?? 0,
         playerA: m.playerA, playerB: m.playerB,
@@ -74,8 +80,9 @@ export default function CrucesPage() {
         scheduledAt: m.scheduledAt, status: m.status,
       }))
       .sort((a: Cruce, b: Cruce) => {
-        const ordenFase: Record<string, number> = { reduccion: 1, primera: 2, master: 3 };
+        const ordenFase: Record<string, number> = { reduccion: 1, cruces64: 2, cruces32: 3, primera: 4, master: 5 };
         if (a.fase !== b.fase) return (ordenFase[a.fase] ?? 9) - (ordenFase[b.fase] ?? 9);
+        if (formatoNuevo) return a.round - b.round;
         if (!a.scheduledAt && !b.scheduledAt) return a.round - b.round;
         if (!a.scheduledAt) return 1;
         if (!b.scheduledAt) return -1;
@@ -178,6 +185,8 @@ export default function CrucesPage() {
   // ── Labels para departamental y Nacional ──────────────────────────
   const labelFase = (cruce: Cruce): string => {
     if (cruce.fase === 'reduccion') return 'Reducción';
+    if (cruce.fase === 'cruces64') return '64 a 32';
+    if (cruce.fase === 'cruces32') return '32 a 16';
     if (cruce.fase === 'primera') return 'Primera';
     if (cruce.fase === 'master') {
       const r = cruce.round;
@@ -197,6 +206,8 @@ export default function CrucesPage() {
   const numeroCruce = (cruce: Cruce): string => {
     if (cruce.serieId?.includes('repechaje')) return 'Repechaje';
     const r = cruce.round;
+    if (cruce.fase === 'cruces64') return `#${r}`;
+    if (cruce.fase === 'cruces32') return `#${r - 32}`;
     if (r >= 101 && r <= 108) return `Oct. ${r - 100}`;
     if (r >= 111 && r <= 114) return `Cua. ${r - 110}`;
     if (r === 121) return 'Semi 1';
@@ -214,6 +225,7 @@ export default function CrucesPage() {
 
   const badgeColor = (cruce: Cruce): string => {
     if (cruce.fase === 'reduccion') return 'bg-orange-900/30 text-orange-400';
+    if (cruce.fase === 'cruces64' || cruce.fase === 'cruces32') return 'bg-amber-900/30 text-amber-400';
     if (cruce.fase === 'primera')   return 'bg-blue-900/30 text-blue-400';
     const r = cruce.round;
     if (r === 131 || (cruce.fase === 'master' && r === 31)) return 'bg-gold/40 text-gold font-bold';
@@ -226,11 +238,13 @@ export default function CrucesPage() {
   // Fases disponibles para el filtro
   const fasesDisponibles = esNacional
     ? ['todas', 'master']
-    : ['todas', 'reduccion', 'primera', 'master'];
+    : ['todas', 'reduccion', ...(cruces.some(c => c.fase === 'cruces64') ? ['cruces64', 'cruces32'] : []), 'primera', 'master'];
 
   const labelFiltro = (f: string) => {
     if (f === 'todas') return 'Todas';
     if (f === 'reduccion') return 'Reducción';
+    if (f === 'cruces64') return 'Cruces 64 a 32';
+    if (f === 'cruces32') return 'Cruces 32 a 16';
     if (f === 'primera') return 'Primera';
     if (f === 'master') return esNacional ? 'Bracket' : 'Master';
     return f;
