@@ -46,6 +46,11 @@ export default function CrucesPage() {
     : [];
 
   // ── Filtrar cruces según tipo de torneo ───────────────────────────
+  // Formato nuevo 2026-27: el lugar vacío de un cruce se muestra como "Ganador cruce …" (solo texto en pantalla).
+  const traducirSlot = (s?: string | null): any => {
+    if (!s) return s;
+    return s.replace(/^Clasificado Segunda #(\d+)$/, 'Ganador cruce 32→16 #$1').replace(/^Gan\. Cruce64 (\d+)$/, 'Ganador cruce 64→32 #$1');
+  };
   const filtrarCruces = (matches: any[], esNac: boolean): Cruce[] => {
     // Formato nuevo (2026-27): todo se ordena por número de cruce, no por fecha.
     const formatoNuevo = matches.some((m: any) => /^cruce64-/.test(m.serieId ?? ''));
@@ -75,7 +80,7 @@ export default function CrucesPage() {
         phaseId: m.phaseId,
         circuitId: m.phase?.circuit?.id ?? 0,
         playerA: m.playerA, playerB: m.playerB,
-        slotA: m.slotA, slotB: m.slotB,
+        slotA: formatoNuevo ? traducirSlot(m.slotA) : m.slotA, slotB: formatoNuevo ? traducirSlot(m.slotB) : m.slotB,
         tableId: m.tableId, table: m.table,
         scheduledAt: m.scheduledAt, status: m.status,
       }))
@@ -183,13 +188,15 @@ export default function CrucesPage() {
     : null;
 
   // ── Labels para departamental y Nacional ──────────────────────────
+  const esFormatoNuevo = cruces.some(c => c.fase === 'cruces64');
   const labelFase = (cruce: Cruce): string => {
     if (cruce.fase === 'reduccion') return 'Reducción';
     if (cruce.fase === 'cruces64') return '64 a 32';
     if (cruce.fase === 'cruces32') return '32 a 16';
-    if (cruce.fase === 'primera') return 'Primera';
+    if (cruce.fase === 'primera') return esFormatoNuevo ? 'Primera Nacional' : 'Primera';
     if (cruce.fase === 'master') {
       const r = cruce.round;
+      if (esFormatoNuevo && r <= 16) return 'Máster Nacional';
       if (r >= 101 && r <= 108) return 'Octavos';
       if (r >= 111 && r <= 114) return 'Cuartos';
       if (r === 121 || r === 122) return 'Semis';
@@ -245,8 +252,8 @@ export default function CrucesPage() {
     if (f === 'reduccion') return 'Reducción';
     if (f === 'cruces64') return 'Cruces 64 a 32';
     if (f === 'cruces32') return 'Cruces 32 a 16';
-    if (f === 'primera') return 'Primera';
-    if (f === 'master') return esNacional ? 'Bracket' : 'Master';
+    if (f === 'primera') return esFormatoNuevo ? 'Primera Nacional' : 'Primera';
+    if (f === 'master') return esNacional ? 'Bracket' : esFormatoNuevo ? 'Máster Nacional' : 'Master';
     return f;
   };
 
