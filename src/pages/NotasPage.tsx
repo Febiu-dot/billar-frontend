@@ -93,7 +93,7 @@ function Pieza({ b }: { b: BloqueNota }) {
   if (b.t === 'fig') return (
     <figure className="my-8">
       <img src={b.src} alt={b.alt} loading="lazy" className="w-full block rounded-xl max-h-[620px] object-cover" />
-      <figcaption className="text-sm leading-relaxed text-silver-dark pt-2"><Texto s={b.pie} /></figcaption>
+      {b.pie && <figcaption className="text-sm leading-relaxed text-silver-dark pt-2"><Texto s={b.pie} /></figcaption>}
     </figure>
   );
   if (b.t === 'video') return (
@@ -126,7 +126,7 @@ function Articulo({ n, vistaPrevia }: { n: Nota; vistaPrevia: boolean }) {
           </header>
           <figure className="mt-8">
             <img src={n.imagen} alt={n.imagenAlt} className="w-full block rounded-2xl max-h-[640px] object-cover" />
-            <figcaption className="text-sm text-silver-dark pt-2">{n.pieImagen}</figcaption>
+            {n.pieImagen && <figcaption className="text-sm text-silver-dark pt-2">{n.pieImagen}</figcaption>}
           </figure>
           <div className="max-w-[760px] mx-auto mt-10 text-[18px] md:text-[19px] leading-[1.75] text-silver-light">
             {n.cuerpo.map((b, k) => <Pieza key={k} b={b} />)}
@@ -135,7 +135,7 @@ function Articulo({ n, vistaPrevia }: { n: Nota; vistaPrevia: boolean }) {
               <h2 className="font-display font-bold uppercase tracking-wide text-2xl text-white mb-4">Fuentes y referencias periodísticas</h2>
               {n.fuentes.map((f, k) => (
                 <p key={k} className="mb-4 last:mb-0">
-                  <Texto s={f.texto} />
+                  <span className="whitespace-pre-line"><Texto s={f.texto} /></span>
                   {f.enlace && <><br /><a href={f.enlace.url} target="_blank" rel="noopener noreferrer" className="text-orange-light underline break-words">{f.enlace.etiqueta}</a></>}
                 </p>
               ))}
