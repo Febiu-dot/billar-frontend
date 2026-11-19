@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-11-17-nota-capote-borrador
+// PUBLIC_BUILD = pub-public-2026-11-17-portada-simulacro
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';

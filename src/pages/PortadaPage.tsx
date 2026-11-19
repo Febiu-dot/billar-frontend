@@ -33,6 +33,16 @@ function Logo({ a, className }: { a: Auspiciante; className?: string }) {
   return a.url ? <a href={a.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-full h-full">{img}</a> : <div className="flex items-center justify-center w-full h-full">{img}</div>;
 }
 
+// Solo en vista previa (?borrador=1): muestra donde irian los avisos de auspiciantes
+function Espacio({ n, texto, className }: { n: number; texto: string; className?: string }) {
+  return (
+    <div className={`border-2 border-dashed border-orange-light/70 rounded-xl flex items-center justify-center gap-3 text-center px-3 ${className ?? ''}`} role="note">
+      <span className="shrink-0 w-8 h-8 rounded-full bg-orange-light text-carbon font-extrabold flex items-center justify-center">{n}</span>
+      <span className="text-orange-light font-semibold text-sm md:text-base">SIMULACRO · {texto}</span>
+    </div>
+  );
+}
+
 const H2 = 'font-display font-extrabold uppercase tracking-wide text-white text-3xl md:text-4xl leading-tight';
 
 export default function PortadaPage() {
@@ -177,7 +187,7 @@ export default function PortadaPage() {
   return (
     <div className="min-h-screen bg-carbon text-silver-light font-body">
       {/* Encabezado */}
-      {vistaPrevia && <div className="bg-orange text-carbon text-center font-bold py-2 px-4 text-sm">VISTA PREVIA · Así se ve la portada con las entregas en borrador. Solo la ves vos con este enlace.</div>}
+      {vistaPrevia && <div className="bg-orange text-carbon text-center font-bold py-2 px-4 text-sm">VISTA PREVIA · Simulacro de la portada con el material en borrador y los espacios para auspiciantes (cuadros naranjas punteados). Solo la ves vos con este enlace.</div>}
       <header className="sticky top-0 z-40 bg-carbon/95 backdrop-blur border-b border-silver/15">
         <div className="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <Link to="/portada" className="flex items-center gap-3 min-w-0">
@@ -321,6 +331,9 @@ export default function PortadaPage() {
       </section>
 
       {/* Torneos */}
+      {vistaPrevia && (
+        <div className="max-w-6xl mx-auto px-4 pb-6"><Espacio n={4} texto="Espacio 4 · «Transmisión presentada por…» (irá junto al video en vivo)" className="h-[64px]" /></div>
+      )}
       <section id="torneos" style={{ scrollMarginTop: 120 }} aria-labelledby="torneos-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
         <h2 id="torneos-t" className={H2}>Torneos</h2>
         {torneosActivos.length === 0 ? <p className="text-silver-dark">No hay torneos en juego en este momento.</p> : (
@@ -401,6 +414,7 @@ export default function PortadaPage() {
         <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col gap-5">
           <div>
             <h2 id="ranking-t" className={H2}>Ranking acumulado</h2>
+            {vistaPrevia && <Espacio n={6} texto="Espacio 6 · «Ranking presentado por…»" className="h-[56px] mt-3" />}
             <p className="text-silver-dark mt-1">{torneoNombre ? `${torneoNombre} · suma de los circuitos jugados` : 'Suma de los circuitos de la temporada'}</p>
           </div>
           <div role="group" aria-label="Categoría" className="flex gap-2 overflow-x-auto pb-1">
@@ -617,11 +631,17 @@ export default function PortadaPage() {
       </section>
 
       {/* Auspiciantes */}
-      {(hayAuspiciantes || hrefAuspiciar) && (
+      {(hayAuspiciantes || hrefAuspiciar || vistaPrevia) && (
         <section aria-labelledby="ausp-t" className="bg-[#0e0e0e] border-t border-silver/15">
           <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col gap-5">
-            {hayAuspiciantes && <h2 id="ausp-t" className={H2}>Nos acompañan</h2>}
+            {(hayAuspiciantes || vistaPrevia) && <h2 id="ausp-t" className={H2}>Nos acompañan</h2>}
+            {vistaPrevia && !AUSPICIANTE_PRINCIPAL && <Espacio n={1} texto="Espacio 1 · Auspiciante principal (logo grande)" className="w-full max-w-[520px] h-[200px] md:h-[220px] self-center" />}
             {AUSPICIANTE_PRINCIPAL && <div className="w-full max-w-[520px] h-[200px] md:h-[220px] self-center"><Logo a={AUSPICIANTE_PRINCIPAL} /></div>}
+            {vistaPrevia && AUSPICIANTES_OFICIALES.length === 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[0, 1, 2, 3].map(i => <Espacio key={i} n={2} texto="Espacio 2 · Auspiciante oficial" className="h-[100px]" />)}
+              </div>
+            )}
             {AUSPICIANTES_OFICIALES.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {AUSPICIANTES_OFICIALES.map(a => <div key={a.nombre} className="h-[100px]"><Logo a={a} /></div>)}
