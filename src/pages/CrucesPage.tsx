@@ -16,6 +16,7 @@ interface Cruce {
 }
 
 const MESA_LIBRE = '__libre__';
+const COLORES_CADENA: Record<string,string> = { A:'#ff6b6b',B:'#ffa94d',C:'#ffe066',D:'#c0eb75',E:'#51cf66',F:'#38d9a9',G:'#66d9e8',H:'#4dabf7',I:'#748ffc',J:'#b197fc',K:'#e599f7',L:'#faa2c1',M:'#c8a27c',N:'#ced4da',O:'#f1e4b3',P:'#e5dbff' };
 
 export default function CrucesPage() {
   const [tournaments, setTournaments]           = useState<Tournament[]>([]);
@@ -33,6 +34,9 @@ export default function CrucesPage() {
   const [form, setForm]                         = useState({ venueId: '', tableId: '', scheduledAt: '', hora: '', minutos: '' });
   const [saving, setSaving]                     = useState(false);
   const [filtroFase, setFiltroFase]             = useState('todas');
+  const [codigos, setCodigos]                   = useState<Record<string, { codigo: string; cadena: string }>>({});
+  const [progMsg, setProgMsg]                   = useState('');
+  const [progBusy, setProgBusy]                 = useState(false);
   const [disparando, setDisparando]             = useState(false);
   const [disparoMsg, setDisparoMsg]             = useState('');
 
@@ -127,6 +131,14 @@ export default function CrucesPage() {
       setPhases((cRes.data.phases ?? []).map((p: any) => ({ id: p.id, type: p.type })));
 
       setCruces(filtrarCruces(mRes.data, esNac));
+      setCodigos({});
+      if (cfg.esquema === 'nacional-2027') {
+        api.get(`/matches/programacion-nacional/${circuitId}`).then(r => {
+          const mapa: Record<string, { codigo: string; cadena: string }> = {};
+          for (const f of r.data.filas ?? []) mapa[f.serieId] = { codigo: f.codigo, cadena: f.cadena };
+          setCodigos(mapa);
+        }).catch(() => {});
+      }
     } catch { if (!silent) setCruces([]); }
     finally { if (!silent) setLoadingMatches(false); }
   };
@@ -200,6 +212,43 @@ export default function CrucesPage() {
   const pc = (player: any) => player?.club
     ? <span className="text-chalk/40 text-xs ml-1">({player.club})</span>
     : null;
+
+  const infoCodigo = (c: Cruce) => (c.serieId ? codigos[c.serieId] : undefined);
+
+  const verProgramacion = async () => {
+    setProgBusy(true); setProgMsg('');
+    try {
+      const r = await api.get(`/matches/programacion-nacional/${selectedCircuit}`);
+      const { resumen, sedesEncontradas } = r.data;
+      const sedes = (sedesEncontradas ?? []).map((x: any) => `${x.sala}: ${x.sede ?? 'NO ENCONTRADA'} (mesas ${x.mesas.join(', ') || '—'})`).join(' | ');
+      setProgMsg(`Vista previa: ${resumen.aplicables} cruces para asignar, ${resumen.yaJugados} ya jugados (no se tocan), ${resumen.problemas} con problemas. ${sedes}`);
+    } catch (e: any) { setProgMsg(`❌ ${e?.response?.data?.error ?? 'Error al consultar la programación'}`); }
+    finally { setProgBusy(false); }
+  };
+
+  const aplicarProgramacion = async () => {
+    if (!confirm('¿Aplicar la programación (sede, mesa, fecha y hora) a los cruces?\n\nNo cambia jugadores ni resultados. Después se puede quitar con "Quitar programación".')) return;
+    setProgBusy(true); setProgMsg('');
+    try {
+      const r = await api.post(`/matches/programacion-nacional/${selectedCircuit}`);
+      setProgMsg(`✅ Programación aplicada: ${r.data.asignados} cruces asignados.`);
+      await handleCircuitChange(selectedCircuit, true);
+    } catch (e: any) {
+      const d = e?.response?.data;
+      setProgMsg(`❌ ${d?.error ?? 'Error al aplicar'}${d?.sedesEncontradas ? ' — ' + d.sedesEncontradas.map((x: any) => `${x.sala}: ${x.sede ?? 'NO ENCONTRADA'}`).join(' | ') : ''}`);
+    } finally { setProgBusy(false); }
+  };
+
+  const quitarProgramacion = async () => {
+    if (!confirm('¿Quitar la programación (sede, mesa, fecha y hora) de los cruces que todavía no se jugaron?\n\nNo toca jugadores ni resultados.')) return;
+    setProgBusy(true); setProgMsg('');
+    try {
+      const r = await api.delete(`/matches/programacion-nacional/${selectedCircuit}`);
+      setProgMsg(`✅ Programación quitada de ${r.data.cruces} cruces.`);
+      await handleCircuitChange(selectedCircuit, true);
+    } catch (e: any) { setProgMsg(`❌ ${e?.response?.data?.error ?? 'Error al quitar'}`); }
+    finally { setProgBusy(false); }
+  };
 
   // ── Labels para departamental y Nacional ──────────────────────────
   const esFormatoNuevo = cruces.some(c => c.fase === 'cruces64');
@@ -402,11 +451,24 @@ export default function CrucesPage() {
               ))}
             </div>
 
+            {Object.keys(codigos).length > 0 && (
+              <div className="card space-y-3">
+                <p className="text-chalk/50 text-xs uppercase tracking-widest">Programación del circuito (sábado 28 y domingo 29/11)</p>
+                <div className="flex gap-2 flex-wrap">
+                  <button className="btn-secondary text-xs py-1.5 px-4" disabled={progBusy} onClick={verProgramacion}>Ver programación</button>
+                  <button className="btn-primary text-xs py-1.5 px-4" disabled={progBusy} onClick={aplicarProgramacion}>Aplicar programación</button>
+                  <button className="text-xs py-1.5 px-4 rounded border border-red-500/40 text-red-400 hover:bg-red-900/20" disabled={progBusy} onClick={quitarProgramacion}>Quitar programación</button>
+                </div>
+                {progMsg && <p className="text-chalk/70 text-xs">{progMsg}</p>}
+              </div>
+            )}
+
             {/* Tabla de cruces */}
             <div className="card p-0 overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-felt-light/10 text-chalk/40 text-xs uppercase tracking-widest">
+                    {Object.keys(codigos).length > 0 && <th className="text-left px-4 py-3">Código</th>}
                     <th className="text-left px-4 py-3">Fase</th>
                     <th className="text-left px-4 py-3">Cruce</th>
                     <th className="text-left px-4 py-3">Jugador A</th>
@@ -421,6 +483,13 @@ export default function CrucesPage() {
                     const asignado = cruce.tableId || cruce.scheduledAt || cruce.mesaLibreSedeId;
                     return (
                       <tr key={cruce.id} id={`fila-${cruce.id}`} className={`border-b border-felt-light/5 ${asignado ? 'bg-green-900/5' : ''}`}>
+                        {Object.keys(codigos).length > 0 && (
+                          <td className="px-4 py-3">
+                            {infoCodigo(cruce)
+                              ? <span className="inline-block min-w-[2.5rem] text-center rounded px-2 py-0.5 text-xs font-bold font-mono" style={{ backgroundColor: COLORES_CADENA[infoCodigo(cruce)!.cadena] ?? '#888', color: '#111' }}>{infoCodigo(cruce)!.codigo}</span>
+                              : <span className="text-chalk/20 text-xs">—</span>}
+                          </td>
+                        )}
                         <td className="px-4 py-3">
                           <span className={`badge-status text-xs ${badgeColor(cruce)}`}>{labelFase(cruce)}</span>
                         </td>

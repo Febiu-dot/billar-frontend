@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-11-20-portada-campeonatos-antes
+// PUBLIC_BUILD = pub-public-2026-11-20-programacion-nacional
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
