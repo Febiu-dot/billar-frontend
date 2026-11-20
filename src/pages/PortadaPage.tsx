@@ -64,6 +64,7 @@ export default function PortadaPage() {
   const [txSel, setTxSel] = useState<number | null>(null);
   const [sedeSel, setSedeSel] = useState<number | null>(null); // null = todas las sedes
   const [rankAbierto, setRankAbierto] = useState(false);
+  const [sedesApi, setSedesApi] = useState<{ id: number; name: string }[]>([]);
   // Modo prueba: /portada?canal=UCxxxxxxxxxxxxxxxxxxxxxx muestra el directo de ese canal.
   const [params] = useSearchParams();
   const canalPrueba = params.get('canal') ?? '';
@@ -138,6 +139,12 @@ export default function PortadaPage() {
       .finally(() => setRankingCargado(true));
   }, [torneoSel]);
 
+  // Sedes del torneo elegido (por departamento y por partidos), aunque hoy no tengan nada en juego
+  useEffect(() => {
+    if (torneoSel == null) return;
+    api.get(`/portada/sedes?tournamentId=${torneoSel}`).then(r => setSedesApi(r.data ?? [])).catch(() => setSedesApi([]));
+  }, [torneoSel]);
+
   const [docs, setDocs] = useState<{ id: number; titulo: string; descripcion: string | null; bytes: number; actualizado: string; version: string }[]>([]);
   useEffect(() => { api.get('/documentos').then(r => setDocs(r.data ?? [])).catch(() => setDocs([])); }, []);
   useEffect(() => { api.get('/afiches').then(r => setAfiches(r.data ?? [])).catch(() => setAfiches([])); }, []);
@@ -168,8 +175,9 @@ export default function PortadaPage() {
     const m = new Map<number, string>();
     [...enJuego, ...proximos].filter(delTorneo).forEach(x => { const v = x?.table?.venue; if (v?.id) m.set(v.id, v.name); });
     txs.forEach(x => { if (!m.has(x.venueId)) m.set(x.venueId, x.sede); });
+    sedesApi.forEach(v => { if (!m.has(v.id)) m.set(v.id, v.name); });
     return [...m.entries()].map(([id, nom]) => ({ id, nombre: nom, envivo: txs.some(x => x.venueId === id) })).sort((x, y) => x.nombre.localeCompare(y.nombre));
-  }, [enJuego, proximos, txs, torneoSel]);
+  }, [enJuego, proximos, txs, torneoSel, sedesApi]);
   const variasSedes = sedesTorneo.length > 1; // varias sedes: las mesas y partidos muestran el nombre de la sede
   const rankingF = useMemo(() => ranking.filter(e => cat === 'general' || e.player?.category?.name === cat).slice(0, 10), [ranking, cat]);
 
