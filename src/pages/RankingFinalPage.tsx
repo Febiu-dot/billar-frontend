@@ -24,6 +24,8 @@ interface RankingEntry {
 }
 
 const CAT_COLORS: Record<string, string> = {
+  'master-nacional':  'bg-pink-900/40 text-pink-300 border border-pink-700/30',
+  'primera-nacional': 'bg-yellow-900/40 text-yellow-300 border border-yellow-700/30',
   master:  'bg-yellow-900/40 text-yellow-400 border border-yellow-700/30',
   primera: 'bg-blue-900/40 text-blue-400 border border-blue-700/30',
   segunda: 'bg-green-900/40 text-green-400 border border-green-700/30',
@@ -31,6 +33,8 @@ const CAT_COLORS: Record<string, string> = {
 };
 
 const CAT_LABEL: Record<string, string> = {
+  'master-nacional':  'Máster Nacional',
+  'primera-nacional': 'Primera Nacional',
   master:  'Máster',
   primera: 'Primera',
   segunda: 'Segunda',
@@ -251,6 +255,8 @@ export default function RankingFinalPage() {
   const counts = {
     general: ranking.length,
     master:  ranking.filter(e => e.categoria === 'master').length,
+    'master-nacional':  ranking.filter(e => e.categoria === 'master-nacional').length,
+    'primera-nacional': ranking.filter(e => e.categoria === 'primera-nacional').length,
     primera: ranking.filter(e => e.categoria === 'primera').length,
     segunda: ranking.filter(e => e.categoria === 'segunda').length,
     tercera: ranking.filter(e => e.categoria === 'tercera').length,
@@ -407,7 +413,8 @@ export default function RankingFinalPage() {
             {/* Filtros por categoría — solo para no nacionales */}
             {!esNacional && (
               <div className="flex gap-2 flex-wrap justify-center mb-4">
-                {(['general', 'master', 'primera', 'segunda', 'tercera'] as const).map(cat => (
+                {(['general', 'master-nacional', 'primera-nacional', 'master', 'primera', 'segunda', 'tercera'] as const)
+                  .filter(cat => cat === 'general' || counts[cat] > 0).map(cat => (
                   <button key={cat} onClick={() => setFiltro(cat)}
                     className={`px-4 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                       filtro === cat
