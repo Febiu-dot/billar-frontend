@@ -170,7 +170,7 @@ export default function PortadaPage() {
     txs.forEach(x => { if (!m.has(x.venueId)) m.set(x.venueId, x.sede); });
     return [...m.entries()].map(([id, nom]) => ({ id, nombre: nom, envivo: txs.some(x => x.venueId === id) })).sort((x, y) => x.nombre.localeCompare(y.nombre));
   }, [enJuego, proximos, txs, torneoSel]);
-  const variasSedes = sedesTorneo.length > 1;
+  const variasSedes = sedesTorneo.length > 1; // varias sedes: las mesas y partidos muestran el nombre de la sede
   const rankingF = useMemo(() => ranking.filter(e => cat === 'general' || e.player?.category?.name === cat).slice(0, 10), [ranking, cat]);
 
   const hrefAuspiciar = contactoHref('Quiero auspiciar a la FEBIU');
@@ -235,7 +235,7 @@ export default function PortadaPage() {
             })}
           </div>
         )}
-        {variasSedes && (
+        {sedesTorneo.length > 0 && (
           <div>
             <div className="text-xs font-semibold tracking-widest uppercase text-silver-dark mb-1.5">2. Elegí la sede</div>
             <div role="group" aria-label="Sede" className="flex gap-2 overflow-x-auto pb-1">
@@ -252,7 +252,7 @@ export default function PortadaPage() {
           </div>
         )}
         <div className="flex flex-col gap-1 sm:max-w-xs">
-          <label htmlFor="sel-cat" className="text-xs font-semibold tracking-widest uppercase text-silver-dark">{variasSedes ? '3. Categoría' : '2. Categoría'}</label>
+          <label htmlFor="sel-cat" className="text-xs font-semibold tracking-widest uppercase text-silver-dark">3. Categoría</label>
           <select id="sel-cat" className="input w-full min-h-[52px] text-base font-semibold" value={catPartidos} onChange={e => setCatPartidos(e.target.value)}>
             <option value="todas">Todas las categorías</option>
             {CATEGORIAS.filter(c => c.key !== 'general').map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
