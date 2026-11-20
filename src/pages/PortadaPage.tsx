@@ -64,6 +64,8 @@ export default function PortadaPage() {
   const [txSel, setTxSel] = useState<number | null>(null);
   const [sedeSel, setSedeSel] = useState<number | null>(null); // null = todas las sedes
   const [rankAbierto, setRankAbierto] = useState(false);
+  const [clubesAbierto, setClubesAbierto] = useState(false);
+  const [panaAbierto, setPanaAbierto] = useState(false);
   const [rankTorneo, setRankTorneo] = useState<number | null>(null); // torneo elegido dentro de la seccion Ranking
   const [rankEligiendo, setRankEligiendo] = useState(false);
   const [sedesApi, setSedesApi] = useState<{ id: number; name: string }[]>([]);
@@ -210,9 +212,9 @@ export default function PortadaPage() {
             {VIDEOS.length > 0 && <a href="#videos" className={btnNav}>Videos</a>}
             {(NOTAS.length > 0 || notasWeb.length > 0) && <a href="#notas" className={btnNav}>Notas</a>}
             {docs.length > 0 && <a href="#reglamento" className={btnNav}>Reglamento</a>}
-            <a href="#clubes" className={btnNav} onClick={() => setTimeout(() => document.getElementById('buscar-jugador')?.focus({ preventScroll: true }), 400)}>Jugadores</a>
-            <a href="#clubes" className={btnNav}>Clubes</a>
-            <a href="#panamericano" className={btnNav}>Panamericano</a>
+            <a href="#clubes" className={btnNav} onClick={() => { setClubesAbierto(true); setTimeout(() => document.getElementById('buscar-jugador')?.focus({ preventScroll: true }), 400); }}>Jugadores</a>
+            <a href="#clubes" className={btnNav} onClick={() => setClubesAbierto(true)}>Clubes</a>
+            <a href="#panamericano" className={btnNav} onClick={() => setPanaAbierto(true)}>Panamericano</a>
             <a href="#mundial" className={`${btnNav} !text-orange-light`}>Mundial 2027</a>
           </nav>
         </div>
@@ -613,7 +615,12 @@ export default function PortadaPage() {
 
       {/* Clubes y jugadores */}
       <section id="clubes" style={{ scrollMarginTop: 120 }} aria-labelledby="clubes-t" className="max-w-6xl mx-auto px-4 py-10 flex flex-col gap-5">
-        <h2 id="clubes-t" className={H2}>Clubes y jugadores</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="clubes-t" className={H2}>Clubes y jugadores</h2>
+          <button type="button" aria-expanded={clubesAbierto} aria-controls="clubes-panel" onClick={() => setClubesAbierto(v => !v)} className="min-h-[52px] px-6 rounded-xl bg-orange text-carbon font-bold text-lg">{clubesAbierto ? 'Ocultar ▴' : 'Ver clubes y jugadores ▾'}</button>
+        </div>
+        {clubesAbierto && (
+        <div id="clubes-panel" className="flex flex-col gap-5">
         <label>
           <span className="sr-only">Buscar jugador o club</span>
           <input id="buscar-jugador" type="search" value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar jugador o club" className="input w-full min-h-[52px] text-base" />
@@ -635,14 +642,21 @@ export default function PortadaPage() {
             ))}
           </div>
         )}
+        </div>
+        )}
       </section>
 
       {/* Panamericano */}
       <section id="panamericano" style={{ scrollMarginTop: 120 }} aria-labelledby="pana-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
-        <div>
-          <h2 id="pana-t" className={H2}>Panamericano de Billar</h2>
-          <p className="text-silver-dark mt-1">Próxima edición: {PANAMERICANO_PROXIMO}</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 id="pana-t" className={H2}>Panamericano de Billar</h2>
+            <p className="text-silver-dark mt-1">Próxima edición: {PANAMERICANO_PROXIMO}</p>
+          </div>
+          <button type="button" aria-expanded={panaAbierto} aria-controls="pana-panel" onClick={() => setPanaAbierto(v => !v)} className="min-h-[52px] px-6 rounded-xl bg-orange text-carbon font-bold text-lg">{panaAbierto ? 'Ocultar ▴' : 'Ver el Panamericano 2026 ▾'}</button>
         </div>
+        {panaAbierto && (
+        <div id="pana-panel" className="flex flex-col gap-5">
         <div className={`${card} p-5 flex flex-col gap-1`}>
           <span className="text-xs font-semibold tracking-widest uppercase text-orange-light">Edición {PANAMERICANO_2026.fecha}</span>
           <h3 className="font-display font-bold text-3xl text-white leading-tight">{PANAMERICANO_2026.titulo}</h3>
@@ -686,6 +700,8 @@ export default function PortadaPage() {
             </details>
           ))}
         </div>
+        </div>
+        )}
       </section>
 
       {/* Auspiciantes */}
