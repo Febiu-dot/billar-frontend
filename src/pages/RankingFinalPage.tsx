@@ -316,6 +316,15 @@ export default function RankingFinalPage() {
               </div>
             )}
 
+            {/* Publicar / exportar el ranking (WhatsApp o vista pública) */}
+            {user?.role === 'admin' && (
+              <div className="flex justify-center mb-4">
+                <a className="btn-primary px-6" href={`/admin/publicaciones?circuitId=${selectedCircuit}&tipoFase=ranking`}>
+                  📢 Publicar / Exportar ranking
+                </a>
+              </div>
+            )}
+
             {/* Acciones admin */}
             {user?.role === 'admin' && (
               <div className="flex flex-col items-center gap-3 mb-6">

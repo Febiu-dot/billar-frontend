@@ -559,6 +559,18 @@ function PlantillaRankingNacional({ data }: { data: any }) {
           letterSpacing:'0.01em', position:'relative', zIndex:1,
         }}>{j.nombre}</div>
 
+        {/* Categoría nacional (se mantiene durante los 4 circuitos) */}
+        {j.categoriaNacional && (() => {
+          const CN: Record<string, [string, string]> = {
+            'master-nacional': ['MN', '#ec4899'], 'primera-nacional': ['PN', '#facc15'],
+            'primera': ['P', '#60a5fa'], 'segunda': ['S', '#c08457'], 'tercera': ['T', '#4ade80'],
+          };
+          const [txt, col] = CN[j.categoriaNacional] ?? ['', '#999'];
+          return txt ? (
+            <div style={{ width:26, textAlign:'center', flexShrink:0, background:col, color:'#10151f', borderRadius:4, fontSize:11, fontWeight:900, padding:'2px 0', fontFamily:"'Saira Condensed', sans-serif", position:'relative', zIndex:1 }}>{txt}</div>
+          ) : null;
+        })()}
+
         {/* País+bandera (panamericano) ó Club badge (nacional) */}
         {data.esPanamericano ? (
           <div style={{
@@ -1866,8 +1878,9 @@ export default function AdminPublicacionesPage() {
   const esAdmin = user?.role === 'admin';
 
   const [torneos, setTorneos]       = useState<any[]>([]);
-  const [circuitId, setCircuitId]   = useState('');
-  const [tipoFase, setTipoFase]     = useState('clasificatorio');
+  const paramsUrl = new URLSearchParams(window.location.search);
+  const [circuitId, setCircuitId]   = useState(paramsUrl.get('circuitId') ?? '');
+  const [tipoFase, setTipoFase]     = useState(paramsUrl.get('tipoFase') ?? 'clasificatorio');
   const [pubData, setPubData]       = useState<any>(null);
   const [loading, setLoading]       = useState(false);
   const [exportando, setExportando] = useState(false);
@@ -1898,7 +1911,7 @@ export default function AdminPublicacionesPage() {
   useEffect(() => {
     api.get('/publicaciones/circuitos').then(r => {
       setTorneos(r.data);
-      if (r.data.length > 0 && r.data[0].circuits?.length > 0) {
+      if (!paramsUrl.get('circuitId') && r.data.length > 0 && r.data[0].circuits?.length > 0) {
         const circuits = r.data[0].circuits;
         const maxOrder = Math.max(...circuits.map((c: any) => c.order ?? 0));
         const ultimo = circuits.find((c: any) => c.order === maxOrder) ?? circuits[0];
