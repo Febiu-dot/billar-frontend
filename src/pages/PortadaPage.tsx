@@ -62,6 +62,8 @@ export default function PortadaPage() {
   const [catPartidos, setCatPartidos] = useState('todas');
   const [txs, setTxs] = useState<any[]>([]);
   const [txSel, setTxSel] = useState<number | null>(null);
+  const [sedeSel, setSedeSel] = useState<number | null>(null); // null = todas las sedes
+  const [rankAbierto, setRankAbierto] = useState(false);
   // Modo prueba: /portada?canal=UCxxxxxxxxxxxxxxxxxxxxxx muestra el directo de ese canal.
   const [params] = useSearchParams();
   const canalPrueba = params.get('canal') ?? '';
@@ -75,23 +77,15 @@ export default function PortadaPage() {
     const m = document.createElement('meta'); m.name = 'robots'; m.content = 'noindex'; document.head.appendChild(m);
     return () => { m.remove(); };
   }, [vistaPrevia]);
-  const txActual = txs.find(x => x.tableId === txSel) ?? txs[0] ?? null;
+  const mesasVisibles = sedeSel != null ? txs.filter(x => x.venueId === sedeSel) : txs;
+  const txActual = mesasVisibles.find(x => x.tableId === txSel) ?? mesasVisibles[0] ?? null;
   const embedUrl = /^UC[\w-]{22}$/.test(canalPrueba)
     ? `https://www.youtube.com/embed/live_stream?channel=${canalPrueba}&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`
     : txActual
       ? (String(txActual.canal).startsWith('v:')
           ? `https://www.youtube.com/embed/${String(txActual.canal).slice(2)}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`
           : `https://www.youtube.com/embed/live_stream?channel=${txActual.canal}&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`)
-      : YOUTUBE_EMBED_URL;
-  const sedes = useMemo(() => {
-    const mapa = new Map<number, { venueId: number; sede: string; mesas: any[] }>();
-    txs.forEach(x => {
-      if (!mapa.has(x.venueId)) mapa.set(x.venueId, { venueId: x.venueId, sede: x.sede, mesas: [] });
-      mapa.get(x.venueId)!.mesas.push(x);
-    });
-    return [...mapa.values()];
-  }, [txs]);
-  const sedeActual = txActual?.venueId ?? null;
+      : (sedeSel != null && txs.length > 0 ? '' : YOUTUBE_EMBED_URL);
   const partidoDeMesa = (tableId: number) => enJuego.find(m => m?.table?.id === tableId);
   const textoPartido = (tableId: number) => {
     const m = partidoDeMesa(tableId);
@@ -160,19 +154,23 @@ export default function PortadaPage() {
     return [...m.entries()].sort((x, y) => (x[0] === 'Sin club' ? 1 : y[0] === 'Sin club' ? -1 : x[0].localeCompare(y[0])));
   }, [jugadores, busca]);
   const esPana = (n: string) => /panamericano/i.test(n);
-  const torneosActivos = todosTorneos.filter(x => x.active && !esPana(x.name));
   const torneosPasados = todosTorneos.filter(x => !x.active && !esPana(x.name));
-  const irATorneo = (id: number) => {
-    setTorneoSel(id); setCatPartidos('todas');
-    document.getElementById('en-vivo')?.scrollIntoView({ behavior: 'smooth' });
-  };
 
   const torneoNombre = torneos.find(t => t.id === torneoSel)?.name ?? '';
   const delTorneo = (m: any) => torneoSel != null && m?.phase?.circuit?.tournament?.id === torneoSel;
   const delaCat = (m: any) => catPartidos === 'todas' ||
     m?.playerA?.category?.name === catPartidos;
-  const enJuegoF = useMemo(() => enJuego.filter(delTorneo).filter(delaCat).slice(0, 6), [enJuego, torneoSel, catPartidos]);
-  const proximosF = useMemo(() => proximos.filter(delTorneo).filter(delaCat).slice(0, 6), [proximos, torneoSel, catPartidos]);
+  const delaSede = (m: any) => sedeSel == null || m?.table?.venue?.id === sedeSel;
+  const enJuegoF = useMemo(() => enJuego.filter(delTorneo).filter(delaCat).filter(delaSede).slice(0, 6), [enJuego, torneoSel, catPartidos, sedeSel]);
+  const proximosF = useMemo(() => proximos.filter(delTorneo).filter(delaCat).filter(delaSede).slice(0, 6), [proximos, torneoSel, catPartidos, sedeSel]);
+  // Sedes del torneo elegido: las que tienen partidos en juego o programados, mas las que transmiten
+  const sedesTorneo = useMemo(() => {
+    const m = new Map<number, string>();
+    [...enJuego, ...proximos].filter(delTorneo).forEach(x => { const v = x?.table?.venue; if (v?.id) m.set(v.id, v.name); });
+    txs.forEach(x => { if (!m.has(x.venueId)) m.set(x.venueId, x.sede); });
+    return [...m.entries()].map(([id, nom]) => ({ id, nombre: nom, envivo: txs.some(x => x.venueId === id) })).sort((x, y) => x.nombre.localeCompare(y.nombre));
+  }, [enJuego, proximos, txs, torneoSel]);
+  const variasSedes = sedesTorneo.length > 1;
   const rankingF = useMemo(() => ranking.filter(e => cat === 'general' || e.player?.category?.name === cat).slice(0, 10), [ranking, cat]);
 
   const hrefAuspiciar = contactoHref('Quiero auspiciar a la FEBIU');
@@ -195,16 +193,15 @@ export default function PortadaPage() {
             <span className="font-display font-extrabold uppercase tracking-wide text-white text-xl md:text-2xl leading-tight">Federación de Billar del Uruguay</span>
           </Link>
           <nav aria-label="Principal" className="flex gap-1 w-full md:w-auto overflow-x-auto whitespace-nowrap -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <a href="#en-vivo" className={btnNav}>Inicio</a>
-            <a href="#torneos" className={btnNav}>Torneos</a>
-            {afiches.length > 0 && <a href="#campeonatos" className={btnNav}>Campeonatos</a>}
-            <a href="#ranking" className={btnNav}>Rankings</a>
-            <a href="#clubes" className={btnNav} onClick={() => setTimeout(() => document.getElementById('buscar-jugador')?.focus({ preventScroll: true }), 400)}>Jugadores</a>
-            <a href="#clubes" className={btnNav}>Clubes</a>
+            <a href="#torneos" className={btnNav}>Inicio</a>
+            <a href="#ranking" className={btnNav} onClick={() => setRankAbierto(true)}>Rankings</a>
+            {entregasVisibles.length > 0 && <a href="#memorias" className={btnNav}>Memorias</a>}
             {VIDEOS.length > 0 && <a href="#videos" className={btnNav}>Videos</a>}
             {(NOTAS.length > 0 || notasWeb.length > 0) && <a href="#notas" className={btnNav}>Notas</a>}
+            {afiches.length > 0 && <a href="#campeonatos" className={btnNav}>Campeonatos</a>}
+            <a href="#clubes" className={btnNav} onClick={() => setTimeout(() => document.getElementById('buscar-jugador')?.focus({ preventScroll: true }), 400)}>Jugadores</a>
+            <a href="#clubes" className={btnNav}>Clubes</a>
             {docs.length > 0 && <a href="#reglamento" className={btnNav}>Reglamento</a>}
-            {entregasVisibles.length > 0 && <a href="#memorias" className={btnNav}>Memorias</a>}
             <a href="#panamericano" className={btnNav}>Panamericano</a>
             <a href="#mundial" className={`${btnNav} !text-orange-light`}>Mundial 2027</a>
           </nav>
@@ -221,40 +218,68 @@ export default function PortadaPage() {
         </section>
       )}
 
+      {/* Elegir que ver: torneo, sede y categoria. Lo primero que busca el visitante */}
+      <section id="torneos" style={{ scrollMarginTop: 120 }} aria-labelledby="torneos-t" className="max-w-6xl mx-auto px-4 pt-6 flex flex-col gap-4">
+        <h2 id="torneos-t" className="text-xs font-semibold tracking-widest uppercase text-silver-dark">1. Elegí el torneo</h2>
+        {torneos.length === 0 ? <p className="text-silver-dark">No hay torneos en juego en este momento.</p> : (
+          <div role="group" aria-label="Torneo" className="flex flex-wrap gap-3">
+            {torneos.map(t => {
+              const sel = t.id === torneoSel;
+              return (
+                <button key={t.id} type="button" aria-pressed={sel} onClick={() => { setTorneoSel(t.id); setSedeSel(null); setCatPartidos('todas'); }}
+                  className={`flex-1 basis-[220px] min-w-0 min-h-[64px] text-left px-4 py-3 rounded-xl border-[1.5px] ${sel ? 'border-orange bg-orange/10' : 'border-silver/30 bg-carbon-100'}`}>
+                  <span className="block text-xs font-bold tracking-wider uppercase text-orange-light">{sel ? 'Viendo' : 'En juego'}</span>
+                  <span className="block font-display font-bold text-xl md:text-2xl text-white leading-tight">{t.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {variasSedes && (
+          <div>
+            <div className="text-xs font-semibold tracking-widest uppercase text-silver-dark mb-1.5">2. Elegí la sede</div>
+            <div role="group" aria-label="Sede" className="flex gap-2 overflow-x-auto pb-1">
+              <button type="button" aria-pressed={sedeSel == null} onClick={() => setSedeSel(null)}
+                className={`flex-none min-h-[48px] px-4 rounded-full border font-semibold text-[15px] whitespace-nowrap ${sedeSel == null ? 'bg-orange border-orange text-carbon font-bold' : 'border-silver/30 text-silver-light'}`}>Todas las sedes</button>
+              {sedesTorneo.map(s => (
+                <button key={s.id} type="button" aria-pressed={sedeSel === s.id} onClick={() => setSedeSel(s.id)}
+                  className={`flex-none min-h-[48px] px-4 rounded-full border font-semibold text-[15px] whitespace-nowrap inline-flex items-center gap-2 ${sedeSel === s.id ? 'bg-orange border-orange text-carbon font-bold' : 'border-silver/30 text-silver-light'}`}>
+                  {s.nombre}
+                  {s.envivo && <span className={`text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded-full ${sedeSel === s.id ? 'bg-carbon text-white' : 'bg-[#cc0000] text-white'}`}>EN VIVO</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="flex flex-col gap-1 sm:max-w-xs">
+          <label htmlFor="sel-cat" className="text-xs font-semibold tracking-widest uppercase text-silver-dark">{variasSedes ? '3. Categoría' : '2. Categoría'}</label>
+          <select id="sel-cat" className="input w-full min-h-[52px] text-base font-semibold" value={catPartidos} onChange={e => setCatPartidos(e.target.value)}>
+            <option value="todas">Todas las categorías</option>
+            {CATEGORIAS.filter(c => c.key !== 'general').map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+          </select>
+        </div>
+      </section>
+
       {/* En vivo */}
-      <section id="en-vivo" style={{ scrollMarginTop: 120 }} aria-labelledby="envivo" className="max-w-6xl mx-auto px-4 pt-6 pb-10">
+      <section id="en-vivo" style={{ scrollMarginTop: 120 }} aria-labelledby="envivo" className="max-w-6xl mx-auto px-4 pt-5 pb-10">
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           <div className="w-full lg:flex-[2] min-w-0 flex flex-col gap-4">
-            {txs.length > 1 && (
+            {mesasVisibles.length > 1 && (
               <div role="group" aria-label="Transmisiones en vivo" className="flex flex-col gap-3">
                 <span className="inline-flex items-center gap-2 text-xs font-semibold tracking-widest uppercase text-silver-dark">
                   <span className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-white bg-[#cc0000] px-2 py-0.5 rounded-full"><span className="w-1.5 h-1.5 rounded-full bg-white" />EN VIVO</span>
-                  {txs.length} transmisiones
+                  {mesasVisibles.length} transmisiones
                 </span>
-                {sedes.length > 1 && (
-                  <div>
-                    <div className="text-xs font-semibold tracking-widest uppercase text-silver-dark mb-1.5">1. Elegí la sede</div>
-                    <div className="flex gap-2 overflow-x-auto pb-1">
-                      {sedes.map(s => (
-                        <button key={s.venueId} type="button" aria-pressed={s.venueId === sedeActual}
-                          onClick={() => setTxSel(s.mesas[0].tableId)}
-                          className={`flex-none min-h-[48px] px-4 rounded-full border font-semibold text-[15px] whitespace-nowrap ${s.venueId === sedeActual ? 'bg-orange border-orange text-carbon font-bold' : 'border-silver/30 text-silver-light'}`}>
-                          {s.sede} ({s.mesas.length})
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
                 <div>
-                  <div className="text-xs font-semibold tracking-widest uppercase text-silver-dark mb-1.5">{sedes.length > 1 ? '2. Elegí la mesa' : 'Elegí la mesa'}</div>
+                  <div className="text-xs font-semibold tracking-widest uppercase text-silver-dark mb-1.5">Elegí la mesa</div>
                   <div className="flex flex-wrap gap-2">
-                    {(sedes.find(s => s.venueId === sedeActual)?.mesas ?? []).map(x => {
+                    {mesasVisibles.map(x => {
                       const sel = txActual?.tableId === x.tableId;
                       return (
                         <button key={x.tableId} type="button" aria-pressed={sel} onClick={() => setTxSel(x.tableId)}
                           className={`flex-1 basis-[200px] min-w-0 min-h-[56px] text-left px-3 py-2 rounded-xl border-[1.5px] ${sel ? 'border-orange bg-orange/10' : 'border-silver/30 bg-carbon-100'}`}>
                           <div className="flex items-center justify-between gap-2">
-                            <span className="font-bold text-white">Mesa {x.mesa}</span>
+                            <span className="font-bold text-white">{sedeSel == null && variasSedes ? `${x.sede} · Mesa ${x.mesa}` : `Mesa ${x.mesa}`}</span>
                             {sel && <span className="text-xs font-bold text-orange-light uppercase tracking-wider">Viendo</span>}
                           </div>
                           <div className="text-sm text-silver truncate">{textoPartido(x.tableId)}</div>
@@ -277,7 +302,7 @@ export default function PortadaPage() {
                 />
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center px-4">
-                  <span className="text-silver text-lg">Próxima transmisión en vivo</span>
+                  <span className="text-silver text-lg">{sedeSel != null && txs.length > 0 ? 'Esta sede no está transmitiendo en este momento' : 'Próxima transmisión en vivo'}</span>
                   {CANAL_YOUTUBE_URL && <a href={CANAL_YOUTUBE_URL} target="_blank" rel="noopener noreferrer" className="min-h-[48px] inline-flex items-center px-5 rounded-lg bg-orange text-carbon font-bold">Ver canal de YouTube</a>}
                 </div>
               )}
@@ -286,6 +311,7 @@ export default function PortadaPage() {
               <h1 id="envivo" className="font-display font-extrabold uppercase tracking-wide text-white text-3xl md:text-5xl leading-tight">{txActual && !canalPrueba ? `${txActual.sede} · Mesa ${txActual.mesa}` : (torneoNombre || 'Torneos FEBIU')}</h1>
               {txActual && !canalPrueba ? <p className="mt-1 text-lg text-silver-light">{textoPartido(txActual.tableId)}</p> : enJuegoF.length > 0 && <p className="mt-1 text-lg text-silver-light">Partidos en juego ahora</p>}
             </div>
+            {vistaPrevia && !TRANSMISION_PRESENTADA_POR && <Espacio n={4} texto="Espacio 4 · «Transmisión presentada por…» (irá junto al video en vivo)" className="h-[64px]" />}
             {TRANSMISION_PRESENTADA_POR && (
               <div className="flex flex-col gap-2">
                 <span className="text-xs font-semibold tracking-widest uppercase text-silver-dark">Transmisión presentada por</span>
@@ -295,29 +321,12 @@ export default function PortadaPage() {
           </div>
 
           <div className="w-full lg:flex-1 min-w-0 flex flex-col gap-4">
-            <div className={`${card} p-4 flex flex-col gap-3`}>
-              <div className="flex flex-col gap-1">
-                <label htmlFor="sel-torneo" className="text-xs font-semibold tracking-widest uppercase text-silver-dark">Ver partidos de</label>
-                <select id="sel-torneo" className="input w-full min-h-[52px] text-base font-semibold" value={torneoSel ?? ''} onChange={e => setTorneoSel(e.target.value ? Number(e.target.value) : null)}>
-                  {torneos.length === 0 && <option value="">Sin torneos activos</option>}
-                  {torneos.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
-              </div>
-              <div className="flex flex-col gap-1">
-                <label htmlFor="sel-cat" className="text-xs font-semibold tracking-widest uppercase text-silver-dark">Categoría</label>
-                <select id="sel-cat" className="input w-full min-h-[52px] text-base font-semibold" value={catPartidos} onChange={e => setCatPartidos(e.target.value)}>
-                  <option value="todas">Todas las categorías</option>
-                  {CATEGORIAS.filter(c => c.key !== 'general').map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
-                </select>
-              </div>
-            </div>
-
             <div className={`${card} p-4`}>
               <h2 className="font-display font-bold uppercase tracking-wide text-white text-2xl mb-1">Partidos en juego</h2>
               {enJuegoF.length === 0 ? <p className="text-silver-dark py-3">No hay partidos en juego en este momento.</p> : enJuegoF.map(m => (
                 <div key={m.id} className="flex items-center justify-between gap-3 py-3 border-t border-silver/10">
                   <div className="min-w-0">
-                    <div className="text-xs font-semibold tracking-wider uppercase text-silver-dark">Mesa {m.table?.number ?? '—'}</div>
+                    <div className="text-xs font-semibold tracking-wider uppercase text-silver-dark">{sedeSel == null && variasSedes && m.table?.venue?.name ? `${m.table.venue.name} · ` : ''}Mesa {m.table?.number ?? '—'}</div>
                     <div className="font-semibold text-white">{nombre(m.playerA)} <span className="text-silver-dark">vs</span> {nombre(m.playerB)}</div>
                   </div>
                   <div className="font-mono font-semibold text-orange-light text-lg whitespace-nowrap">{m.result ? `${m.result.setsA} – ${m.result.setsB}` : 'vs'}</div>
@@ -329,7 +338,7 @@ export default function PortadaPage() {
               <h2 className="font-display font-bold uppercase tracking-wide text-white text-2xl mb-1">Próximos partidos</h2>
               {proximosF.length === 0 ? <p className="text-silver-dark py-3">No hay partidos programados.</p> : proximosF.map(m => (
                 <div key={m.id} className="py-3 border-t border-silver/10">
-                  <div className="text-xs font-semibold tracking-wider uppercase text-silver-dark">{m.table?.number ? `Mesa ${m.table.number}` : (m.phase?.name ?? '')}</div>
+                  <div className="text-xs font-semibold tracking-wider uppercase text-silver-dark">{m.table?.number ? `${sedeSel == null && variasSedes && m.table?.venue?.name ? `${m.table.venue.name} · ` : ''}Mesa ${m.table.number}` : (m.phase?.name ?? '')}</div>
                   <div className="font-semibold text-white">{nombre(m.playerA)} <span className="text-silver-dark">vs</span> {nombre(m.playerB)}</div>
                 </div>
               ))}
@@ -339,67 +348,6 @@ export default function PortadaPage() {
           </div>
         </div>
       </section>
-
-      {/* Torneos */}
-      {vistaPrevia && (
-        <div className="max-w-6xl mx-auto px-4 pb-6"><Espacio n={4} texto="Espacio 4 · «Transmisión presentada por…» (irá junto al video en vivo)" className="h-[64px]" /></div>
-      )}
-      <section id="torneos" style={{ scrollMarginTop: 120 }} aria-labelledby="torneos-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
-        <h2 id="torneos-t" className={H2}>Torneos</h2>
-        {torneosActivos.length === 0 ? <p className="text-silver-dark">No hay torneos en juego en este momento.</p> : (
-          <div className="flex flex-wrap gap-4">
-            {torneosActivos.map(x => (
-              <div key={x.id} className={`${card} flex-1 basis-[260px] min-w-0 p-5 flex flex-col gap-3 items-start`}>
-                <span className="inline-flex items-center min-h-[28px] px-3 rounded-full text-xs font-bold tracking-wider uppercase bg-orange text-carbon">En juego</span>
-                <h3 className="font-display font-bold text-2xl text-white leading-tight">{x.name}</h3>
-                <button type="button" onClick={() => irATorneo(x.id)} className="min-h-[48px] px-5 rounded-lg border border-silver/40 text-white font-semibold hover:border-orange-light">Ver partidos y ranking</button>
-              </div>
-            ))}
-          </div>
-        )}
-        {torneosPasados.length > 0 && (
-          <div>
-            <p className="text-sm font-semibold tracking-widest uppercase text-silver-dark mb-2">Torneos ya jugados</p>
-            <div className="flex flex-wrap gap-2">
-              {torneosPasados.map(x => <span key={x.id} className="inline-flex items-center min-h-[36px] px-4 rounded-full border border-silver/25 text-silver-light text-sm">{x.name} · {x.year}</span>)}
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* Campeonatos de los clubes (afiches) */}
-      {afiches.length > 0 && (
-        <section id="campeonatos" style={{ scrollMarginTop: 120 }} aria-labelledby="campeonatos-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
-          <h2 id="campeonatos-t" className={H2}>Campeonatos de los clubes</h2>
-          <p className="text-silver-dark -mt-2">En curso y próximos. Tocá un afiche para verlo grande.</p>
-          <div className="flex flex-wrap gap-4">
-            {afiches.map(a => {
-              const f = (s: string) => s.split('-').reverse().join('/');
-              const url = `${api.defaults.baseURL}/afiches/${a.id}/imagen?v=${a.version}`;
-              return (
-                <div key={a.id} className={`${card} flex-1 basis-[240px] max-w-[320px] min-w-0 overflow-hidden flex flex-col`}>
-                  <button type="button" onClick={() => setAfSel({ ...a, url })} aria-label={`Ver afiche de ${a.titulo}`} className="block">
-                    <img src={url} alt={`Afiche: ${a.titulo}`} loading="lazy" className="w-full aspect-[3/4] object-cover" />
-                  </button>
-                  <div className="p-4 flex flex-col gap-1">
-                    <span className={`self-start inline-flex items-center min-h-[24px] px-3 rounded-full text-xs font-bold tracking-wider uppercase ${a.estado === 'en_curso' ? 'bg-orange text-carbon' : 'border border-silver/40 text-silver-light'}`}>{a.estado === 'en_curso' ? 'En curso' : 'Próximo'}</span>
-                    <h3 className="font-display font-bold text-xl text-white leading-tight">{a.titulo}</h3>
-                    <p className="text-silver-light text-sm">{a.club}{a.lugar ? ` · ${a.lugar}` : ''}</p>
-                    <p className="text-silver-dark text-sm">{f(a.fechaInicio)}{a.fechaFin && a.fechaFin !== a.fechaInicio ? ` al ${f(a.fechaFin)}` : ''}</p>
-                    {a.contacto && <p className="text-silver-light text-sm">Inscripciones: {a.contacto}</p>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-      {afSel && (
-        <div role="dialog" aria-modal="true" aria-label={afSel.titulo} onClick={() => setAfSel(null)} className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
-          <button type="button" onClick={() => setAfSel(null)} aria-label="Cerrar" className="absolute top-3 right-3 min-h-[48px] min-w-[48px] rounded-full bg-white/10 text-white text-2xl">×</button>
-          <img src={afSel.url} alt={`Afiche: ${afSel.titulo}`} className="max-h-full max-w-full object-contain" onClick={e => e.stopPropagation()} />
-        </div>
-      )}
 
       {/* Temporada */}
       <section id="temporada" style={{ scrollMarginTop: 120 }} aria-labelledby="temporada-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
@@ -417,16 +365,31 @@ export default function PortadaPage() {
             </div>
           ))}
         </div>
+        {torneosPasados.length > 0 && (
+          <div>
+            <p className="text-sm font-semibold tracking-widest uppercase text-silver-dark mb-2">Torneos ya jugados</p>
+            <div className="flex flex-wrap gap-2">
+              {torneosPasados.map(x => <span key={x.id} className="inline-flex items-center min-h-[36px] px-4 rounded-full border border-silver/25 text-silver-light text-sm">{x.name} · {x.year}</span>)}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Ranking */}
       <section id="ranking" style={{ scrollMarginTop: 120 }} aria-labelledby="ranking-t" className="bg-[#0e0e0e] border-y border-silver/15">
-        <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col gap-5">
+        <div className="max-w-6xl mx-auto px-4 py-5 flex flex-col gap-5">
           <div>
-            <h2 id="ranking-t" className={H2}>Ranking acumulado</h2>
+            <h2 id="ranking-t" className="m-0">
+              <button type="button" aria-expanded={rankAbierto} aria-controls="ranking-panel" onClick={() => setRankAbierto(v => !v)} className="w-full min-h-[56px] flex items-center justify-between gap-3 text-left">
+                <span className={H2}>Ranking acumulado</span>
+                <span className="shrink-0 inline-flex items-center min-h-[44px] px-4 rounded-full border border-silver/35 text-white font-semibold text-sm">{rankAbierto ? 'Ocultar ▴' : 'Ver ranking ▾'}</span>
+              </button>
+            </h2>
             {vistaPrevia && <Espacio n={6} texto="Espacio 6 · «Ranking presentado por…»" className="h-[56px] mt-3" />}
             <p className="text-silver-dark mt-1">{torneoNombre ? `${torneoNombre} · suma de los circuitos jugados` : 'Suma de los circuitos de la temporada'}</p>
           </div>
+          {rankAbierto && (
+          <div id="ranking-panel" className="flex flex-col gap-5">
           <div role="group" aria-label="Categoría" className="flex gap-2 overflow-x-auto pb-1">
             {CATEGORIAS.map(c => (
               <button key={c.key} type="button" aria-pressed={cat === c.key} onClick={() => setCat(c.key)}
@@ -455,34 +418,35 @@ export default function PortadaPage() {
             )}
           </div>
           <Link to="/ranking-final" className="min-h-[52px] flex items-center justify-center rounded-xl border border-silver/35 text-white font-semibold sm:w-fit sm:px-8">Ver ranking completo</Link>
+          </div>
+          )}
         </div>
       </section>
 
-      {/* Clubes y jugadores */}
-      <section id="clubes" style={{ scrollMarginTop: 120 }} aria-labelledby="clubes-t" className="max-w-6xl mx-auto px-4 py-10 flex flex-col gap-5">
-        <h2 id="clubes-t" className={H2}>Clubes y jugadores</h2>
-        <label>
-          <span className="sr-only">Buscar jugador o club</span>
-          <input id="buscar-jugador" type="search" value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar jugador o club" className="input w-full min-h-[52px] text-base" />
-        </label>
-        {gruposF.length === 0 ? <p className="text-silver-dark">No se encontró ningún jugador ni club con ese nombre.</p> : (
-          <div className="flex flex-col gap-2">
-            {gruposF.map(([club, lista]) => (
-              <details key={club} open={!!busca.trim()} className={`${card} group`}>
-                <summary className="min-h-[56px] px-4 py-3 flex items-center justify-between gap-3 cursor-pointer list-none">
-                  <span className="font-display font-bold text-xl text-white">{club}</span>
-                  <span className="text-silver-dark text-sm shrink-0">{lista.length} {lista.length === 1 ? 'jugador' : 'jugadores'} ▾</span>
-                </summary>
-                <ul className="px-4 pb-4 grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
-                  {lista.map(j => (
-                    <li key={j.id} className="py-1 text-silver-light"><span className="font-semibold text-white">{j.nombre}</span> <span className="text-sm text-silver">· {j.categoria}</span></li>
-                  ))}
-                </ul>
-              </details>
-            ))}
-          </div>
-        )}
-      </section>
+      {/* Memorias del Billar Uruguayo: aparece sola cuando hay una entrega publicada */}
+      {entregasVisibles.length > 0 && (() => {
+        const e = entregasVisibles[0];
+        return (
+          <section id="memorias" style={{ scrollMarginTop: 120 }} aria-labelledby="memorias-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold tracking-[.19em] uppercase text-orange-light">Archivo histórico</p>
+                <h2 id="memorias-t" className={H2}>Memorias del Billar Uruguayo</h2>
+              </div>
+              <Link to={`/portada/memorias${qv}`} className="min-h-[44px] inline-flex items-center font-semibold text-orange-light">Ver todas las entregas</Link>
+            </div>
+            <Link to={`/portada/memorias/${e.numero}${qv}`} className={`${card} overflow-hidden flex flex-col md:flex-row hover:border-orange-light/60`}>
+              <img src={e.portada} alt={e.portadaAlt} loading="lazy" className="w-full md:w-1/2 h-56 md:h-auto object-cover" />
+              <div className="p-6 flex flex-col gap-2 justify-center">
+                <span className="text-xs font-bold tracking-[.19em] uppercase text-orange-light">Entrega n.º {e.numero}{e.estado !== 'publicado' ? ' · BORRADOR' : ''}</span>
+                <h3 className="font-display font-bold text-3xl text-white leading-tight">{e.titulo}</h3>
+                <p className="text-silver-light">{e.resumen}</p>
+                <span className="min-h-[44px] inline-flex items-center font-semibold text-orange-light">Leer la entrega →</span>
+              </div>
+            </Link>
+          </section>
+        );
+      })()}
 
       {/* Videos */}
       {VIDEOS.length > 0 && (
@@ -537,6 +501,66 @@ export default function PortadaPage() {
         </section>
       )}
 
+      {/* Campeonatos de los clubes (afiches) */}
+      {afiches.length > 0 && (
+        <section id="campeonatos" style={{ scrollMarginTop: 120 }} aria-labelledby="campeonatos-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
+          <h2 id="campeonatos-t" className={H2}>Campeonatos de los clubes</h2>
+          <p className="text-silver-dark -mt-2">En curso y próximos. Tocá un afiche para verlo grande.</p>
+          <div className="flex flex-wrap gap-4">
+            {afiches.map(a => {
+              const f = (s: string) => s.split('-').reverse().join('/');
+              const url = `${api.defaults.baseURL}/afiches/${a.id}/imagen?v=${a.version}`;
+              return (
+                <div key={a.id} className={`${card} flex-1 basis-[240px] max-w-[320px] min-w-0 overflow-hidden flex flex-col`}>
+                  <button type="button" onClick={() => setAfSel({ ...a, url })} aria-label={`Ver afiche de ${a.titulo}`} className="block">
+                    <img src={url} alt={`Afiche: ${a.titulo}`} loading="lazy" className="w-full aspect-[3/4] object-cover" />
+                  </button>
+                  <div className="p-4 flex flex-col gap-1">
+                    <span className={`self-start inline-flex items-center min-h-[24px] px-3 rounded-full text-xs font-bold tracking-wider uppercase ${a.estado === 'en_curso' ? 'bg-orange text-carbon' : 'border border-silver/40 text-silver-light'}`}>{a.estado === 'en_curso' ? 'En curso' : 'Próximo'}</span>
+                    <h3 className="font-display font-bold text-xl text-white leading-tight">{a.titulo}</h3>
+                    <p className="text-silver-light text-sm">{a.club}{a.lugar ? ` · ${a.lugar}` : ''}</p>
+                    <p className="text-silver-dark text-sm">{f(a.fechaInicio)}{a.fechaFin && a.fechaFin !== a.fechaInicio ? ` al ${f(a.fechaFin)}` : ''}</p>
+                    {a.contacto && <p className="text-silver-light text-sm">Inscripciones: {a.contacto}</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+      {afSel && (
+        <div role="dialog" aria-modal="true" aria-label={afSel.titulo} onClick={() => setAfSel(null)} className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
+          <button type="button" onClick={() => setAfSel(null)} aria-label="Cerrar" className="absolute top-3 right-3 min-h-[48px] min-w-[48px] rounded-full bg-white/10 text-white text-2xl">×</button>
+          <img src={afSel.url} alt={`Afiche: ${afSel.titulo}`} className="max-h-full max-w-full object-contain" onClick={e => e.stopPropagation()} />
+        </div>
+      )}
+
+      {/* Clubes y jugadores */}
+      <section id="clubes" style={{ scrollMarginTop: 120 }} aria-labelledby="clubes-t" className="max-w-6xl mx-auto px-4 py-10 flex flex-col gap-5">
+        <h2 id="clubes-t" className={H2}>Clubes y jugadores</h2>
+        <label>
+          <span className="sr-only">Buscar jugador o club</span>
+          <input id="buscar-jugador" type="search" value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar jugador o club" className="input w-full min-h-[52px] text-base" />
+        </label>
+        {gruposF.length === 0 ? <p className="text-silver-dark">No se encontró ningún jugador ni club con ese nombre.</p> : (
+          <div className="flex flex-col gap-2">
+            {gruposF.map(([club, lista]) => (
+              <details key={club} open={!!busca.trim()} className={`${card} group`}>
+                <summary className="min-h-[56px] px-4 py-3 flex items-center justify-between gap-3 cursor-pointer list-none">
+                  <span className="font-display font-bold text-xl text-white">{club}</span>
+                  <span className="text-silver-dark text-sm shrink-0">{lista.length} {lista.length === 1 ? 'jugador' : 'jugadores'} ▾</span>
+                </summary>
+                <ul className="px-4 pb-4 grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
+                  {lista.map(j => (
+                    <li key={j.id} className="py-1 text-silver-light"><span className="font-semibold text-white">{j.nombre}</span> <span className="text-sm text-silver">· {j.categoria}</span></li>
+                  ))}
+                </ul>
+              </details>
+            ))}
+          </div>
+        )}
+      </section>
+
       {/* Reglamento y documentos oficiales (PDF): aparece solo cuando hay documentos cargados */}
       {docs.length > 0 && (
         <section id="reglamento" style={{ scrollMarginTop: 120 }} aria-labelledby="reglamento-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
@@ -563,31 +587,6 @@ export default function PortadaPage() {
           </div>
         </section>
       )}
-
-      {/* Memorias del Billar Uruguayo: aparece sola cuando hay una entrega publicada */}
-      {entregasVisibles.length > 0 && (() => {
-        const e = entregasVisibles[0];
-        return (
-          <section id="memorias" style={{ scrollMarginTop: 120 }} aria-labelledby="memorias-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold tracking-[.19em] uppercase text-orange-light">Archivo histórico</p>
-                <h2 id="memorias-t" className={H2}>Memorias del Billar Uruguayo</h2>
-              </div>
-              <Link to={`/portada/memorias${qv}`} className="min-h-[44px] inline-flex items-center font-semibold text-orange-light">Ver todas las entregas</Link>
-            </div>
-            <Link to={`/portada/memorias/${e.numero}${qv}`} className={`${card} overflow-hidden flex flex-col md:flex-row hover:border-orange-light/60`}>
-              <img src={e.portada} alt={e.portadaAlt} loading="lazy" className="w-full md:w-1/2 h-56 md:h-auto object-cover" />
-              <div className="p-6 flex flex-col gap-2 justify-center">
-                <span className="text-xs font-bold tracking-[.19em] uppercase text-orange-light">Entrega n.º {e.numero}{e.estado !== 'publicado' ? ' · BORRADOR' : ''}</span>
-                <h3 className="font-display font-bold text-3xl text-white leading-tight">{e.titulo}</h3>
-                <p className="text-silver-light">{e.resumen}</p>
-                <span className="min-h-[44px] inline-flex items-center font-semibold text-orange-light">Leer la entrega →</span>
-              </div>
-            </Link>
-          </section>
-        );
-      })()}
 
       {/* Panamericano */}
       <section id="panamericano" style={{ scrollMarginTop: 120 }} aria-labelledby="pana-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
