@@ -64,6 +64,8 @@ export default function PortadaPage() {
   const [txSel, setTxSel] = useState<number | null>(null);
   const [sedeSel, setSedeSel] = useState<number | null>(null); // null = todas las sedes
   const [rankAbierto, setRankAbierto] = useState(false);
+  const [rankTorneo, setRankTorneo] = useState<number | null>(null); // torneo elegido dentro de la seccion Ranking
+  const [rankEligiendo, setRankEligiendo] = useState(false);
   const [sedesApi, setSedesApi] = useState<{ id: number; name: string }[]>([]);
   // Modo prueba: /portada?canal=UCxxxxxxxxxxxxxxxxxxxxxx muestra el directo de ese canal.
   const [params] = useSearchParams();
@@ -131,13 +133,13 @@ export default function PortadaPage() {
   }, [torneos, enJuego, torneoSel]);
 
   useEffect(() => {
-    if (torneoSel == null) return;
+    if (rankTorneo == null) return;
     setRankingCargado(false);
-    api.get(`/acumulado/${torneoSel}`)
+    api.get(`/acumulado/${rankTorneo}`)
       .then(r => setRanking(r.data ?? []))
       .catch(() => setRanking([]))
       .finally(() => setRankingCargado(true));
-  }, [torneoSel]);
+  }, [rankTorneo]);
 
   // Sedes del torneo elegido (por departamento y por partidos), aunque hoy no tengan nada en juego
   useEffect(() => {
@@ -202,7 +204,7 @@ export default function PortadaPage() {
           </Link>
           <nav aria-label="Principal" className="flex gap-1 w-full md:w-auto overflow-x-auto whitespace-nowrap -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <a href="#torneos" className={btnNav}>Inicio</a>
-            <a href="#ranking" className={btnNav} onClick={() => setRankAbierto(true)}>Rankings</a>
+            <a href="#ranking" className={btnNav} onClick={() => { if (rankTorneo == null) setRankEligiendo(true); }}>Rankings</a>
             {entregasVisibles.length > 0 && <a href="#memorias" className={btnNav}>Memorias</a>}
             {VIDEOS.length > 0 && <a href="#videos" className={btnNav}>Videos</a>}
             {(NOTAS.length > 0 || notasWeb.length > 0) && <a href="#notas" className={btnNav}>Notas</a>}
@@ -387,16 +389,39 @@ export default function PortadaPage() {
       <section id="ranking" style={{ scrollMarginTop: 120 }} aria-labelledby="ranking-t" className="bg-[#0e0e0e] border-y border-silver/15">
         <div className="max-w-6xl mx-auto px-4 py-5 flex flex-col gap-5">
           <div>
-            <h2 id="ranking-t" className="m-0">
-              <button type="button" aria-expanded={rankAbierto} aria-controls="ranking-panel" onClick={() => setRankAbierto(v => !v)} className="w-full min-h-[56px] flex items-center justify-between gap-3 text-left">
-                <span className={H2}>Ranking acumulado</span>
-                <span className="shrink-0 inline-flex items-center min-h-[44px] px-4 rounded-full border border-silver/35 text-white font-semibold text-sm">{rankAbierto ? 'Ocultar ▴' : 'Ver ranking ▾'}</span>
-              </button>
-            </h2>
+            <h2 id="ranking-t" className={H2}>Ranking acumulado</h2>
             {vistaPrevia && <Espacio n={6} texto="Espacio 6 · «Ranking presentado por…»" className="h-[56px] mt-3" />}
-            <p className="text-silver-dark mt-1">{torneoNombre ? `${torneoNombre} · suma de los circuitos jugados` : 'Suma de los circuitos de la temporada'}</p>
+            <p className="text-silver-dark mt-1">Elegí un torneo para ver su ranking.</p>
           </div>
-          {rankAbierto && (
+          {rankTorneo == null || rankEligiendo ? (
+            <div className="flex flex-col gap-3">
+              {!rankEligiendo ? (
+                <button type="button" onClick={() => setRankEligiendo(true)} className="self-start min-h-[52px] px-6 rounded-xl bg-orange text-carbon font-bold text-lg">Seleccionar torneo ▾</button>
+              ) : (
+                <>
+                  <div className="text-xs font-semibold tracking-widest uppercase text-silver-dark">Elegí el torneo</div>
+                  {torneos.length === 0 ? <p className="text-silver-dark">No hay torneos en juego en este momento.</p> : (
+                    <div role="group" aria-label="Torneo del ranking" className="flex flex-wrap gap-3">
+                      {torneos.map(t => (
+                        <button key={t.id} type="button" onClick={() => { setRankTorneo(t.id); setRankEligiendo(false); setRankAbierto(false); }}
+                          className={`flex-1 basis-[220px] min-w-0 min-h-[56px] text-left px-4 py-3 rounded-xl border-[1.5px] ${t.id === rankTorneo ? 'border-orange bg-orange/10' : 'border-silver/30 bg-carbon-100'}`}>
+                          <span className="block font-display font-bold text-xl text-white leading-tight">{t.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {rankTorneo != null && <button type="button" onClick={() => setRankEligiendo(false)} className="self-start min-h-[44px] px-4 rounded-lg border border-silver/35 text-white font-semibold text-sm">Cancelar</button>}
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="font-display font-bold text-2xl text-white">{torneos.find(t => t.id === rankTorneo)?.name ?? 'Torneo'}</span>
+              <button type="button" aria-expanded={rankAbierto} aria-controls="ranking-panel" onClick={() => setRankAbierto(v => !v)} className="min-h-[52px] px-6 rounded-xl bg-orange text-carbon font-bold text-lg">{rankAbierto ? 'Ocultar ranking ▴' : 'Ver ranking ▾'}</button>
+              <button type="button" onClick={() => setRankEligiendo(true)} className="min-h-[44px] px-4 rounded-lg border border-silver/35 text-white font-semibold text-sm">Cambiar torneo</button>
+            </div>
+          )}
+          {rankAbierto && rankTorneo != null && !rankEligiendo && (
           <div id="ranking-panel" className="flex flex-col gap-5">
           <div role="group" aria-label="Categoría" className="flex gap-2 overflow-x-auto pb-1">
             {CATEGORIAS.map(c => (

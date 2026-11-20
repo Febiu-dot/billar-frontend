@@ -116,3 +116,4 @@ Sitio público de la Federación de Billar del Uruguay, construido sobre el mism
 - Etiquetas para compartir: scripts/notas-html.mjs (se ejecuta en el build).
 - 20/11/2026: apagado automático de transmisiones reducido de 14 a 8 horas.
 - 20/11/2026: nuevo orden de la portada. Banner del auspiciante, selector de torneo y sede (más categoría), video en vivo con los resultados al lado (filtrados por torneo, sede y categoría), La temporada, Ranking acumulado plegado (se abre con «Ver ranking»), Memorias, Videos, Notas y entrevistas, Campeonatos de los clubes, Clubes y jugadores, Reglamento, Panamericano, Nos acompañan y Mundial.
+- 20/11/2026: el ranking acumulado de la portada tiene su propio selector: «Seleccionar torneo», después «Ver ranking». Ya no depende del torneo elegido arriba.
