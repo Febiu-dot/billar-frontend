@@ -36,6 +36,8 @@ export const CONTACTO = {
 
 export const TRANSMISION_PRESENTADA_POR: Auspiciante | null = null;
 export const AUSPICIANTE_PRINCIPAL: Auspiciante | null = null;
+// Banner que separa los torneos de la parte historica (notas, memorias, reglamento). Si es null, no se muestra (solo en la vista previa).
+export const AUSPICIANTE_ARCHIVO: Auspiciante | null = null;
 export const AUSPICIANTES_OFICIALES: Auspiciante[] = [];
 
 export const VIDEOS: VideoItem[] = [

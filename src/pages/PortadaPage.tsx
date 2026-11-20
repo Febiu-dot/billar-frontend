@@ -8,7 +8,7 @@ import { NOTAS as NOTAS_WEB, publicadasNotas } from '../config/notas';
 import { PANAMERICANO_2026 } from '../config/panamericano2026';
 import {
   YOUTUBE_EMBED_URL, CANAL_YOUTUBE_URL, CONTACTO, TRANSMISION_PRESENTADA_POR,
-  AUSPICIANTE_PRINCIPAL, AUSPICIANTES_OFICIALES, VIDEOS, NOTAS,
+  AUSPICIANTE_PRINCIPAL, AUSPICIANTE_ARCHIVO, AUSPICIANTES_OFICIALES, VIDEOS, NOTAS,
   PANAMERICANO_PROXIMO, MUNDIAL, Auspiciante,
 } from '../config/portadaConfig';
 
@@ -208,10 +208,10 @@ export default function PortadaPage() {
             {entregasVisibles.length > 0 && <a href="#memorias" className={btnNav}>Memorias</a>}
             {VIDEOS.length > 0 && <a href="#videos" className={btnNav}>Videos</a>}
             {(NOTAS.length > 0 || notasWeb.length > 0) && <a href="#notas" className={btnNav}>Notas</a>}
+            {docs.length > 0 && <a href="#reglamento" className={btnNav}>Reglamento</a>}
             {afiches.length > 0 && <a href="#campeonatos" className={btnNav}>Campeonatos</a>}
             <a href="#clubes" className={btnNav} onClick={() => setTimeout(() => document.getElementById('buscar-jugador')?.focus({ preventScroll: true }), 400)}>Jugadores</a>
             <a href="#clubes" className={btnNav}>Clubes</a>
-            {docs.length > 0 && <a href="#reglamento" className={btnNav}>Reglamento</a>}
             <a href="#panamericano" className={btnNav}>Panamericano</a>
             <a href="#mundial" className={`${btnNav} !text-orange-light`}>Mundial 2027</a>
           </nav>
@@ -456,6 +456,20 @@ export default function PortadaPage() {
         </div>
       </section>
 
+      {/* Separador: de aca para abajo es archivo, lectura y reglamento (distinto de los torneos) */}
+      <div id="archivo" style={{ scrollMarginTop: 120 }} className="mt-4 bg-[#101010] border-y-4 border-orange/70">
+        <div className="max-w-6xl mx-auto px-4 pt-10 pb-6 flex flex-col gap-4">
+          <div>
+            <p className="text-xs font-bold tracking-[.19em] uppercase text-orange-light">Para leer y conocer más</p>
+            <h2 className="font-display font-extrabold uppercase tracking-wide text-white text-4xl md:text-6xl leading-[1] mt-1">Historia, notas y reglamento</h2>
+            <p className="text-silver-light text-lg mt-2 max-w-3xl">El archivo histórico del billar uruguayo, entrevistas, videos y los documentos oficiales de la Federación.</p>
+          </div>
+          {AUSPICIANTE_ARCHIVO ? (
+            <div className="w-full h-[90px] md:h-[110px] bg-carbon-100 border border-silver/15 rounded-xl p-3"><Logo a={AUSPICIANTE_ARCHIVO} /></div>
+          ) : vistaPrevia ? (
+            <Espacio n={7} texto="Espacio 7 · Banner de auspiciante del archivo (separa los torneos de la parte histórica)" className="w-full h-[90px] md:h-[110px]" />
+          ) : null}
+        </div>
       {/* Memorias del Billar Uruguayo: aparece sola cuando hay una entrega publicada */}
       {entregasVisibles.length > 0 && (() => {
         const e = entregasVisibles[0];
@@ -534,6 +548,35 @@ export default function PortadaPage() {
         </section>
       )}
 
+      {/* Reglamento y documentos oficiales (PDF): aparece solo cuando hay documentos cargados */}
+      {docs.length > 0 && (
+        <section id="reglamento" style={{ scrollMarginTop: 120 }} aria-labelledby="reglamento-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
+          <h2 id="reglamento-t" className={H2}>Reglamento</h2>
+          <p className="text-silver-dark -mt-2">Documentos oficiales de la Federación de Billar del Uruguay.</p>
+          <div className="flex flex-col gap-4">
+            {docs.map(d => {
+              const url = `${api.defaults.baseURL}/documentos/${d.id}/archivo?v=${d.version}`;
+              return (
+                <div key={d.id} className={`${card} p-5 flex flex-col md:flex-row md:items-center gap-4`}>
+                  <div className="text-5xl" aria-hidden>📄</div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-display font-bold text-2xl text-white leading-tight">{d.titulo}</h3>
+                    {d.descripcion && <p className="text-silver-light mt-1">{d.descripcion}</p>}
+                    <p className="text-silver-dark text-sm mt-1">PDF · {(d.bytes / 1024 / 1024).toFixed(1).replace('.', ',')} MB · actualizado el {d.actualizado.split('-').reverse().join('/')}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <a href={url} target="_blank" rel="noopener noreferrer" className="min-h-[48px] inline-flex items-center px-5 rounded-lg bg-orange text-carbon font-bold">Leer</a>
+                    <a href={`${url}&descargar=1`} className="min-h-[48px] inline-flex items-center px-5 rounded-lg border border-silver/40 text-white font-semibold hover:border-orange-light">Descargar PDF</a>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      </div>
+
       {/* Campeonatos de los clubes (afiches) */}
       {afiches.length > 0 && (
         <section id="campeonatos" style={{ scrollMarginTop: 120 }} aria-labelledby="campeonatos-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
@@ -593,33 +636,6 @@ export default function PortadaPage() {
           </div>
         )}
       </section>
-
-      {/* Reglamento y documentos oficiales (PDF): aparece solo cuando hay documentos cargados */}
-      {docs.length > 0 && (
-        <section id="reglamento" style={{ scrollMarginTop: 120 }} aria-labelledby="reglamento-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
-          <h2 id="reglamento-t" className={H2}>Reglamento</h2>
-          <p className="text-silver-dark -mt-2">Documentos oficiales de la Federación de Billar del Uruguay.</p>
-          <div className="flex flex-col gap-4">
-            {docs.map(d => {
-              const url = `${api.defaults.baseURL}/documentos/${d.id}/archivo?v=${d.version}`;
-              return (
-                <div key={d.id} className={`${card} p-5 flex flex-col md:flex-row md:items-center gap-4`}>
-                  <div className="text-5xl" aria-hidden>📄</div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-display font-bold text-2xl text-white leading-tight">{d.titulo}</h3>
-                    {d.descripcion && <p className="text-silver-light mt-1">{d.descripcion}</p>}
-                    <p className="text-silver-dark text-sm mt-1">PDF · {(d.bytes / 1024 / 1024).toFixed(1).replace('.', ',')} MB · actualizado el {d.actualizado.split('-').reverse().join('/')}</p>
-                  </div>
-                  <div className="flex flex-wrap gap-3">
-                    <a href={url} target="_blank" rel="noopener noreferrer" className="min-h-[48px] inline-flex items-center px-5 rounded-lg bg-orange text-carbon font-bold">Leer</a>
-                    <a href={`${url}&descargar=1`} className="min-h-[48px] inline-flex items-center px-5 rounded-lg border border-silver/40 text-white font-semibold hover:border-orange-light">Descargar PDF</a>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
 
       {/* Panamericano */}
       <section id="panamericano" style={{ scrollMarginTop: 120 }} aria-labelledby="pana-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
