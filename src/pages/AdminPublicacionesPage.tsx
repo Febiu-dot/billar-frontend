@@ -457,7 +457,7 @@ function PlantillaReduccion({ data, tema }: { data: any; tema: any }) {
               <JRow j={c.jugadorA} tema={tema} border /><JRow j={c.jugadorB} tema={tema} />
               <div style={{ background: tema.light, padding: '7px 14px', fontSize: 16, color: tema.header, display: 'flex', gap: 12, fontWeight: 600, flexWrap: 'wrap' }}>
                 {c.hora ? <span>🕐 {c.hora}</span> : null}{c.fecha ? <span>📅 {c.fecha}</span> : null}
-                {c.sede ? <span>📍 {c.sede}{c.mesa ? ` M.${c.mesa}` : ''}</span> : <span style={{ opacity: 0.5 }}>Sin asignar</span>}
+                {c.sede ? <span>📍 {c.sede}{c.mesa ? (c.mesa === 'libre' ? ' · Mesa libre' : ` M.${c.mesa}`) : ''}</span> : <span style={{ opacity: 0.5 }}>Sin asignar</span>}
               </div>
             </div>
           ) : <div key={ci} style={{ flex: 1 }} />)}
@@ -1278,7 +1278,7 @@ function PlantillaCrucesNacional({ data }: { data: any }) {
               fontFamily:"'Saira Condensed', sans-serif", fontWeight:700, fontSize:12,
               color:CV2.goldBright, letterSpacing:'0.06em', whiteSpace:'nowrap',
             }}>
-              {p.hora ? `🕐 ${p.hora}` : ''}{p.hora && p.mesa ? '  ' : ''}{p.mesa ? `M.${p.mesa}` : ''}
+              {p.hora ? `🕐 ${p.hora}` : ''}{p.hora && p.mesa ? '  ' : ''}{p.mesa ? (p.mesa === 'libre' ? 'Mesa libre' : `M.${p.mesa}`) : ''}
             </span>
           )}
         </div>
