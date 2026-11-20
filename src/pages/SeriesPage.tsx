@@ -8,6 +8,8 @@ interface Circuit    { id: number; name: string; tournamentId: number; order: nu
 interface Venue      { id: number; name: string; departamentoId?: number; tables?: { id: number; number: number; status: string }[]; }
 interface Serie      { serieId: string; fase: string; circuitId: number; partidos: any[]; }
 
+const MESA_LIBRE = '__libre__';
+
 export default function SeriesPage() {
   const [tournaments, setTournaments]             = useState<Tournament[]>([]);
   const [circuits, setCircuits]                   = useState<Circuit[]>([]);
@@ -97,8 +99,8 @@ export default function SeriesPage() {
     setAsignandoModal({ serie, partido });
     const hl = horaUY(partido.scheduledAt);
     setForm({
-      venueId: partido.table?.venue?.id?.toString() ?? '',
-      tableId: partido.tableId?.toString() ?? '',
+      venueId: partido.table?.venue?.id?.toString() ?? partido.mesaLibreSedeId?.toString() ?? '',
+      tableId: partido.mesaLibreSedeId ? MESA_LIBRE : (partido.tableId?.toString() ?? ''),
       scheduledAt: fechaUY(partido.scheduledAt) || getUltimaFechaAsignada(),
       hora: hl.hora,
       minutos: hl.minutos || '00',
@@ -113,11 +115,19 @@ export default function SeriesPage() {
       // proximo partido sin asignar, siguiendo el orden de la pantalla
       const todos = series.flatMap(s => s.partidos);
       const idx = todos.findIndex(p => p.id === partido.id);
-      const proximoId = todos.slice(idx + 1).find(p => !(p.tableId || p.scheduledAt))?.id;
+      const proximoId = todos.slice(idx + 1).find(p => !(p.tableId || p.scheduledAt || p.mesaLibreSedeId))?.id;
       const scheduledAt = form.scheduledAt && form.hora
         ? isoDesdeUY(form.scheduledAt, form.hora, form.minutos)
         : undefined;
-      if (form.tableId) await api.put(`/matches/${partido.id}/assign`, { tableId: parseInt(form.tableId) });
+      if (form.tableId === MESA_LIBRE) {
+        // Mesa libre: queda en espera y toma la primera mesa que se desocupe en la sede
+        await api.put(`/matches/${partido.id}/mesa-libre`, { venueId: parseInt(form.venueId) });
+      } else if (form.tableId) {
+        await api.put(`/matches/${partido.id}/assign`, { tableId: parseInt(form.tableId) });
+      } else if (partido.mesaLibreSedeId) {
+        // se saco la marca de "Mesa libre": vuelve a quedar sin mesa
+        await api.put(`/matches/${partido.id}/desasignar`);
+      }
       if (scheduledAt) await api.put(`/matches/${partido.id}`, { scheduledAt });
       if (scheduledAt) setUltimaFechaAsignada(form.scheduledAt);
       setAsignandoModal(null);
@@ -127,6 +137,8 @@ export default function SeriesPage() {
       alert(err?.response?.data?.error ?? 'Error al asignar');
     } finally { setSaving(false); }
   };
+
+  const nombreSede = (venueId: number) => venues.find(v => v.id === venueId)?.name ?? 'sede';
 
   const sedesFiltradas = torneoDepId ? venues.filter(v => v.departamentoId === torneoDepId) : venues;
   const getTablasDeSede = (venueId: string) => sedesFiltradas.find(v => v.id === parseInt(venueId))?.tables ?? [];
@@ -204,12 +216,12 @@ export default function SeriesPage() {
                   <h3 className="font-display text-lg text-chalk">{formatSerieId(serie.serieId)}</h3>
                   <span className="badge-status bg-felt-light/20 text-chalk/40 text-xs capitalize">{serie.fase}</span>
                   <span className="text-chalk/30 text-xs font-mono ml-auto">
-                    {serie.partidos.filter(p => p.tableId || p.scheduledAt).length}/{serie.partidos.length} asignados
+                    {serie.partidos.filter(p => p.tableId || p.scheduledAt || p.mesaLibreSedeId).length}/{serie.partidos.length} asignados
                   </span>
                 </div>
                 <div className="space-y-2">
                   {serie.partidos.map((partido: any) => {
-                    const asignado = partido.tableId || partido.scheduledAt;
+                    const asignado = partido.tableId || partido.scheduledAt || partido.mesaLibreSedeId;
                     return (
                       <div key={partido.id} id={`fila-${partido.id}`} className={`flex items-center justify-between rounded-lg px-3 py-2 border ${asignado ? 'border-green-700/30 bg-green-900/10' : 'border-felt-light/10 bg-felt-dark/30'}`}>
                         <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -230,6 +242,11 @@ export default function SeriesPage() {
                           {partido.table && (
                             <span className="text-green-400/60 text-xs font-mono hidden sm:inline">
                               {partido.table.venue?.name} — Mesa {partido.table.number}
+                            </span>
+                          )}
+                          {!partido.table && partido.mesaLibreSedeId && (
+                            <span className="text-gold text-xs font-mono hidden sm:inline">
+                              {nombreSede(partido.mesaLibreSedeId)} — Mesa libre
                             </span>
                           )}
                           {partido.scheduledAt && (
@@ -278,6 +295,7 @@ export default function SeriesPage() {
                 <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Mesa</label>
                 <select className="input" value={form.tableId} onChange={e => setForm({ ...form, tableId: e.target.value })}>
                   <option value="">Seleccionar mesa...</option>
+                  <option value={MESA_LIBRE}>Mesa libre (la primera que se desocupe)</option>
                   {getTablasDeSede(form.venueId).map((t: any) => <option key={t.id} value={t.id}>Mesa {t.number} — {t.status}</option>)}
                 </select>
               </div>

@@ -455,6 +455,7 @@ export default function MatchesPage() {
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <MatchStatusBadge status={m.status} />
                       {m.table && <span className="text-xs text-chalk/40 font-mono">Mesa {m.table.number} — {m.table.venue?.name}</span>}
+                      {!m.table && (m as any).mesaLibreSedeId && <span className="text-xs text-gold font-mono">Mesa libre — esperando la primera que se desocupe</span>}
                       <span className="text-xs text-chalk/30 font-mono">{m.phase?.circuit?.tournament?.name} · {m.phase?.name} · R{m.round}</span>
                       {horaDe(m) && <span className="text-xs text-gold/60 font-mono">{horaDe(m)}</span>}
                     </div>

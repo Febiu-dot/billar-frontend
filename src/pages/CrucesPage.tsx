@@ -12,7 +12,10 @@ interface Cruce {
   phaseId: number; circuitId: number;
   playerA?: any; playerB?: any; slotA?: string; slotB?: string;
   tableId?: number; table?: any; scheduledAt?: string; status: string;
+  mesaLibreSedeId?: number | null;
 }
+
+const MESA_LIBRE = '__libre__';
 
 export default function CrucesPage() {
   const [tournaments, setTournaments]           = useState<Tournament[]>([]);
@@ -82,6 +85,7 @@ export default function CrucesPage() {
         playerA: m.playerA, playerB: m.playerB,
         slotA: formatoNuevo ? traducirSlot(m.slotA) : m.slotA, slotB: formatoNuevo ? traducirSlot(m.slotB) : m.slotB,
         tableId: m.tableId, table: m.table,
+        mesaLibreSedeId: m.mesaLibreSedeId ?? null,
         scheduledAt: m.scheduledAt, status: m.status,
       }))
       .sort((a: Cruce, b: Cruce) => {
@@ -146,8 +150,8 @@ export default function CrucesPage() {
     setAsignandoModal(cruce);
     const hl = horaUY(cruce.scheduledAt);
     setForm({
-      venueId: cruce.table?.venue?.id?.toString() ?? '',
-      tableId: cruce.tableId?.toString() ?? '',
+      venueId: cruce.table?.venue?.id?.toString() ?? cruce.mesaLibreSedeId?.toString() ?? '',
+      tableId: cruce.mesaLibreSedeId ? MESA_LIBRE : (cruce.tableId?.toString() ?? ''),
       scheduledAt: fechaUY(cruce.scheduledAt) || getUltimaFechaAsignada(),
       hora: hl.hora,
       minutos: hl.minutos || '00',
@@ -160,11 +164,19 @@ export default function CrucesPage() {
     try {
       // proximo cruce sin asignar, siguiendo el orden de la pantalla
       const idx = crucesFiltrados.findIndex(c => c.id === asignandoModal.id);
-      const proximoId = crucesFiltrados.slice(idx + 1).find(c => !(c.tableId || c.scheduledAt))?.id;
+      const proximoId = crucesFiltrados.slice(idx + 1).find(c => !(c.tableId || c.scheduledAt || c.mesaLibreSedeId))?.id;
       const scheduledAt = form.scheduledAt && form.hora
         ? isoDesdeUY(form.scheduledAt, form.hora, form.minutos)
         : undefined;
-      if (form.tableId) await api.put(`/matches/${asignandoModal.id}/assign`, { tableId: parseInt(form.tableId) });
+      if (form.tableId === MESA_LIBRE) {
+        // Mesa libre: queda en espera y toma la primera mesa que se desocupe en la sede
+        await api.put(`/matches/${asignandoModal.id}/mesa-libre`, { venueId: parseInt(form.venueId) });
+      } else if (form.tableId) {
+        await api.put(`/matches/${asignandoModal.id}/assign`, { tableId: parseInt(form.tableId) });
+      } else if (asignandoModal.mesaLibreSedeId) {
+        // se saco la marca de "Mesa libre": vuelve a quedar sin mesa
+        await api.put(`/matches/${asignandoModal.id}/desasignar`);
+      }
       if (scheduledAt) await api.put(`/matches/${asignandoModal.id}`, { scheduledAt });
       if (scheduledAt) setUltimaFechaAsignada(form.scheduledAt);
       setAsignandoModal(null);
@@ -174,6 +186,8 @@ export default function CrucesPage() {
       alert(err?.response?.data?.error ?? 'Error al asignar');
     } finally { setSaving(false); }
   };
+
+  const nombreSede = (venueId: number) => venues.find(v => v.id === venueId)?.name ?? 'sede';
 
   const sedesFiltradas = torneoDepId ? venues.filter(v => v.departamentoId === torneoDepId) : venues;
   const getTablasDeSede = (venueId: string) => sedesFiltradas.find(v => v.id === parseInt(venueId))?.tables ?? [];
@@ -404,7 +418,7 @@ export default function CrucesPage() {
                 </thead>
                 <tbody>
                   {crucesFiltrados.map(cruce => {
-                    const asignado = cruce.tableId || cruce.scheduledAt;
+                    const asignado = cruce.tableId || cruce.scheduledAt || cruce.mesaLibreSedeId;
                     return (
                       <tr key={cruce.id} id={`fila-${cruce.id}`} className={`border-b border-felt-light/5 ${asignado ? 'bg-green-900/5' : ''}`}>
                         <td className="px-4 py-3">
@@ -416,7 +430,9 @@ export default function CrucesPage() {
                         <td className="px-4 py-3 hidden md:table-cell">
                           {cruce.table
                             ? <span className="text-green-400/60 text-xs font-mono">{cruce.table.venue?.name} — Mesa {cruce.table.number}</span>
-                            : <span className="text-chalk/20 text-xs">Sin asignar</span>}
+                            : cruce.mesaLibreSedeId
+                              ? <span className="text-gold text-xs font-mono">{nombreSede(cruce.mesaLibreSedeId)} — Mesa libre</span>
+                              : <span className="text-chalk/20 text-xs">Sin asignar</span>}
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
                           {cruce.scheduledAt
@@ -461,6 +477,7 @@ export default function CrucesPage() {
                 <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Mesa</label>
                 <select className="input" value={form.tableId} onChange={e => setForm({ ...form, tableId: e.target.value })}>
                   <option value="">Seleccionar mesa...</option>
+                  <option value={MESA_LIBRE}>Mesa libre (la primera que se desocupe)</option>
                   {getTablasDeSede(form.venueId).map((t: any) => <option key={t.id} value={t.id}>Mesa {t.number} — {t.status}</option>)}
                 </select>
               </div>
