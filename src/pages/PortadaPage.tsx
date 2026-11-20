@@ -205,11 +205,11 @@ export default function PortadaPage() {
           <nav aria-label="Principal" className="flex gap-1 w-full md:w-auto overflow-x-auto whitespace-nowrap -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <a href="#torneos" className={btnNav}>Inicio</a>
             <a href="#ranking" className={btnNav} onClick={() => { if (rankTorneo == null) setRankEligiendo(true); }}>Rankings</a>
+            {afiches.length > 0 && <a href="#campeonatos" className={btnNav}>Campeonatos</a>}
             {entregasVisibles.length > 0 && <a href="#memorias" className={btnNav}>Memorias</a>}
             {VIDEOS.length > 0 && <a href="#videos" className={btnNav}>Videos</a>}
             {(NOTAS.length > 0 || notasWeb.length > 0) && <a href="#notas" className={btnNav}>Notas</a>}
             {docs.length > 0 && <a href="#reglamento" className={btnNav}>Reglamento</a>}
-            {afiches.length > 0 && <a href="#campeonatos" className={btnNav}>Campeonatos</a>}
             <a href="#clubes" className={btnNav} onClick={() => setTimeout(() => document.getElementById('buscar-jugador')?.focus({ preventScroll: true }), 400)}>Jugadores</a>
             <a href="#clubes" className={btnNav}>Clubes</a>
             <a href="#panamericano" className={btnNav}>Panamericano</a>
@@ -456,6 +456,40 @@ export default function PortadaPage() {
         </div>
       </section>
 
+      {/* Campeonatos de los clubes (afiches) */}
+      {afiches.length > 0 && (
+        <section id="campeonatos" style={{ scrollMarginTop: 120 }} aria-labelledby="campeonatos-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
+          <h2 id="campeonatos-t" className={H2}>Campeonatos de los clubes</h2>
+          <p className="text-silver-dark -mt-2">En curso y próximos. Tocá un afiche para verlo grande.</p>
+          <div className="flex flex-wrap gap-4">
+            {afiches.map(a => {
+              const f = (s: string) => s.split('-').reverse().join('/');
+              const url = `${api.defaults.baseURL}/afiches/${a.id}/imagen?v=${a.version}`;
+              return (
+                <div key={a.id} className={`${card} flex-1 basis-[240px] max-w-[320px] min-w-0 overflow-hidden flex flex-col`}>
+                  <button type="button" onClick={() => setAfSel({ ...a, url })} aria-label={`Ver afiche de ${a.titulo}`} className="block">
+                    <img src={url} alt={`Afiche: ${a.titulo}`} loading="lazy" className="w-full aspect-[3/4] object-cover" />
+                  </button>
+                  <div className="p-4 flex flex-col gap-1">
+                    <span className={`self-start inline-flex items-center min-h-[24px] px-3 rounded-full text-xs font-bold tracking-wider uppercase ${a.estado === 'en_curso' ? 'bg-orange text-carbon' : 'border border-silver/40 text-silver-light'}`}>{a.estado === 'en_curso' ? 'En curso' : 'Próximo'}</span>
+                    <h3 className="font-display font-bold text-xl text-white leading-tight">{a.titulo}</h3>
+                    <p className="text-silver-light text-sm">{a.club}{a.lugar ? ` · ${a.lugar}` : ''}</p>
+                    <p className="text-silver-dark text-sm">{f(a.fechaInicio)}{a.fechaFin && a.fechaFin !== a.fechaInicio ? ` al ${f(a.fechaFin)}` : ''}</p>
+                    {a.contacto && <p className="text-silver-light text-sm">Inscripciones: {a.contacto}</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+      {afSel && (
+        <div role="dialog" aria-modal="true" aria-label={afSel.titulo} onClick={() => setAfSel(null)} className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
+          <button type="button" onClick={() => setAfSel(null)} aria-label="Cerrar" className="absolute top-3 right-3 min-h-[48px] min-w-[48px] rounded-full bg-white/10 text-white text-2xl">×</button>
+          <img src={afSel.url} alt={`Afiche: ${afSel.titulo}`} className="max-h-full max-w-full object-contain" onClick={e => e.stopPropagation()} />
+        </div>
+      )}
+
       {/* Separador: de aca para abajo es archivo, lectura y reglamento (distinto de los torneos) */}
       <div id="archivo" style={{ scrollMarginTop: 120 }} className="mt-4 bg-[#101010] border-y-4 border-orange/70">
         <div className="max-w-6xl mx-auto px-4 pt-10 pb-6 flex flex-col gap-4">
@@ -576,40 +610,6 @@ export default function PortadaPage() {
       )}
 
       </div>
-
-      {/* Campeonatos de los clubes (afiches) */}
-      {afiches.length > 0 && (
-        <section id="campeonatos" style={{ scrollMarginTop: 120 }} aria-labelledby="campeonatos-t" className="max-w-6xl mx-auto px-4 pb-10 flex flex-col gap-5">
-          <h2 id="campeonatos-t" className={H2}>Campeonatos de los clubes</h2>
-          <p className="text-silver-dark -mt-2">En curso y próximos. Tocá un afiche para verlo grande.</p>
-          <div className="flex flex-wrap gap-4">
-            {afiches.map(a => {
-              const f = (s: string) => s.split('-').reverse().join('/');
-              const url = `${api.defaults.baseURL}/afiches/${a.id}/imagen?v=${a.version}`;
-              return (
-                <div key={a.id} className={`${card} flex-1 basis-[240px] max-w-[320px] min-w-0 overflow-hidden flex flex-col`}>
-                  <button type="button" onClick={() => setAfSel({ ...a, url })} aria-label={`Ver afiche de ${a.titulo}`} className="block">
-                    <img src={url} alt={`Afiche: ${a.titulo}`} loading="lazy" className="w-full aspect-[3/4] object-cover" />
-                  </button>
-                  <div className="p-4 flex flex-col gap-1">
-                    <span className={`self-start inline-flex items-center min-h-[24px] px-3 rounded-full text-xs font-bold tracking-wider uppercase ${a.estado === 'en_curso' ? 'bg-orange text-carbon' : 'border border-silver/40 text-silver-light'}`}>{a.estado === 'en_curso' ? 'En curso' : 'Próximo'}</span>
-                    <h3 className="font-display font-bold text-xl text-white leading-tight">{a.titulo}</h3>
-                    <p className="text-silver-light text-sm">{a.club}{a.lugar ? ` · ${a.lugar}` : ''}</p>
-                    <p className="text-silver-dark text-sm">{f(a.fechaInicio)}{a.fechaFin && a.fechaFin !== a.fechaInicio ? ` al ${f(a.fechaFin)}` : ''}</p>
-                    {a.contacto && <p className="text-silver-light text-sm">Inscripciones: {a.contacto}</p>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-      {afSel && (
-        <div role="dialog" aria-modal="true" aria-label={afSel.titulo} onClick={() => setAfSel(null)} className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
-          <button type="button" onClick={() => setAfSel(null)} aria-label="Cerrar" className="absolute top-3 right-3 min-h-[48px] min-w-[48px] rounded-full bg-white/10 text-white text-2xl">×</button>
-          <img src={afSel.url} alt={`Afiche: ${afSel.titulo}`} className="max-h-full max-w-full object-contain" onClick={e => e.stopPropagation()} />
-        </div>
-      )}
 
       {/* Clubes y jugadores */}
       <section id="clubes" style={{ scrollMarginTop: 120 }} aria-labelledby="clubes-t" className="max-w-6xl mx-auto px-4 py-10 flex flex-col gap-5">
