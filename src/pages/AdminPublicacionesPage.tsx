@@ -347,9 +347,17 @@ function PubFooter({ notas, tema }: { notas: string; tema: any }) {
 }
 
 function JRow({ j, tema, border }: { j: any; tema: any; border?: boolean }) {
-  // Primera Nacional se distingue de Primera con dorado oscuro (antes ambas salían en azul)
-  const cat = (!j.esSlot && j.categoriaNacional === 'primera-nacional')
-    ? { text: '#7a5a00', badge: '#8a6a10', light: '#fbf3da' }
+  // En torneos nacionales el color sale de la categoría NACIONAL del ranking inicial (no de la departamental).
+  // Primera Nacional va en dorado oscuro para distinguirse de Primera (azul).
+  const COLOR_CAT_NAC: Record<string, { text: string; badge: string; light: string }> = {
+    'master-nacional':  { text: '#4a1070', badge: '#4a1070', light: '#f5eef8' },
+    'primera-nacional': { text: '#7a5a00', badge: '#8a6a10', light: '#fbf3da' },
+    'primera':          { text: '#014f86', badge: '#014f86', light: '#e8f4fd' },
+    'segunda':          { text: '#6B2737', badge: '#6B2737', light: '#fbeef1' },
+    'tercera':          { text: '#1a5c2a', badge: '#1a5c2a', light: '#edf7ef' },
+  };
+  const cat = (!j.esSlot && j.categoriaNacional && COLOR_CAT_NAC[j.categoriaNacional])
+    ? COLOR_CAT_NAC[j.categoriaNacional]
     : getCatColor(j.esSlot ? null : j.categoria);
   return (
     <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', gap: 10, borderBottom: border ? `1px solid ${tema.light}` : 'none', minHeight: 48, fontFamily: F }}>
@@ -1880,7 +1888,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
-const BUILD_TAG = 'pub-2026-11-21-primera-nacional-color';
+const BUILD_TAG = 'pub-2026-11-21-color-categoria-nacional';
 
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
