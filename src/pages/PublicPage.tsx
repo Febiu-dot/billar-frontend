@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-11-21-color-categoria-nacional
+// PUBLIC_BUILD = pub-public-2026-11-21-cruces-64-en-2-partes
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';

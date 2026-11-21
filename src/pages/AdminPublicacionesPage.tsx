@@ -36,6 +36,8 @@ const TEMAS: Record<string, { header: string; accent: string; light: string; bad
   segunda:          { header: '#6B2737', accent: '#8a3447', light: '#fbeef1', badge: '#6B2737' },
   'ranking-segunda': { header: '#6B2737', accent: '#8a3447', light: '#fbeef1', badge: '#6B2737' },
   'cruces-64':      { header: '#6B2737', accent: '#8a3447', light: '#fbeef1', badge: '#6B2737' },
+  'cruces-64-parte-1': { header: '#6B2737', accent: '#8a3447', light: '#fbeef1', badge: '#6B2737' },
+  'cruces-64-parte-2': { header: '#6B2737', accent: '#8a3447', light: '#fbeef1', badge: '#6B2737' },
   'cruces-32':      { header: '#6B2737', accent: '#8a3447', light: '#fbeef1', badge: '#6B2737' },
   primera:          { header: '#014f86', accent: '#0277bd', light: '#e8f4fd', badge: '#014f86' },
   master:           { header: '#4a1070', accent: '#7b1fa2', light: '#f5eef8', badge: '#4a1070' },
@@ -117,6 +119,8 @@ const FASES = [
   { value: 'segunda',           label: '🟠 Series Segunda' },
   { value: 'ranking-segunda',   label: '📋 Ranking de Segunda (1° y 2° → cruces)' },
   { value: 'cruces-64',         label: '🟠 Cruces de 64 a 32 (circuito nacional)' },
+  { value: 'cruces-64-parte-1', label: '🟠 Cruces de 64 a 32 — Parte 1 de 2' },
+  { value: 'cruces-64-parte-2', label: '🟠 Cruces de 64 a 32 — Parte 2 de 2' },
   { value: 'cruces-32',         label: '🟠 Cruces de 32 a 16 (circuito nacional)' },
   { value: 'primera',           label: '🔵 Cruces Primera / con Primera Nacional' },
   { value: 'master',            label: '🟣 Fase Máster (cruces)' },
@@ -1888,7 +1892,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
-const BUILD_TAG = 'pub-2026-11-21-color-categoria-nacional';
+const BUILD_TAG = 'pub-2026-11-21-cruces-64-en-2-partes';
 
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
@@ -2065,6 +2069,21 @@ export default function AdminPublicacionesPage() {
           sufijo = ` — PARTE ${tipoFase.endsWith('1') ? 1 : 2} DE 2`;
         }
         setPubData({ tipo: 'ranking', tipoFase, torneo: circuito.torneoNombre, circuito: circuitosIncluidos, temporada: String(circuito.torneoYear), fase: `RANKING ACUMULADO${sufijo} — LUEGO DEL CIRCUITO ${lastCircuitOrder}`, formato: '', fechaPrincipal: `Incluye: ${circuitosIncluidos}`, jugadores });
+        setNotas(''); setLoading(false); return;
+      }
+
+      // Cruces de 64 a 32 divididos en 2 partes: se pide la publicación completa y se reparten los cruces
+      // en dos mitades de filas completas (de a 2 cruces por fila).
+      const mCruces = tipoFase.match(/^cruces-64-parte-([12])$/);
+      if (mCruces) {
+        const resC = await api.get(`/publicaciones/${circuitId}/cruces-64`);
+        const d = resC.data;
+        const todos: any[] = d.cruces ?? [];
+        const filasPorParte = Math.ceil(Math.ceil(todos.length / 2) / 2);
+        const n = Number(mCruces[1]);
+        const cruces = todos.slice((n - 1) * filasPorParte * 2, n * filasPorParte * 2);
+        if (cruces.length === 0) { setError(`No hay cruces para la parte ${n} (hay ${todos.length} cruces en total).`); setLoading(false); return; }
+        setPubData({ ...d, tipoFase, cruces, fase: `${d.fase ?? ''} — PARTE ${n} DE 2` });
         setNotas(''); setLoading(false); return;
       }
 
