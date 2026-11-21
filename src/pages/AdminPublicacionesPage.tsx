@@ -47,6 +47,12 @@ const TEMAS: Record<string, { header: string; accent: string; light: string; bad
   acumulado:        { header: '#1a3a5c', accent: '#1565c0', light: '#e8f0fe', badge: '#1a3a5c' },
   'series-nacional':  { header: '#06182f', accent: '#f4c430', light: '#0a223f', badge: '#014f86' },
   'inicial-nacional': { header: '#06182f', accent: '#f4c430', light: '#0a223f', badge: '#014f86' },
+  'series-nacional-parte-1': { header: '#06182f', accent: '#f4c430', light: '#0a223f', badge: '#014f86' },
+  'series-nacional-parte-2': { header: '#06182f', accent: '#f4c430', light: '#0a223f', badge: '#014f86' },
+  'series-nacional-parte-3': { header: '#06182f', accent: '#f4c430', light: '#0a223f', badge: '#014f86' },
+  'inicial-nacional-parte-1': { header: '#06182f', accent: '#f4c430', light: '#0a223f', badge: '#014f86' },
+  'inicial-nacional-parte-2': { header: '#06182f', accent: '#f4c430', light: '#0a223f', badge: '#014f86' },
+  'inicial-nacional-parte-3': { header: '#06182f', accent: '#f4c430', light: '#0a223f', badge: '#014f86' },
   'bracket-master': { header: '#4a1070', accent: '#7b1fa2', light: '#f5eef8', badge: '#4a1070' },
   'bracket-nacional': { header: '#135c1a', accent: '#f5d020', light: '#fffde7', badge: '#135c1a' },
   'cruces-nacional':  { header: '#06182f', accent: '#f4c430', light: '#0a223f', badge: '#014f86' },
@@ -1871,7 +1877,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
-const BUILD_TAG = 'pub-2026-10-17-bracket-master-v3';
+const BUILD_TAG = 'pub-2026-11-21-series-nacional-3-partes';
 
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();
@@ -2048,6 +2054,22 @@ export default function AdminPublicacionesPage() {
           sufijo = ` — PARTE ${tipoFase.endsWith('1') ? 1 : 2} DE 2`;
         }
         setPubData({ tipo: 'ranking', tipoFase, torneo: circuito.torneoNombre, circuito: circuitosIncluidos, temporada: String(circuito.torneoYear), fase: `RANKING ACUMULADO${sufijo} — LUEGO DEL CIRCUITO ${lastCircuitOrder}`, formato: '', fechaPrincipal: `Incluye: ${circuitosIncluidos}`, jugadores });
+        setNotas(''); setLoading(false); return;
+      }
+
+      // Series nacionales divididas en 3 partes: se pide la publicación completa y se reparten
+      // las series en 3 bloques de filas completas (de a 2 series por fila), sin cortar ninguna a la mitad.
+      const mParte = tipoFase.match(/^(inicial-nacional|series-nacional)-parte-([123])$/);
+      if (mParte) {
+        const resP = await api.get(`/publicaciones/${circuitId}/${mParte[1]}`);
+        const d = resP.data;
+        const todas: any[] = d.series ?? [];
+        const filas = Math.ceil(todas.length / 2);
+        const filasPorParte = Math.ceil(filas / 3);
+        const n = Number(mParte[2]);
+        const series = todas.slice((n - 1) * filasPorParte * 2, n * filasPorParte * 2);
+        if (series.length === 0) { setError(`No hay series para la parte ${n} (hay ${todas.length} series en total).`); setLoading(false); return; }
+        setPubData({ ...d, tipoFase, series, fase: `${d.fase ?? ''} — PARTE ${n} DE 3` });
         setNotas(''); setLoading(false); return;
       }
 
@@ -2285,7 +2307,13 @@ export default function AdminPublicacionesPage() {
                   const fasesDep = FASES.filter(f => !['series-nacional','cruces-nacional','bracket-nacional','inicial-nacional'].includes(f.value));
                   const fasesNac = [
                     { value: 'inicial-nacional',           label: '📋 Inicial (fixture sin resultados)' },
+                    { value: 'inicial-nacional-parte-1',   label: '📋 Inicial — Parte 1 de 3' },
+                    { value: 'inicial-nacional-parte-2',   label: '📋 Inicial — Parte 2 de 3' },
+                    { value: 'inicial-nacional-parte-3',   label: '📋 Inicial — Parte 3 de 3' },
                     { value: 'series-nacional',            label: '🎱 Series Nacional (con resultados)' },
+                    { value: 'series-nacional-parte-1',    label: '🎱 Series Nacional — Parte 1 de 3' },
+                    { value: 'series-nacional-parte-2',    label: '🎱 Series Nacional — Parte 2 de 3' },
+                    { value: 'series-nacional-parte-3',    label: '🎱 Series Nacional — Parte 3 de 3' },
                     { value: 'ranking',                    label: '🏅 Ranking del Circuito' },
                     { value: 'cruces-nacional',            label: '⚔️ Cruces Nacional' },
                     { value: 'bracket-nacional',           label: '🏟 Bracket Nacional' },
@@ -2468,7 +2496,7 @@ export default function AdminPublicacionesPage() {
                 <button className="btn-primary px-8" disabled={exportando} onClick={exportar}>
                   {exportando ? 'Exportando...' : '⬇ Exportar PNG'}
                 </button>
-                {(pubData?.tipo === 'inicial-nacional' || pubData?.tipo === 'series-nacional') && (
+                {(pubData?.tipo === 'inicial-nacional' || pubData?.tipo === 'series-nacional') && !String(tipoFase).includes('-parte-') && (
                   <button className="btn-primary px-8" disabled={exportando} onClick={exportarEnPartes}
                     style={{ background: 'linear-gradient(135deg, #1a3560, #0a223f)', border: '1px solid #f4c43055' }}>
                     {exportando ? 'Exportando...' : '⬇ Exportar en 2 partes (WhatsApp)'}

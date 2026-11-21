@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-11-20-ranking-publicar
+// PUBLIC_BUILD = pub-public-2026-11-21-series-3-partes
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
