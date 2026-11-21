@@ -347,7 +347,10 @@ function PubFooter({ notas, tema }: { notas: string; tema: any }) {
 }
 
 function JRow({ j, tema, border }: { j: any; tema: any; border?: boolean }) {
-  const cat = getCatColor(j.esSlot ? null : j.categoria);
+  // Primera Nacional se distingue de Primera con dorado oscuro (antes ambas salían en azul)
+  const cat = (!j.esSlot && j.categoriaNacional === 'primera-nacional')
+    ? { text: '#7a5a00', badge: '#8a6a10', light: '#fbf3da' }
+    : getCatColor(j.esSlot ? null : j.categoria);
   return (
     <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', gap: 10, borderBottom: border ? `1px solid ${tema.light}` : 'none', minHeight: 48, fontFamily: F }}>
       {!j.esSlot && j.ranking !== null ? (
@@ -1877,7 +1880,7 @@ function PubContenido({ data, tema, notas, sala, fechaBracket, horas }:
 }
 
 // ── Página principal ──────────────────────────────────────────────────
-const BUILD_TAG = 'pub-2026-11-21-series-nacional-3-partes';
+const BUILD_TAG = 'pub-2026-11-21-primera-nacional-color';
 
 export default function AdminPublicacionesPage() {
   const { user } = useAuth();

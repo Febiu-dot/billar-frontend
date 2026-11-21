@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-11-21-series-3-partes
+// PUBLIC_BUILD = pub-public-2026-11-21-primera-nacional-color
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
