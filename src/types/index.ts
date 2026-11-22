@@ -22,6 +22,7 @@ export interface Venue {
   name: string;
   address?: string;
   city?: string;
+  phone?: string | null;
   departamentoId?: number;
   departamento?: Departamento;
   tables?: Table[];

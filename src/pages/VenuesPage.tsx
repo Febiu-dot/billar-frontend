@@ -9,7 +9,7 @@ export default function VenuesPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editVenue, setEditVenue] = useState<Venue | null>(null);
-  const [form, setForm] = useState({ name: '', address: '', city: '', departamentoId: '' });
+  const [form, setForm] = useState({ name: '', address: '', city: '', phone: '', departamentoId: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -28,14 +28,14 @@ export default function VenuesPage() {
 
   const openAdd = () => {
     setEditVenue(null);
-    setForm({ name: '', address: '', city: '', departamentoId: '' });
+    setForm({ name: '', address: '', city: '', phone: '', departamentoId: '' });
     setError('');
     setShowModal(true);
   };
 
   const openEdit = (v: Venue) => {
     setEditVenue(v);
-    setForm({ name: v.name, address: v.address ?? '', city: v.city ?? '', departamentoId: v.departamentoId?.toString() ?? '' });
+    setForm({ name: v.name, address: v.address ?? '', city: v.city ?? '', phone: v.phone ?? '', departamentoId: v.departamentoId?.toString() ?? '' });
     setError('');
     setShowModal(true);
   };
@@ -52,7 +52,7 @@ export default function VenuesPage() {
         await api.post('/venues', payload);
       }
       setShowModal(false);
-      setForm({ name: '', address: '', city: '', departamentoId: '' });
+      setForm({ name: '', address: '', city: '', phone: '', departamentoId: '' });
       fetchVenues();
     } catch {
       setError('Error al guardar la sede');
@@ -131,6 +131,7 @@ export default function VenuesPage() {
                     <h3 className="font-semibold text-chalk text-lg">{v.name}</h3>
                     {v.address && <p className="text-chalk/50 text-sm">{v.address}</p>}
                     {v.city && <p className="text-chalk/40 text-xs">{v.city}</p>}
+                    {v.phone && <p className="text-chalk/50 text-sm mt-0.5">Tel. {v.phone}</p>}
                     {v.departamento && (
                       <p className="text-gold/60 text-xs font-mono mt-1">{v.departamento.nombre}</p>
                     )}
@@ -180,6 +181,10 @@ export default function VenuesPage() {
             <div>
               <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Ciudad</label>
               <input className="input" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} placeholder="Montevideo" />
+            </div>
+            <div>
+              <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Teléfono de contacto</label>
+              <input className="input" type="tel" inputMode="tel" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="099 123 456" />
             </div>
             <div>
               <label className="block text-chalk/60 text-xs uppercase tracking-widest mb-1.5">Departamento</label>

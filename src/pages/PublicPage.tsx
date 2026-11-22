@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-11-22-sin-selector-sede-1
+// PUBLIC_BUILD = pub-public-2026-11-22-sede-telefono-1
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
