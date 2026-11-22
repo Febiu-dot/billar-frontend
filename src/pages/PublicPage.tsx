@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-11-22-circuito-activo
+// PUBLIC_BUILD = pub-public-2026-11-22-envivo-boton-1
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
