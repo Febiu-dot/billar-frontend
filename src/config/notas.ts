@@ -8,7 +8,7 @@
 export type BloqueNota =
   | { t: 'p'; texto: string; inicial?: boolean }
   | { t: 'h2'; texto: string }
-  | { t: 'cita'; texto: string }
+  | { t: 'cita'; texto: string }  // cita destacada (usar una sola por nota)
   | { t: 'fig'; src: string; alt: string; pie?: string; vertical?: boolean }  // vertical: foto de pie, se muestra entera y angosta
   | { t: 'datos'; items: { valor: string; etiqueta: string }[] }
   | { t: 'tabla'; columnas: string[]; filas: string[][] }
@@ -104,7 +104,7 @@ export const NOTAS: Nota[] = [
     fecha: null,
     tipo: 'Nota',
     titulo: "Verónica Gutiérrez: comenzó a jugar al billar a los 54 años y llegó a la élite mundial",
-    bajada: "Tricampeona nacional, campeona panamericana y quinta en el Mundial de Madrid 2025, la jugadora uruguaya demuestra que nunca es tarde para descubrir una pasión y alcanzar grandes objetivos deportivos.",
+    bajada: "Tricampeona nacional de cinco quillas, fue quinta en el Mundial de Madrid 2025 y se consagró campeona panamericana en Uruguay en 2026",
     resumen: "Tricampeona nacional, campeona panamericana y quinta en el Mundial de Madrid 2025: empezó a jugar a los 54 años y llegó a la élite mundial.",
     autor: 'FEBIU',
     imagen: '/notas/veronica-gutierrez/veronica-1.jpg',
@@ -117,7 +117,7 @@ export const NOTAS: Nota[] = [
       { t: "p", texto: "Tres campeonatos nacionales consecutivos, un título panamericano y un quinto puesto mundial forman parte de una trayectoria tan breve como extraordinaria." },
       { t: "datos", items: [{"valor": "54", "etiqueta": "años tenía cuando empezó a jugar, a comienzos de 2024"}, {"valor": "3", "etiqueta": "campeonatos nacionales consecutivos: 2024, 2025 y 2026"}, {"valor": "2026", "etiqueta": "campeona panamericana, en Uruguay"}, {"valor": "5.º", "etiqueta": "puesto en el Mundial de Madrid 2025"}] },
       { t: "p", texto: "Pero detrás de esos resultados hay una historia de aprendizaje, perseverancia, apoyo familiar y una pasión que apareció cuando menos lo esperaba." },
-      { t: "h2", texto: "Una pasión que comenzó acompañando a su esposo" },
+      { t: "h2", texto: "Los primeros tiros en Lavalleja" },
       { t: "p", texto: "El primer acercamiento de Verónica al billar fue casi casual." },
       { t: "p", texto: "Su esposo practicaba este deporte y ella comenzó a acompañarlo a entrenamientos y torneos. Poco a poco, lo que inicialmente observaba desde afuera despertó su curiosidad." },
       { t: "p", texto: "«Me enamoré de la posibilidad de aprender permanentemente, de buscar mejorar cada tiro y de descubrir que detrás de cada jugada hay una estrategia, concentración y mucha dedicación», recuerda." },
@@ -132,7 +132,7 @@ export const NOTAS: Nota[] = [
       { t: "p", texto: "En el plano internacional obtuvo el vicecampeonato panamericano en Santa Fe, Argentina, durante el período 2024–2025, y posteriormente se consagró campeona panamericana en Uruguay, en 2026." },
       { t: "fig", src: "/notas/veronica-gutierrez/veronica-panamericano.jpg", alt: "Verónica Gutiérrez sonriendo con el trofeo de campeona del Panamericano de 5 Quillas Uruguay 2026, en la Sala Willy Billar, junto al cartel del campeonato", pie: "Verónica Gutiérrez con el trofeo en el Panamericano de Uruguay 2026.", vertical: true },
       { t: "p", texto: "Estos resultados la consolidaron como una de las principales representantes femeninas del billar uruguayo de cinco quillas." },
-      { t: "p", texto: "Sin embargo, uno de los momentos más importantes de su trayectoria llegaría en España." },
+      { t: "p", texto: "Sin embargo, antes de ese título panamericano, Verónica había vivido en España uno de los momentos más importantes de su trayectoria: el Mundial de 2025." },
       { t: "h2", texto: "Madrid 2025: entre las mejores del mundo" },
       { t: "p", texto: "En noviembre de 2025, Verónica participó en el Campeonato Mundial Femenino de Billar Cinco Quillas, disputado en Madrid." },
       { t: "p", texto: "Allí alcanzó el quinto puesto, un resultado de enorme importancia en su carrera deportiva." },

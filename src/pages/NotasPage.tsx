@@ -89,11 +89,16 @@ function Indice() {
 
 function Pieza({ b }: { b: BloqueNota }) {
   if (b.t === 'h2') return <h2 className="font-display font-extrabold uppercase tracking-wide text-white text-2xl md:text-4xl leading-tight mt-12 mb-4 pl-4 border-l-4 border-orange">{b.texto}</h2>;
-  if (b.t === 'cita') return <blockquote className="border-l-4 border-orange my-8 py-2 pl-6 text-xl md:text-2xl text-white"><Texto s={b.texto} /></blockquote>;
+  if (b.t === 'cita') return (
+    <blockquote className="relative my-12 rounded-2xl bg-carbon-100 border border-silver/15 border-l-[6px] border-l-orange px-6 py-7 md:px-10 md:py-9">
+      <span aria-hidden="true" className="absolute -top-5 left-5 font-display font-extrabold text-orange text-7xl leading-none select-none">“</span>
+      <p className="font-display font-bold uppercase tracking-wide text-white text-2xl md:text-4xl leading-tight m-0"><Texto s={b.texto} /></p>
+    </blockquote>
+  );
   if (b.t === 'fig') return (
-    <figure className="my-8">
-      <img src={b.src} alt={b.alt} loading="lazy" className={b.vertical ? 'block mx-auto w-full max-w-[420px] h-auto rounded-xl' : 'w-full block rounded-xl max-h-[620px] object-cover'} />
-      {b.pie && <figcaption className={`text-sm leading-relaxed text-silver-dark pt-2 ${b.vertical ? 'max-w-[420px] mx-auto' : ''}`}><Texto s={b.pie} /></figcaption>}
+    <figure className={b.vertical ? 'my-8 w-fit max-w-full mx-auto' : 'my-8'}>
+      <img src={b.src} alt={b.alt} loading="lazy" className={b.vertical ? 'block mx-auto w-auto max-w-full h-auto max-h-[520px] rounded-xl' : 'w-full block rounded-xl max-h-[620px] object-cover'} />
+      {b.pie && <figcaption className="text-[15px] leading-relaxed text-silver-light pt-2"><Texto s={b.pie} /></figcaption>}
     </figure>
   );
   if (b.t === 'datos') return (
