@@ -92,9 +92,37 @@ function Pieza({ b }: { b: BloqueNota }) {
   if (b.t === 'cita') return <blockquote className="border-l-4 border-orange my-8 py-2 pl-6 text-xl md:text-2xl text-white"><Texto s={b.texto} /></blockquote>;
   if (b.t === 'fig') return (
     <figure className="my-8">
-      <img src={b.src} alt={b.alt} loading="lazy" className="w-full block rounded-xl max-h-[620px] object-cover" />
-      {b.pie && <figcaption className="text-sm leading-relaxed text-silver-dark pt-2"><Texto s={b.pie} /></figcaption>}
+      <img src={b.src} alt={b.alt} loading="lazy" className={b.vertical ? 'block mx-auto w-full max-w-[420px] h-auto rounded-xl' : 'w-full block rounded-xl max-h-[620px] object-cover'} />
+      {b.pie && <figcaption className={`text-sm leading-relaxed text-silver-dark pt-2 ${b.vertical ? 'max-w-[420px] mx-auto' : ''}`}><Texto s={b.pie} /></figcaption>}
     </figure>
+  );
+  if (b.t === 'datos') return (
+    <ul className="my-10 grid grid-cols-2 md:grid-cols-4 gap-3 list-none p-0">
+      {b.items.map((d, k) => (
+        <li key={k} className="bg-carbon-100 border border-silver/15 border-t-4 border-t-orange rounded-xl p-4 flex flex-col gap-1">
+          <span className="font-display font-extrabold text-orange-light text-5xl leading-none">{d.valor}</span>
+          <span className="text-sm leading-snug text-silver-light">{d.etiqueta}</span>
+        </li>
+      ))}
+    </ul>
+  );
+  if (b.t === 'tabla') return (
+    <div className="my-6 overflow-hidden rounded-xl border border-silver/20">
+      <table className="w-full text-left text-base md:text-lg">
+        <thead className="bg-carbon-50 text-xs font-semibold tracking-widest uppercase text-silver-dark">
+          <tr>{b.columnas.map((c, k) => <th key={k} scope="col" className={`px-4 py-3 ${k === 0 ? 'w-[7.5rem] md:w-40' : ''}`}>{c}</th>)}</tr>
+        </thead>
+        <tbody>
+          {b.filas.map((f, r) => (
+            <tr key={r} className="border-t border-silver/10 align-top">
+              {f.map((c, k) => k === 0
+                ? <th key={k} scope="row" className="px-4 py-3 font-display font-bold text-orange-light whitespace-nowrap">{c}</th>
+                : <td key={k} className="px-4 py-3 text-white">{c}</td>)}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
   if (b.t === 'video') return (
     <figure className="my-8">
@@ -131,7 +159,7 @@ function Articulo({ n, vistaPrevia }: { n: Nota; vistaPrevia: boolean }) {
           <div className="max-w-[760px] mx-auto mt-10 text-[18px] md:text-[19px] leading-[1.75] text-silver-light">
             {n.cuerpo.map((b, k) => <Pieza key={k} b={b} />)}
             {n.aclaracion && <p className="mt-10 p-5 rounded-xl bg-carbon-100 border border-silver/15 text-base italic">{n.aclaracion}</p>}
-            <section className="bg-carbon-100 border border-silver/15 rounded-2xl p-5 sm:p-8 my-10 text-[15px] leading-[1.7]">
+            {n.fuentes.length > 0 && <section className="bg-carbon-100 border border-silver/15 rounded-2xl p-5 sm:p-8 my-10 text-[15px] leading-[1.7]">
               <h2 className="font-display font-bold uppercase tracking-wide text-2xl text-white mb-4">Fuentes y referencias periodísticas</h2>
               {n.fuentes.map((f, k) => (
                 <p key={k} className="mb-4 last:mb-0">
@@ -139,7 +167,7 @@ function Articulo({ n, vistaPrevia }: { n: Nota; vistaPrevia: boolean }) {
                   {f.enlace && <><br /><a href={f.enlace.url} target="_blank" rel="noopener noreferrer" className="text-orange-light underline break-words">{f.enlace.etiqueta}</a></>}
                 </p>
               ))}
-            </section>
+            </section>}
           </div>
         </article>
         <nav aria-label="Notas" className="flex flex-wrap justify-between gap-3 mt-6">

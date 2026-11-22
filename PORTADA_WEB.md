@@ -122,3 +122,4 @@ Sitio público de la Federación de Billar del Uruguay, construido sobre el mism
 - 20/11/2026: Clubes y jugadores y Panamericano de Billar quedan plegados; se abren con un botón. El menú de arriba los abre solo.
 - 22/11/2026: se quitó el selector de categoría de arriba (las categorías van mezcladas en los partidos). El selector queda en torneo y sede.
 - 22/11/2026: Próximos partidos de la portada: solo partidos formados (con los dos jugadores), con «Ver más»; con sede elegida se piden al servidor los de esa sede (incluye mesa libre y series); refresco cada 60 s.
+- 22/11/2026: nota «Verónica Gutiérrez» (borrador) en Notas y entrevistas; bloques nuevos 'datos' y 'tabla' y fotos verticales sin recorte.
