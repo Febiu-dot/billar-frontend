@@ -1,5 +1,6 @@
 import { fechaUY, horaUY, isoDesdeUY, getUltimaFechaAsignada, setUltimaFechaAsignada } from '../utils/fechas';
-import { useEffect, useState } from 'react';
+import { leerCircuitoActivo, guardarCircuitoActivo } from '../utils/circuitoActivo';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../services/api';
 import { LoadingSpinner, EmptyState, Modal } from '../components/ui';
 
@@ -35,6 +36,17 @@ export default function SeriesPage() {
   const circuitsFiltrados = selectedTournament
     ? circuits.filter(c => c.tournamentId === Number(selectedTournament)).sort((a, b) => a.order - b.order)
     : [];
+
+  // Recuerda el torneo y circuito en uso entre pantallas
+  const restauradoRef = useRef(false);
+  useEffect(() => {
+    if (restauradoRef.current || tournaments.length === 0 || circuits.length === 0) return;
+    restauradoRef.current = true;
+    const a = leerCircuitoActivo();
+    if (!a.tournamentId || !tournaments.some((t: any) => String(t.id) === a.tournamentId)) return;
+    handleTournamentChange(a.tournamentId);
+    if (a.circuitId && circuits.some((c: any) => String(c.id) === a.circuitId && String(c.tournamentId) === a.tournamentId)) handleCircuitChange(a.circuitId);
+  }, [tournaments, circuits]);
 
   // ── Filtrar series (departamental + Nacional) ──────────────────────
   const filtrarSeries = (matches: any[]): Serie[] => {
@@ -76,6 +88,7 @@ export default function SeriesPage() {
 
   const handleCircuitChange = async (circuitId: string, silent = false) => {
     setSelectedCircuit(circuitId);
+    if (circuitId) guardarCircuitoActivo(circuits.find((c: any) => c.id === Number(circuitId))?.tournamentId ?? '', circuitId);
     if (!silent) setSeries([]);
     if (!circuitId) return;
     if (!silent) setLoadingMatches(true);
@@ -83,7 +96,8 @@ export default function SeriesPage() {
       const res = await api.get(`/matches?circuitId=${circuitId}`);
       setSeries(filtrarSeries(res.data));
       // Departamento para filtrar sedes
-      const torneo = tournaments.find(t => t.id === Number(selectedTournament)) as any;
+      const tid = (circuits.find(c => c.id === Number(circuitId)) as any)?.tournamentId ?? Number(selectedTournament);
+      const torneo = tournaments.find(t => t.id === Number(tid)) as any;
       setTorneoDepId(torneo?.departamentoId ?? null);
     } catch { if (!silent) setSeries([]); }
     finally { if (!silent) setLoadingMatches(false); }
@@ -91,6 +105,7 @@ export default function SeriesPage() {
 
   const handleTournamentChange = (tournamentId: string) => {
     setSelectedTournament(tournamentId);
+    guardarCircuitoActivo(tournamentId, '');
     setSelectedCircuit('');
     setSeries([]);
   };

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { leerCircuitoActivo, guardarCircuitoActivo } from '../utils/circuitoActivo';
 import { api } from '../services/api';
 import { LoadingSpinner } from '../components/ui';
 
@@ -52,8 +53,27 @@ export default function RankingCargaPage() {
     ? circuits.filter(c => c.tournamentId === Number(selectedTournament)).sort((a, b) => a.order - b.order)
     : [];
 
+  // Recuerda el torneo y circuito en uso entre pantallas
+  const restauradoRef = useRef(false);
+  useEffect(() => {
+    if (restauradoRef.current || tournaments.length === 0 || circuits.length === 0) return;
+    restauradoRef.current = true;
+    const a = leerCircuitoActivo();
+    if (!a.tournamentId || !tournaments.some((t: any) => String(t.id) === a.tournamentId)) return;
+    handleTournamentChange(a.tournamentId);
+    if (a.circuitId && circuits.some((c: any) => String(c.id) === a.circuitId && String(c.tournamentId) === a.tournamentId)) handleCircuitChange(a.circuitId);
+  }, [tournaments, circuits]);
+
+  const handleTournamentChange = (tournamentId: string) => {
+    setSelectedTournament(tournamentId);
+    setSelectedCircuit('');
+    setPlayers([]); setRows([]); setResultado(null);
+    guardarCircuitoActivo(tournamentId, '');
+  };
+
   const handleCircuitChange = async (circuitId: string) => {
     setSelectedCircuit(circuitId);
+    if (circuitId) guardarCircuitoActivo(circuits.find((c: any) => c.id === Number(circuitId))?.tournamentId ?? '', circuitId);
     setRows([]); setFileName(''); setParseError(''); setResultado(null);
     if (!circuitId) { setPlayers([]); return; }
     setLoadingPlayers(true);
@@ -191,7 +211,7 @@ export default function RankingCargaPage() {
           <h2 className="font-display text-lg text-chalk">Seleccionar circuito</h2>
           <div className="flex flex-wrap gap-3">
             <select className="input w-64" value={selectedTournament}
-              onChange={e => { setSelectedTournament(e.target.value); setSelectedCircuit(''); setPlayers([]); setRows([]); setResultado(null); }}>
+              onChange={e => handleTournamentChange(e.target.value)}>
               <option value="">Seleccioná un torneo</option>
               {tournaments.map(t => <option key={t.id} value={t.id}>{t.name} ({t.year})</option>)}
             </select>

@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-11-22-proximos-por-fecha
+// PUBLIC_BUILD = pub-public-2026-11-22-circuito-activo
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';

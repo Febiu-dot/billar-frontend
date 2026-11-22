@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { leerCircuitoActivo, guardarCircuitoActivo } from '../utils/circuitoActivo';
 import { api } from '../services/api';
 import { LoadingSpinner, EmptyState, Modal } from '../components/ui';
 
@@ -59,12 +60,14 @@ export default function FaseConfigPage() {
       setTournaments(tRes.data);
       setVenues(vRes.data);
       if (tRes.data.length > 0) {
-        const t = tRes.data[0];
+        // Torneo y circuito en uso (recordados entre pantallas); si no hay, el primero y su último circuito
+        const act = leerCircuitoActivo();
+        const t = tRes.data.find((x: Tournament) => String(x.id) === act.tournamentId) ?? tRes.data[0];
         setSelectedTournament(t);
-        // Seleccionar el circuito con mayor order por defecto
         const circuitos = t.circuits ?? [];
         const maxOrder = Math.max(...circuitos.map((c: Circuit) => c.order ?? 0));
-        const ultimoCircuito = circuitos.find((c: Circuit) => c.order === maxOrder) ?? circuitos[0];
+        const guardado = circuitos.find((c: Circuit) => String(c.id) === act.circuitId);
+        const ultimoCircuito = guardado ?? circuitos.find((c: Circuit) => c.order === maxOrder) ?? circuitos[0];
         setSelectedCircuit(ultimoCircuito ?? null);
         if (ultimoCircuito?.phases?.length > 0) setSelectedPhase(ultimoCircuito.phases[0]);
       }
@@ -237,6 +240,7 @@ export default function FaseConfigPage() {
                 const t = tournaments.find(t => t.id === Number(e.target.value));
                 setSelectedTournament(t ?? null);
                 setSelectedCircuit(t?.circuits?.[0] ?? null);
+                guardarCircuitoActivo(t?.id, t?.circuits?.[0]?.id);
                 setSelectedPhase(t?.circuits?.[0]?.phases?.[0] ?? null);
               }}>
                 {tournaments.map(t => <option key={t.id} value={t.id}>{t.name} ({t.year})</option>)}
@@ -252,6 +256,7 @@ export default function FaseConfigPage() {
                 const c = circuitosFiltrados.find(c => c.id === Number(e.target.value));
                 setSelectedCircuit(c ?? null);
                 setSelectedPhase(c?.phases?.[0] ?? null);
+                guardarCircuitoActivo(selectedTournament?.id, c?.id);
               }}>
                 {circuitosFiltrados.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>

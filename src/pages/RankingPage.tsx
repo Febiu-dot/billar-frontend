@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { leerCircuitoActivo, guardarCircuitoActivo } from '../utils/circuitoActivo';
 import { api } from '../services/api';
 import { LoadingSpinner } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
@@ -46,6 +47,17 @@ export default function RankingPage() {
     ? circuits.filter(c => c.tournamentId === Number(selectedTournament)).sort((a, b) => a.order - b.order)
     : [];
 
+  // Recuerda el torneo y circuito en uso entre pantallas
+  const restauradoRef = useRef(false);
+  useEffect(() => {
+    if (restauradoRef.current || tournaments.length === 0 || circuits.length === 0) return;
+    restauradoRef.current = true;
+    const a = leerCircuitoActivo();
+    if (!a.tournamentId || !tournaments.some((t: any) => String(t.id) === a.tournamentId)) return;
+    handleTournamentChange(a.tournamentId);
+    if (a.circuitId && circuits.some((c: any) => String(c.id) === a.circuitId && String(c.tournamentId) === a.tournamentId)) handleCircuitChange(a.circuitId);
+  }, [tournaments, circuits]);
+
   // ── Filtra las fases que realmente existen en este circuito ──────────
   // Para Nacional solo existen 'clasificatorio' y 'master'
   // Para Departamental existen las 4
@@ -76,12 +88,14 @@ export default function RankingPage() {
 
   const handleTournamentChange = (tournamentId: string) => {
     setSelectedTournament(tournamentId);
+    guardarCircuitoActivo(tournamentId, '');
     setSelectedCircuit('');
     setRanking(null);
   };
 
   const handleCircuitChange = (circuitId: string) => {
     setSelectedCircuit(circuitId);
+    if (circuitId) guardarCircuitoActivo((circuits as any[]).find((c: any) => c.id === Number(circuitId))?.tournamentId ?? '', circuitId);
     cargar(circuitId);
   };
 

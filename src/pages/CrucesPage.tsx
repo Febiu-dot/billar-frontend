@@ -1,5 +1,6 @@
 import { fechaUY, horaUY, isoDesdeUY, getUltimaFechaAsignada, setUltimaFechaAsignada } from '../utils/fechas';
-import { useEffect, useState } from 'react';
+import { leerCircuitoActivo, guardarCircuitoActivo } from '../utils/circuitoActivo';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../services/api';
 import { LoadingSpinner, EmptyState, Modal } from '../components/ui';
 
@@ -51,6 +52,17 @@ export default function CrucesPage() {
   const circuitsFiltrados = selectedTournament
     ? allCircuits.filter(c => c.tournamentId === Number(selectedTournament)).sort((a, b) => a.order - b.order)
     : [];
+
+  // Recuerda el torneo y circuito en uso entre pantallas
+  const restauradoRef = useRef(false);
+  useEffect(() => {
+    if (restauradoRef.current || tournaments.length === 0 || allCircuits.length === 0) return;
+    restauradoRef.current = true;
+    const a = leerCircuitoActivo();
+    if (!a.tournamentId || !tournaments.some((t: any) => String(t.id) === a.tournamentId)) return;
+    handleTournamentChange(a.tournamentId);
+    if (a.circuitId && allCircuits.some((c: any) => String(c.id) === a.circuitId && String(c.tournamentId) === a.tournamentId)) handleCircuitChange(a.circuitId);
+  }, [tournaments, allCircuits]);
 
   // ── Filtrar cruces según tipo de torneo ───────────────────────────
   // Formato nuevo 2026-27: el lugar vacío de un cruce se muestra como "Ganador cruce …" (solo texto en pantalla).
@@ -105,12 +117,14 @@ export default function CrucesPage() {
 
   const handleTournamentChange = (tournamentId: string) => {
     setSelectedTournament(tournamentId);
+    guardarCircuitoActivo(tournamentId, '');
     setSelectedCircuit('');
     setCruces([]); setPhases([]); setDisparoMsg(''); setFiltroFase('todas');
   };
 
   const handleCircuitChange = async (circuitId: string, silent = false) => {
     setSelectedCircuit(circuitId);
+    if (circuitId) guardarCircuitoActivo((allCircuits as any[]).find((c: any) => c.id === Number(circuitId))?.tournamentId ?? '', circuitId);
     if (!silent) { setCruces([]); setPhases([]); setDisparoMsg(''); }
     if (!circuitId) return;
     if (!silent) setLoadingMatches(true);
@@ -124,7 +138,8 @@ export default function CrucesPage() {
       setEsNacional(esNac);
 
       // Departamento para filtrar sedes (null para Nacional)
-      const torneo = tournaments.find(t => t.id === Number(selectedTournament));
+      const tid = allCircuits.find(c => c.id === Number(circuitId))?.tournamentId ?? Number(selectedTournament);
+      const torneo = tournaments.find(t => t.id === Number(tid));
       setTorneoDepId(esNac ? null : (torneo?.departamentoId ?? null));
 
       // Fases disponibles

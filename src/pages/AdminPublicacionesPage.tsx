@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { leerCircuitoActivo, guardarCircuitoActivo } from '../utils/circuitoActivo';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { LoadingSpinner } from '../components/ui';
@@ -1932,11 +1933,18 @@ export default function AdminPublicacionesPage() {
   useEffect(() => {
     api.get('/publicaciones/circuitos').then(r => {
       setTorneos(r.data);
-      if (!paramsUrl.get('circuitId') && r.data.length > 0 && r.data[0].circuits?.length > 0) {
-        const circuits = r.data[0].circuits;
-        const maxOrder = Math.max(...circuits.map((c: any) => c.order ?? 0));
-        const ultimo = circuits.find((c: any) => c.order === maxOrder) ?? circuits[0];
-        setCircuitId(String(ultimo.id));
+      if (!paramsUrl.get('circuitId') && r.data.length > 0) {
+        // Primero el circuito en uso (recordado entre pantallas); si no existe, el último circuito del primer torneo
+        const act = leerCircuitoActivo();
+        const guardado = r.data.flatMap((t: any) => t.circuits ?? []).find((c: any) => String(c.id) === act.circuitId);
+        if (guardado) {
+          setCircuitId(String(guardado.id));
+        } else if (r.data[0].circuits?.length > 0) {
+          const circuits = r.data[0].circuits;
+          const maxOrder = Math.max(...circuits.map((c: any) => c.order ?? 0));
+          const ultimo = circuits.find((c: any) => c.order === maxOrder) ?? circuits[0];
+          setCircuitId(String(ultimo.id));
+        }
       }
     }).catch(() => {});
   }, []);
@@ -2320,6 +2328,7 @@ export default function AdminPublicacionesPage() {
                 const circ = circuitos.find((c: any) => String(c.id) === String(cId));
                 const esNac = /nacional/i.test(circ?.torneoNombre ?? '') || /panamericano/i.test(circ?.torneoNombre ?? '');
                 setCircuitId(cId);
+                if (cId) guardarCircuitoActivo(circ?.tournamentId ?? torneos.find((t: any) => (t.circuits ?? []).some((c: any) => String(c.id) === String(cId)))?.id ?? '', cId);
                 setTipoFase(esNac ? 'inicial-nacional' : 'clasificatorio');
                 setPubData(null);
               }}>
