@@ -130,3 +130,4 @@ Sitio público de la Federación de Billar del Uruguay, construido sobre el mism
 - 2026-11-22: Boton "Transmisiones en vivo" siempre visible junto al titulo; sin directos, al tocarlo muestra el cartel "En este momento no hay transmisiones en vivo."
 - 2026-11-22: Quitado el selector de sedes (Todas las sedes + chips) bajo el selector de torneo; las sedes se eligen dentro del panel de transmisiones en vivo.
 - 2026-11-22: Sedes (admin): nuevo campo "Teléfono de contacto" (Venue.phone), se ve en la tarjeta de la sede.
+- 2026-11-22: Seccion Clubes y jugadores: al abrir un club se muestra "Contacto del club" (direccion, ciudad, telefono) tomado de la ficha de la sede, unido por nombre.

@@ -184,7 +184,19 @@ export default function PortadaPage() {
   useEffect(() => { api.get('/documentos').then(r => setDocs(r.data ?? [])).catch(() => setDocs([])); }, []);
   useEffect(() => { api.get('/afiches').then(r => setAfiches(r.data ?? [])).catch(() => setAfiches([])); }, []);
   useEffect(() => { api.get('/portada/jugadores').then(r => setJugadores(r.data ?? [])).catch(() => setJugadores([])); }, []);
+  const [contactos, setContactos] = useState<{ nombre: string; direccion: string; ciudad: string; telefono: string }[]>([]);
+  useEffect(() => { api.get('/portada/contactos').then(r => setContactos(r.data ?? [])).catch(() => setContactos([])); }, []);
   const quitar = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  // Une cada club con su sede por nombre (sin tildes, espacios ni signos; uno contenido en el otro).
+  const clave = (t: string) => quitar(t).replace(/[^a-z0-9]/g, '');
+  const contactoDe = (club: string) => {
+    const c = clave(club);
+    if (c.length < 3) return null;
+    const hits = contactos.filter(x => { const k = clave(x.nombre); return k.length >= 3 && (k === c || k.includes(c) || c.includes(k)); });
+    if (hits.length === 0) return null;
+    hits.sort((a, b) => Math.abs(clave(a.nombre).length - c.length) - Math.abs(clave(b.nombre).length - c.length));
+    return hits[0];
+  };
   const gruposF = useMemo(() => {
     const q = quitar(busca.trim());
     const m = new Map<string, typeof jugadores>();
@@ -671,6 +683,14 @@ export default function PortadaPage() {
                   <span className="font-display font-bold text-xl text-white">{club}</span>
                   <span className="text-silver-dark text-sm shrink-0">{lista.length} {lista.length === 1 ? 'jugador' : 'jugadores'} ▾</span>
                 </summary>
+                {(() => { const c = contactoDe(club); return c && (c.direccion || c.ciudad || c.telefono) ? (
+                  <div className="mx-4 mb-3 rounded-lg border border-silver/20 bg-carbon px-4 py-3 text-silver-light flex flex-col gap-0.5">
+                    <span className="text-xs font-semibold tracking-widest uppercase text-silver-dark">Contacto del club</span>
+                    {c.direccion && <span><span className="text-silver-dark">Dirección: </span>{c.direccion}</span>}
+                    {c.ciudad && <span><span className="text-silver-dark">Ciudad: </span>{c.ciudad}</span>}
+                    {c.telefono && <span><span className="text-silver-dark">Teléfono: </span><a href={`tel:${c.telefono.replace(/[^0-9+]/g, '')}`} className="text-white font-semibold underline">{c.telefono}</a></span>}
+                  </div>
+                ) : null; })()}
                 <ul className="px-4 pb-4 grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
                   {lista.map(j => (
                     <li key={j.id} className="py-1 text-silver-light"><span className="font-semibold text-white">{j.nombre}</span> <span className="text-sm text-silver">· {j.categoria}</span></li>
