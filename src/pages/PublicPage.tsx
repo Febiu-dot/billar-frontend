@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-11-21-cruces-64-en-2-partes
+// PUBLIC_BUILD = pub-public-2026-11-22-proximos-por-fecha
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
@@ -560,7 +560,27 @@ export default function PublicPage() {
   const porTorneo = (m: any) =>
     torneoSel != null && m?.phase?.circuit?.tournament?.id === torneoSel;
   const activosF   = torneoSel != null ? activeMatches.filter(porTorneo)  : [];
-  const pendientesF = torneoSel != null ? pendingMatches.filter(porTorneo).slice(0, 8) : [];
+  // Próximos partidos: solo los que ya tienen los dos jugadores definidos (los cruces vacíos de fases futuras
+  // no son partidos todavía), ordenados por fecha y hora programada; los que no tienen horario van al final.
+  const pendientesF = torneoSel != null
+    ? pendingMatches
+        .filter(porTorneo)
+        .filter((m: any) => m.playerAId != null && m.playerBId != null)
+        .sort((a: any, b: any) => {
+          const ta = a.scheduledAt ? new Date(a.scheduledAt).getTime() : Infinity;
+          const tb = b.scheduledAt ? new Date(b.scheduledAt).getTime() : Infinity;
+          if (ta !== tb) return ta < tb ? -1 : 1;
+          return (a.id ?? 0) - (b.id ?? 0);
+        })
+        .slice(0, 8)
+    : [];
+  const horarioProx = (iso?: string | null): string => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const dia = d.toLocaleDateString('es-UY', { weekday: 'long', day: 'numeric', month: 'numeric', timeZone: 'America/Montevideo' });
+    const hora = d.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Montevideo' });
+    return `${dia} · ${hora}`;
+  };
   // TODOS los resultados del torneo elegido, agrupados por jornada (dia; corte 05:00 hora de Uruguay).
   // Por defecto se muestra la ultima jornada; con los botones de fecha se ven las anteriores.
   const recientesF  = torneoSel != null ? recentMatches.filter(porTorneo) : [];
@@ -698,6 +718,7 @@ export default function PublicPage() {
                           {nombrePublico(m.playerA, esPanaSel)} <span className="text-silver-dark">vs</span> {nombrePublico(m.playerB, esPanaSel)}
                         </p>
                         <p className="text-silver-dark text-xs font-mono">{m.phase?.name} · R{m.round}</p>
+                        {m.scheduledAt && <p className="text-orange text-xs font-mono capitalize">{horarioProx(m.scheduledAt)}</p>}
                       </div>
                       <span className="badge-status bg-silver-muted/10 text-silver-dark shrink-0">Pendiente</span>
                     </div>
