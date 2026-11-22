@@ -263,7 +263,7 @@ export default function PortadaPage() {
 
       {/* Elegir que ver: torneo, sede y categoria. Lo primero que busca el visitante */}
       <section id="torneos" style={{ scrollMarginTop: 120 }} aria-labelledby="torneos-t" className="max-w-6xl mx-auto px-4 pt-6 flex flex-col gap-4">
-        <h2 id="torneos-t" className="text-xs font-semibold tracking-widest uppercase text-silver-dark">1. Elegí el torneo</h2>
+        <h2 id="torneos-t" className="text-xs font-semibold tracking-widest uppercase text-silver-dark">Elegí el torneo</h2>
         {torneos.length === 0 ? <p className="text-silver-dark">No hay torneos en juego en este momento.</p> : (
           <div role="group" aria-label="Torneo" className="flex flex-wrap gap-3">
             {torneos.map(t => {
@@ -276,22 +276,6 @@ export default function PortadaPage() {
                 </button>
               );
             })}
-          </div>
-        )}
-        {sedesTorneo.length > 0 && (
-          <div>
-            <div className="text-xs font-semibold tracking-widest uppercase text-silver-dark mb-1.5">2. Elegí la sede</div>
-            <div role="group" aria-label="Sede" className="flex gap-2 overflow-x-auto pb-1">
-              <button type="button" aria-pressed={sedeSel == null} onClick={() => setSedeSel(null)}
-                className={`flex-none min-h-[48px] px-4 rounded-full border font-semibold text-[15px] whitespace-nowrap ${sedeSel == null ? 'bg-orange border-orange text-carbon font-bold' : 'border-silver/30 text-silver-light'}`}>Todas las sedes</button>
-              {sedesTorneo.map(s => (
-                <button key={s.id} type="button" aria-pressed={sedeSel === s.id} onClick={() => setSedeSel(s.id)}
-                  className={`flex-none min-h-[48px] px-4 rounded-full border font-semibold text-[15px] whitespace-nowrap inline-flex items-center gap-2 ${sedeSel === s.id ? 'bg-orange border-orange text-carbon font-bold' : 'border-silver/30 text-silver-light'}`}>
-                  {s.nombre}
-                  {s.envivo && <span className={`text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded-full ${sedeSel === s.id ? 'bg-carbon text-white' : 'bg-[#cc0000] text-white'}`}>EN VIVO</span>}
-                </button>
-              ))}
-            </div>
           </div>
         )}
       </section>
