@@ -60,6 +60,8 @@ export default function PortadaPage() {
   const [enJuegoSede, setEnJuegoSede] = useState<any[]>([]);
   const [proximosSede, setProximosSede] = useState<any[]>([]);
   const [proxMax, setProxMax] = useState(8);
+  const [verTx, setVerTx] = useState(false);          // panel del video abierto
+  const [sedeVideo, setSedeVideo] = useState<number | null>(null); // sede elegida dentro del panel del video
   const sedeRef = useRef<number | null>(null);
   const [ranking, setRanking] = useState<any[]>([]);
   const [rankingCargado, setRankingCargado] = useState(false);
@@ -86,15 +88,24 @@ export default function PortadaPage() {
     const m = document.createElement('meta'); m.name = 'robots'; m.content = 'noindex'; document.head.appendChild(m);
     return () => { m.remove(); };
   }, [vistaPrevia]);
-  const mesasVisibles = sedeSel != null ? txs.filter(x => x.venueId === sedeSel) : txs;
-  const txActual = mesasVisibles.find(x => x.tableId === txSel) ?? mesasVisibles[0] ?? null;
+  const sedesTx = useMemo(() => {
+    const m = new Map<number, string>();
+    txs.forEach(x => { if (!m.has(x.venueId)) m.set(x.venueId, x.sede); });
+    return [...m.entries()].map(([id, nombre]) => ({ id, nombre }));
+  }, [txs]);
+  // Sede del video: la elegida en el panel; si no, la sede elegida arriba (si transmite); si no, la primera que transmite
+  const sedeVideoEf = sedesTx.some(x => x.id === sedeVideo) ? sedeVideo : (sedesTx.some(x => x.id === sedeSel) ? sedeSel : (sedesTx[0]?.id ?? null));
+  const mesasVideo = txs.filter(x => x.venueId === sedeVideoEf);
+  const txActual = mesasVideo.find(x => x.tableId === txSel) ?? mesasVideo[0] ?? null;
+  const hayDirectos = txs.length > 0 || !!canalPrueba;
+  const verPanel = hayDirectos && (verTx || !!canalPrueba);
   const embedUrl = /^UC[\w-]{22}$/.test(canalPrueba)
     ? `https://www.youtube.com/embed/live_stream?channel=${canalPrueba}&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`
     : txActual
       ? (String(txActual.canal).startsWith('v:')
           ? `https://www.youtube.com/embed/${String(txActual.canal).slice(2)}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`
           : `https://www.youtube.com/embed/live_stream?channel=${txActual.canal}&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`)
-      : (sedeSel != null && txs.length > 0 ? '' : YOUTUBE_EMBED_URL);
+      : YOUTUBE_EMBED_URL;
   const partidoDeMesa = (tableId: number) => enJuego.find(m => m?.table?.id === tableId);
   const textoPartido = (tableId: number) => {
     const m = partidoDeMesa(tableId);
@@ -285,33 +296,54 @@ export default function PortadaPage() {
         )}
       </section>
 
-      {/* En vivo */}
+      {/* En vivo: el video solo aparece cuando hay transmisiones y la persona lo pide con el boton */}
       <section id="en-vivo" style={{ scrollMarginTop: 120 }} aria-labelledby="envivo" className="max-w-6xl mx-auto px-4 pt-5 pb-10">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
+          <div className="min-w-0">
+            <h1 id="envivo" className="font-display font-extrabold uppercase tracking-wide text-white text-3xl md:text-5xl leading-tight">{torneoNombre || 'Torneos FEBIU'}</h1>
+            {!hayDirectos && <p className="mt-1 text-silver-dark">Hoy no hay transmisiones en vivo en este momento. Cuando haya, aparece acá un botón para verlas.</p>}
+            {hayDirectos && !verPanel && <p className="mt-1 text-silver-light">Hay {txs.length === 1 ? 'una transmisión' : `${txs.length} transmisiones`} en vivo ahora.</p>}
+          </div>
+          {hayDirectos && (
+            <button type="button" aria-expanded={verPanel} aria-controls="panel-envivo" onClick={() => setVerTx(v => !v)}
+              className={`min-h-[56px] px-6 rounded-xl font-bold text-lg inline-flex items-center gap-3 ${verPanel ? 'border-[1.5px] border-silver/40 text-white bg-carbon-100' : 'bg-[#cc0000] text-white'}`}>
+              {!verPanel && <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" aria-hidden="true" />}
+              {verPanel ? 'Ocultar la transmisión ▴' : 'Ver transmisiones en vivo'}
+            </button>
+          )}
+        </div>
+        {vistaPrevia && !verPanel && !TRANSMISION_PRESENTADA_POR && <div className="mb-5"><Espacio n={4} texto="Espacio 4 · «Transmisión presentada por…» (irá junto al video en vivo)" className="h-[64px]" /></div>}
         <div className="flex flex-col lg:flex-row gap-6 items-start">
-          <div className="w-full lg:flex-[2] min-w-0 flex flex-col gap-4">
-            {mesasVisibles.length > 1 && (
-              <div role="group" aria-label="Transmisiones en vivo" className="flex flex-col gap-3">
-                <span className="inline-flex items-center gap-2 text-xs font-semibold tracking-widest uppercase text-silver-dark">
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-white bg-[#cc0000] px-2 py-0.5 rounded-full"><span className="w-1.5 h-1.5 rounded-full bg-white" />EN VIVO</span>
-                  {mesasVisibles.length} transmisiones
-                </span>
-                <div>
-                  <div className="text-xs font-semibold tracking-widest uppercase text-silver-dark mb-1.5">Elegí la mesa</div>
-                  <div className="flex flex-wrap gap-2">
-                    {mesasVisibles.map(x => {
-                      const sel = txActual?.tableId === x.tableId;
-                      return (
-                        <button key={x.tableId} type="button" aria-pressed={sel} onClick={() => setTxSel(x.tableId)}
-                          className={`flex-1 basis-[200px] min-w-0 min-h-[56px] text-left px-3 py-2 rounded-xl border-[1.5px] ${sel ? 'border-orange bg-orange/10' : 'border-silver/30 bg-carbon-100'}`}>
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-bold text-white">{sedeSel == null && variasSedes ? `${x.sede} · Mesa ${x.mesa}` : `Mesa ${x.mesa}`}</span>
-                            {sel && <span className="text-xs font-bold text-orange-light uppercase tracking-wider">Viendo</span>}
-                          </div>
-                          <div className="text-sm text-silver truncate">{textoPartido(x.tableId)}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
+          {verPanel && (
+          <div id="panel-envivo" className="w-full lg:flex-[2] min-w-0 flex flex-col gap-4">
+            {sedesTx.length > 1 && (
+              <div>
+                <div className="text-xs font-semibold tracking-widest uppercase text-silver-dark mb-1.5">Sedes transmitiendo en vivo</div>
+                <div role="group" aria-label="Sede que transmite" className="flex gap-2 overflow-x-auto pb-1">
+                  {sedesTx.map(sx => (
+                    <button key={sx.id} type="button" aria-pressed={sedeVideoEf === sx.id} onClick={() => { setSedeVideo(sx.id); setTxSel(null); }}
+                      className={`flex-none min-h-[48px] px-4 rounded-full border font-semibold text-[15px] whitespace-nowrap ${sedeVideoEf === sx.id ? 'bg-orange border-orange text-carbon font-bold' : 'border-silver/30 text-silver-light'}`}>{sx.nombre}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {mesasVideo.length > 1 && (
+              <div>
+                <div className="text-xs font-semibold tracking-widest uppercase text-silver-dark mb-1.5">Elegí la mesa</div>
+                <div role="group" aria-label="Mesa" className="flex flex-wrap gap-2">
+                  {mesasVideo.map(x => {
+                    const sel = txActual?.tableId === x.tableId;
+                    return (
+                      <button key={x.tableId} type="button" aria-pressed={sel} onClick={() => setTxSel(x.tableId)}
+                        className={`flex-1 basis-[200px] min-w-0 min-h-[56px] text-left px-3 py-2 rounded-xl border-[1.5px] ${sel ? 'border-orange bg-orange/10' : 'border-silver/30 bg-carbon-100'}`}>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-bold text-white">Mesa {x.mesa}</span>
+                          {sel && <span className="text-xs font-bold text-orange-light uppercase tracking-wider">Viendo</span>}
+                        </div>
+                        <div className="text-sm text-silver truncate">{textoPartido(x.tableId)}</div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -327,15 +359,17 @@ export default function PortadaPage() {
                 />
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center px-4">
-                  <span className="text-silver text-lg">{sedeSel != null && txs.length > 0 ? 'Esta sede no está transmitiendo en este momento' : 'Próxima transmisión en vivo'}</span>
+                  <span className="text-silver text-lg">Próxima transmisión en vivo</span>
                   {CANAL_YOUTUBE_URL && <a href={CANAL_YOUTUBE_URL} target="_blank" rel="noopener noreferrer" className="min-h-[48px] inline-flex items-center px-5 rounded-lg bg-orange text-carbon font-bold">Ver canal de YouTube</a>}
                 </div>
               )}
             </div>
-            <div>
-              <h1 id="envivo" className="font-display font-extrabold uppercase tracking-wide text-white text-3xl md:text-5xl leading-tight">{txActual && !canalPrueba ? `${txActual.sede} · Mesa ${txActual.mesa}` : (torneoNombre || 'Torneos FEBIU')}</h1>
-              {txActual && !canalPrueba ? <p className="mt-1 text-lg text-silver-light">{textoPartido(txActual.tableId)}</p> : enJuegoF.length > 0 && <p className="mt-1 text-lg text-silver-light">Partidos en juego ahora</p>}
-            </div>
+            {txActual && !canalPrueba && (
+              <div>
+                <h2 className="font-display font-extrabold uppercase tracking-wide text-white text-2xl md:text-3xl leading-tight">{txActual.sede} · Mesa {txActual.mesa}</h2>
+                <p className="mt-1 text-lg text-silver-light">{textoPartido(txActual.tableId)}</p>
+              </div>
+            )}
             {vistaPrevia && !TRANSMISION_PRESENTADA_POR && <Espacio n={4} texto="Espacio 4 · «Transmisión presentada por…» (irá junto al video en vivo)" className="h-[64px]" />}
             {TRANSMISION_PRESENTADA_POR && (
               <div className="flex flex-col gap-2">
@@ -344,8 +378,9 @@ export default function PortadaPage() {
               </div>
             )}
           </div>
+          )}
 
-          <div className="w-full lg:flex-1 min-w-0 flex flex-col gap-4">
+          <div className={verPanel ? 'w-full lg:flex-1 min-w-0 flex flex-col gap-4' : 'w-full grid md:grid-cols-2 gap-4 items-start'}>
             <div className={`${card} p-4`}>
               <h2 className="font-display font-bold uppercase tracking-wide text-white text-2xl mb-1">Partidos en juego</h2>
               {enJuegoF.length === 0 ? <p className="text-silver-dark py-3">No hay partidos en juego en este momento.</p> : enJuegoF.map(m => (
@@ -372,7 +407,7 @@ export default function PortadaPage() {
               )}
             </div>
 
-            <Link to="/publico" className="min-h-[52px] flex items-center justify-center rounded-xl border border-silver/35 text-white font-semibold">Ver todos los partidos y resultados</Link>
+            <Link to="/publico" className={`min-h-[52px] flex items-center justify-center rounded-xl border border-silver/35 text-white font-semibold ${verPanel ? '' : 'md:col-span-2'}`}>Ver todos los partidos y resultados</Link>
           </div>
         </div>
       </section>
