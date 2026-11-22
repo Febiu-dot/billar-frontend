@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
@@ -56,6 +56,11 @@ export default function PortadaPage() {
   const [torneoSel, setTorneoSel] = useState<number | null>(null);
   const [enJuego, setEnJuego] = useState<any[]>([]);
   const [proximos, setProximos] = useState<any[]>([]);
+  // Con una sede elegida se piden al servidor los partidos de esa sede (incluye los que aun no tienen mesa pero ya estan asignados a la sede o a su serie)
+  const [enJuegoSede, setEnJuegoSede] = useState<any[]>([]);
+  const [proximosSede, setProximosSede] = useState<any[]>([]);
+  const [proxMax, setProxMax] = useState(8);
+  const sedeRef = useRef<number | null>(null);
   const [ranking, setRanking] = useState<any[]>([]);
   const [rankingCargado, setRankingCargado] = useState(false);
   const [cat, setCat] = useState('general');
@@ -107,12 +112,27 @@ export default function PortadaPage() {
     ]).then(([a, b, c, t]) => {
       setEnJuego(a.data);
       setProximos([...b.data, ...c.data]);
+      const v = sedeRef.current;
+      if (v != null) {
+        Promise.all([api.get(`/matches?status=en_juego&venueId=${v}`), api.get(`/matches?status=asignado&venueId=${v}`), api.get(`/matches?status=pendiente&venueId=${v}`)])
+          .then(([sa, sb, sc]) => { if (sedeRef.current === v) { setEnJuegoSede(sa.data); setProximosSede([...sb.data, ...sc.data]); } })
+          .catch(() => {});
+      }
       const act = (t.data as any[]).filter(x => x.active === true).map(x => ({ id: x.id, name: x.name }));
       setTorneos(act);
       setTodosTorneos((t.data as any[]).map(x => ({ id: x.id, name: x.name, year: x.year, active: x.active === true })));
       setLoading(false);
     }).catch(() => setLoading(false));
   };
+
+  useEffect(() => {
+    sedeRef.current = sedeSel;
+    setProxMax(8);
+    if (sedeSel == null) { setEnJuegoSede([]); setProximosSede([]); return; }
+    Promise.all([api.get(`/matches?status=en_juego&venueId=${sedeSel}`), api.get(`/matches?status=asignado&venueId=${sedeSel}`), api.get(`/matches?status=pendiente&venueId=${sedeSel}`)])
+      .then(([a, b, c]) => { if (sedeRef.current === sedeSel) { setEnJuegoSede(a.data); setProximosSede([...b.data, ...c.data]); } })
+      .catch(() => {});
+  }, [sedeSel]);
 
   const cargarTx = () => { api.get('/transmisiones').then(r => setTxs(r.data ?? [])).catch(() => setTxs([])); };
 
@@ -123,7 +143,8 @@ export default function PortadaPage() {
     socket.on('transmision:updated', cargarTx);
     socket.on('match:updated', cargarPartidos);
     socket.on('table:updated', cargarPartidos);
-    return () => { socket.off('transmision:updated', cargarTx); socket.off('match:updated', cargarPartidos); socket.off('table:updated', cargarPartidos); };
+    const refresco = setInterval(cargarPartidos, 60000); // por si se arman partidos nuevos sin aviso en tiempo real
+    return () => { clearInterval(refresco); socket.off('transmision:updated', cargarTx); socket.off('match:updated', cargarPartidos); socket.off('table:updated', cargarPartidos); };
   }, []);
 
   // Torneo por defecto: el que tiene partidos en juego; si no, el primero activo.
@@ -168,13 +189,15 @@ export default function PortadaPage() {
 
   const torneoNombre = torneos.find(t => t.id === torneoSel)?.name ?? '';
   const delTorneo = (m: any) => torneoSel != null && m?.phase?.circuit?.tournament?.id === torneoSel;
-  const delaSede = (m: any) => sedeSel == null || m?.table?.venue?.id === sedeSel;
-  const enJuegoF = useMemo(() => enJuego.filter(delTorneo).filter(delaSede).slice(0, 6), [enJuego, torneoSel, sedeSel]);
-  const proximosF = useMemo(() => proximos.filter(delTorneo).filter(delaSede).slice(0, 6), [proximos, torneoSel, sedeSel]);
+  // Proximos: solo partidos ya formados (con los dos jugadores definidos), no las llaves que todavia esperan a sus rivales
+  const formado = (m: any) => !!m?.playerA && !!m?.playerB;
+  const enJuegoF = useMemo(() => (sedeSel == null ? enJuego : enJuegoSede).filter(delTorneo).slice(0, 6), [enJuego, enJuegoSede, torneoSel, sedeSel]);
+  const proximosTodos = useMemo(() => (sedeSel == null ? proximos : proximosSede).filter(delTorneo).filter(formado), [proximos, proximosSede, torneoSel, sedeSel]);
+  const proximosF = proximosTodos.slice(0, proxMax);
   // Sedes del torneo elegido: las que tienen partidos en juego o programados, mas las que transmiten
   const sedesTorneo = useMemo(() => {
     const m = new Map<number, string>();
-    [...enJuego, ...proximos].filter(delTorneo).forEach(x => { const v = x?.table?.venue; if (v?.id) m.set(v.id, v.name); });
+    [...enJuego, ...proximos.filter(formado)].filter(delTorneo).forEach(x => { const v = x?.table?.venue; if (v?.id) m.set(v.id, v.name); });
     txs.forEach(x => { if (!m.has(x.venueId)) m.set(x.venueId, x.sede); });
     sedesApi.forEach(v => { if (!m.has(v.id)) m.set(v.id, v.name); });
     return [...m.entries()].map(([id, nom]) => ({ id, nombre: nom, envivo: txs.some(x => x.venueId === id) })).sort((x, y) => x.nombre.localeCompare(y.nombre));
@@ -344,6 +367,9 @@ export default function PortadaPage() {
                   <div className="font-semibold text-white">{nombre(m.playerA)} <span className="text-silver-dark">vs</span> {nombre(m.playerB)}</div>
                 </div>
               ))}
+              {proximosTodos.length > proxMax && (
+                <button type="button" onClick={() => setProxMax(n => n + 8)} className="mt-2 w-full min-h-[48px] rounded-xl border border-silver/35 text-white font-semibold">Ver más partidos ({proximosTodos.length - proxMax} más)</button>
+              )}
             </div>
 
             <Link to="/publico" className="min-h-[52px] flex items-center justify-center rounded-xl border border-silver/35 text-white font-semibold">Ver todos los partidos y resultados</Link>
