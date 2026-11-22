@@ -125,9 +125,8 @@ Sitio público de la Federación de Billar del Uruguay, construido sobre el mism
 - 22/11/2026: nota «Verónica Gutiérrez» (borrador) en Notas y entrevistas; bloques nuevos 'datos' y 'tabla' y fotos verticales sin recorte.
 - 22/11/2026: ajustes a la nota de Verónica (bajada, transición Madrid/Panamericano, subtítulo, cita destacada, epígrafes con más contraste, fotos verticales más chicas). Revisada en 360, 390 y 1100 px sin desbordes.
 - 22/11/2026: nota de Verónica: el vicecampeonato de Santa Fe pasa a 2025 (texto y palmarés).
-
-- 2026-11-22: En vivo de la portada: sin transmisiones ya no se muestra el cuadro negro (solo un texto y los resultados a todo el ancho); con transmisiones aparece el botón rojo "Ver transmisiones en vivo", que abre el panel con sedes y mesas que transmiten.
-- 2026-11-22: Boton "Transmisiones en vivo" siempre visible junto al titulo; sin directos, al tocarlo muestra el cartel "En este momento no hay transmisiones en vivo."
-- 2026-11-22: Quitado el selector de sedes (Todas las sedes + chips) bajo el selector de torneo; las sedes se eligen dentro del panel de transmisiones en vivo.
-- 2026-11-22: Sedes (admin): nuevo campo "Teléfono de contacto" (Venue.phone), se ve en la tarjeta de la sede.
-- 2026-11-22: Seccion Clubes y jugadores: al abrir un club se muestra "Contacto del club" (direccion, ciudad, telefono) tomado de la ficha de la sede, unido por nombre.
+- 22/11/2026: «En vivo» de la portada: ya no hay cuadro negro. El botón «Transmisiones en vivo» está siempre junto al título del torneo (rojo y parpadeante si hay directos, gris si no). Sin directos, al tocarlo aparece el cartel «En este momento no hay transmisiones en vivo.». Con directos se abre el panel con las sedes y mesas que transmiten. Sin panel, «Partidos en juego» y «Próximos partidos» van a todo el ancho.
+- 22/11/2026: se quitó el selector de sedes («Todas las sedes» y los botones por sede) debajo del selector de torneo; las sedes se eligen dentro del panel de transmisiones. Partidos en juego y próximos muestran todas las sedes del torneo.
+- 22/11/2026: Sedes (app): campo nuevo «Teléfono de contacto» (Venue.phone, migración 20261122234000_venue_phone).
+- 22/11/2026: Clubes y jugadores (web): al abrir un club se ve «Contacto del club» (dirección, ciudad, teléfono) tomado de la ficha de la sede. Se une club con sede por nombre (sin tildes, espacios ni signos; uno contenido en el otro). Si un club no muestra contacto, los nombres son muy distintos. Endpoint público: GET /api/portada/contactos.
+- 22/11/2026: la transmisión se apaga sola a las 8 h (antes 14 h).
