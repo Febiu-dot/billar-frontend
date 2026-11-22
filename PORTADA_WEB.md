@@ -120,3 +120,4 @@ Sitio público de la Federación de Billar del Uruguay, construido sobre el mism
 - 20/11/2026: separador «Historia, notas y reglamento» entre los torneos y la parte histórica; esa zona (Memorias, Videos, Notas y Reglamento) tiene fondo propio y un banner opcional de auspiciante (espacio 7, AUSPICIANTE_ARCHIVO en portadaConfig).
 - 20/11/2026: «Campeonatos de los clubes» pasó antes del separador de archivo (queda con los torneos).
 - 20/11/2026: Clubes y jugadores y Panamericano de Billar quedan plegados; se abren con un botón. El menú de arriba los abre solo.
+- 22/11/2026: se quitó el selector de categoría de arriba (las categorías van mezcladas en los partidos). El selector queda en torneo y sede.

@@ -59,7 +59,6 @@ export default function PortadaPage() {
   const [ranking, setRanking] = useState<any[]>([]);
   const [rankingCargado, setRankingCargado] = useState(false);
   const [cat, setCat] = useState('general');
-  const [catPartidos, setCatPartidos] = useState('todas');
   const [txs, setTxs] = useState<any[]>([]);
   const [txSel, setTxSel] = useState<number | null>(null);
   const [sedeSel, setSedeSel] = useState<number | null>(null); // null = todas las sedes
@@ -169,11 +168,9 @@ export default function PortadaPage() {
 
   const torneoNombre = torneos.find(t => t.id === torneoSel)?.name ?? '';
   const delTorneo = (m: any) => torneoSel != null && m?.phase?.circuit?.tournament?.id === torneoSel;
-  const delaCat = (m: any) => catPartidos === 'todas' ||
-    m?.playerA?.category?.name === catPartidos;
   const delaSede = (m: any) => sedeSel == null || m?.table?.venue?.id === sedeSel;
-  const enJuegoF = useMemo(() => enJuego.filter(delTorneo).filter(delaCat).filter(delaSede).slice(0, 6), [enJuego, torneoSel, catPartidos, sedeSel]);
-  const proximosF = useMemo(() => proximos.filter(delTorneo).filter(delaCat).filter(delaSede).slice(0, 6), [proximos, torneoSel, catPartidos, sedeSel]);
+  const enJuegoF = useMemo(() => enJuego.filter(delTorneo).filter(delaSede).slice(0, 6), [enJuego, torneoSel, sedeSel]);
+  const proximosF = useMemo(() => proximos.filter(delTorneo).filter(delaSede).slice(0, 6), [proximos, torneoSel, sedeSel]);
   // Sedes del torneo elegido: las que tienen partidos en juego o programados, mas las que transmiten
   const sedesTorneo = useMemo(() => {
     const m = new Map<number, string>();
@@ -238,7 +235,7 @@ export default function PortadaPage() {
             {torneos.map(t => {
               const sel = t.id === torneoSel;
               return (
-                <button key={t.id} type="button" aria-pressed={sel} onClick={() => { setTorneoSel(t.id); setSedeSel(null); setCatPartidos('todas'); }}
+                <button key={t.id} type="button" aria-pressed={sel} onClick={() => { setTorneoSel(t.id); setSedeSel(null); }}
                   className={`flex-1 basis-[220px] min-w-0 min-h-[64px] text-left px-4 py-3 rounded-xl border-[1.5px] ${sel ? 'border-orange bg-orange/10' : 'border-silver/30 bg-carbon-100'}`}>
                   <span className="block text-xs font-bold tracking-wider uppercase text-orange-light">{sel ? 'Viendo' : 'En juego'}</span>
                   <span className="block font-display font-bold text-xl md:text-2xl text-white leading-tight">{t.name}</span>
@@ -263,13 +260,6 @@ export default function PortadaPage() {
             </div>
           </div>
         )}
-        <div className="flex flex-col gap-1 sm:max-w-xs">
-          <label htmlFor="sel-cat" className="text-xs font-semibold tracking-widest uppercase text-silver-dark">3. Categoría</label>
-          <select id="sel-cat" className="input w-full min-h-[52px] text-base font-semibold" value={catPartidos} onChange={e => setCatPartidos(e.target.value)}>
-            <option value="todas">Todas las categorías</option>
-            {CATEGORIAS.filter(c => c.key !== 'general').map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
-          </select>
-        </div>
       </section>
 
       {/* En vivo */}
