@@ -124,3 +124,4 @@ Sitio público de la Federación de Billar del Uruguay, construido sobre el mism
 - 22/11/2026: Próximos partidos de la portada: solo partidos formados (con los dos jugadores), con «Ver más»; con sede elegida se piden al servidor los de esa sede (incluye mesa libre y series); refresco cada 60 s.
 - 22/11/2026: nota «Verónica Gutiérrez» (borrador) en Notas y entrevistas; bloques nuevos 'datos' y 'tabla' y fotos verticales sin recorte.
 - 22/11/2026: ajustes a la nota de Verónica (bajada, transición Madrid/Panamericano, subtítulo, cita destacada, epígrafes con más contraste, fotos verticales más chicas). Revisada en 360, 390 y 1100 px sin desbordes.
+- 22/11/2026: nota de Verónica: el vicecampeonato de Santa Fe pasa a 2025 (texto y palmarés).
