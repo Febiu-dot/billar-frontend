@@ -301,17 +301,20 @@ export default function PortadaPage() {
         <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
           <div className="min-w-0">
             <h1 id="envivo" className="font-display font-extrabold uppercase tracking-wide text-white text-3xl md:text-5xl leading-tight">{torneoNombre || 'Torneos FEBIU'}</h1>
-            {!hayDirectos && <p className="mt-1 text-silver-dark">Hoy no hay transmisiones en vivo en este momento. Cuando haya, aparece acá un botón para verlas.</p>}
             {hayDirectos && !verPanel && <p className="mt-1 text-silver-light">Hay {txs.length === 1 ? 'una transmisión' : `${txs.length} transmisiones`} en vivo ahora.</p>}
           </div>
-          {hayDirectos && (
-            <button type="button" aria-expanded={verPanel} aria-controls="panel-envivo" onClick={() => setVerTx(v => !v)}
-              className={`min-h-[56px] px-6 rounded-xl font-bold text-lg inline-flex items-center gap-3 ${verPanel ? 'border-[1.5px] border-silver/40 text-white bg-carbon-100' : 'bg-[#cc0000] text-white'}`}>
-              {!verPanel && <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" aria-hidden="true" />}
-              {verPanel ? 'Ocultar la transmisión ▴' : 'Ver transmisiones en vivo'}
-            </button>
-          )}
+          <button type="button" aria-expanded={verPanel || (verTx && !hayDirectos)} aria-controls="panel-envivo" onClick={() => setVerTx(v => !v)}
+            className={`min-h-[56px] px-6 rounded-xl font-bold text-lg inline-flex items-center gap-3 ${verPanel || (verTx && !hayDirectos) ? 'border-[1.5px] border-silver/40 text-white bg-carbon-100' : hayDirectos ? 'bg-[#cc0000] text-white' : 'border-[1.5px] border-silver/40 text-white'}`}>
+            {!verPanel && hayDirectos && <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" aria-hidden="true" />}
+            {verPanel || (verTx && !hayDirectos) ? 'Ocultar transmisiones ▴' : 'Transmisiones en vivo'}
+          </button>
         </div>
+        {verTx && !hayDirectos && (
+          <div id="panel-envivo" role="status" className="mb-5 rounded-xl border border-silver/35 bg-carbon-100 px-5 py-6 text-center">
+            <p className="text-white text-xl md:text-2xl font-semibold">En este momento no hay transmisiones en vivo.</p>
+            <p className="mt-2 text-silver-light text-base md:text-lg">Cuando haya partidos transmitiendo, vas a poder elegir la sede y la mesa desde este botón.</p>
+          </div>
+        )}
         {vistaPrevia && !verPanel && !TRANSMISION_PRESENTADA_POR && <div className="mb-5"><Espacio n={4} texto="Espacio 4 · «Transmisión presentada por…» (irá junto al video en vivo)" className="h-[64px]" /></div>}
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           {verPanel && (

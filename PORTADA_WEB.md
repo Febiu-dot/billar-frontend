@@ -127,3 +127,4 @@ Sitio público de la Federación de Billar del Uruguay, construido sobre el mism
 - 22/11/2026: nota de Verónica: el vicecampeonato de Santa Fe pasa a 2025 (texto y palmarés).
 
 - 2026-11-22: En vivo de la portada: sin transmisiones ya no se muestra el cuadro negro (solo un texto y los resultados a todo el ancho); con transmisiones aparece el botón rojo "Ver transmisiones en vivo", que abre el panel con sedes y mesas que transmiten.
+- 2026-11-22: Boton "Transmisiones en vivo" siempre visible junto al titulo; sin directos, al tocarlo muestra el cartel "En este momento no hay transmisiones en vivo."
