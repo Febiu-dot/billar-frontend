@@ -162,7 +162,9 @@ function paginaSerie(d: jsPDF, logo: string | null, tit: string, s: NonNullable<
 }
 
 function paginaCruces(d: jsPDF, logo: string | null, tit: string, fase: string, lote: NonNullable<DatosPlanilla['cruces']>) {
-  const W = 595.28, H = 841.89, ML = 26, NB = 7;
+  const W = 595.28, H = 841.89, ML = 26, NB = 7, K = 0.87;
+  // Misma reducción (13 %) que la planilla de series: hoja centrada con margen libre para imprimir
+  d.internal.write('q', `${K} 0 0 ${K} ${((W / 2) * (1 - K)).toFixed(3)} ${((H / 2) * (1 - K)).toFixed(3)} cm`);
   d.setDrawColor(...GREEN); d.setLineWidth(2); d.rect(ML - 10, ML - 10, W - 2 * ML + 20, H - 2 * ML + 20);
   d.setLineWidth(0.6); d.rect(ML - 6, ML - 6, W - 2 * ML + 12, H - 2 * ML + 12);
   const x0 = ML, x1 = W - ML, tw = x1 - x0, top = ML + 2;
@@ -210,6 +212,7 @@ function paginaCruces(d: jsPDF, logo: string | null, tit: string, fase: string, 
     y += bh + gap;
   }
   d.setLineWidth(0.8);
+  d.internal.write('Q');
 }
 
 export async function generarPlanillaPDF(datos: DatosPlanilla): Promise<jsPDF> {
