@@ -1,3 +1,4 @@
+import { datosParaPlanilla, descargarPlanilla, imprimirPlanilla } from '../utils/planillaJuez';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { leerCircuitoActivo, guardarCircuitoActivo } from '../utils/circuitoActivo';
 import { api } from '../services/api';
@@ -2540,6 +2541,18 @@ export default function AdminPublicacionesPage() {
                     style={{ background: 'linear-gradient(135deg, #1a3560, #0a223f)', border: '1px solid #f4c43055' }}>
                     {exportando ? 'Exportando...' : '⬇ Exportar en 2 partes (WhatsApp)'}
                   </button>
+                )}
+                {datosParaPlanilla(pubData) && (
+                  <>
+                    <button className="btn-primary px-8" onClick={async () => { try { await descargarPlanilla(datosParaPlanilla(pubData)!, `planilla-juez-${String(tipoFase).replace(/[^a-z0-9-]/gi, '')}`); } catch (e: any) { alert(`Error al generar la planilla: ${e.message}`); } }}
+                      style={{ background: 'linear-gradient(135deg, #1a3560, #0a223f)', border: '1px solid #f4c43055' }}>
+                      📄 Planilla de juez (PDF)
+                    </button>
+                    <button className="btn-primary px-8" onClick={async () => { try { await imprimirPlanilla(datosParaPlanilla(pubData)!); } catch (e: any) { alert(`Error al imprimir la planilla: ${e.message}`); } }}
+                      style={{ background: 'linear-gradient(135deg, #1a3560, #0a223f)', border: '1px solid #f4c43055' }}>
+                      🖨 Imprimir planilla
+                    </button>
+                  </>
                 )}
                 <button className="btn-primary px-8" disabled={publicando || exportando} onClick={publicarEnVistaPublica}
                   style={{ background: 'linear-gradient(135deg, #1b5e20, #2e7d32)', border: '1px solid #66bb6a55' }}>
