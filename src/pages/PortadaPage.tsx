@@ -310,8 +310,8 @@ export default function PortadaPage() {
             {hayDirectos && !verPanel && <p className="mt-1 text-silver-light">Hay {txs.length === 1 ? 'una transmisión' : `${txs.length} transmisiones`} en vivo ahora.</p>}
           </div>
           <button type="button" aria-expanded={verPanel || (verTx && !hayDirectos)} aria-controls="panel-envivo" onClick={() => setVerTx(v => !v)}
-            className={`min-h-[56px] px-6 rounded-xl font-bold text-lg inline-flex items-center gap-3 ${verPanel || (verTx && !hayDirectos) ? 'border-[1.5px] border-silver/40 text-white bg-carbon-100' : hayDirectos ? 'bg-[#cc0000] text-white' : 'border-[1.5px] border-silver/40 text-white'}`}>
-            {!verPanel && hayDirectos && <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" aria-hidden="true" />}
+            className={`min-h-[56px] px-6 rounded-xl font-bold text-lg inline-flex items-center gap-3 ${verPanel || (verTx && !hayDirectos) ? 'border-[1.5px] border-silver/40 text-white bg-carbon-100' : 'bg-orange text-carbon'}`}>
+            {!verPanel && hayDirectos && <span className="w-2.5 h-2.5 rounded-full bg-carbon animate-pulse" aria-hidden="true" />}
             {verPanel || (verTx && !hayDirectos) ? 'Ocultar transmisiones ▴' : 'Transmisiones en vivo'}
           </button>
         </div>
