@@ -46,4 +46,5 @@ export const VIDEOS: VideoItem[] = [
 export const NOTAS: NotaItem[] = [];
 
 export const PANAMERICANO_PROXIMO = 'Julio 2027';
-export const MUNDIAL = { fecha: 'Octubre de 2027', sede: '' };
+// Confirmado por la UMB (noticia del 24/11/2026): Uruguay sede del Mundial, del 4 al 7 de noviembre de 2027.
+export const MUNDIAL = { fecha: 'Del 4 al 7 de noviembre de 2027', sede: 'Uruguay', cortaFecha: '4 al 7 de noviembre de 2027' };

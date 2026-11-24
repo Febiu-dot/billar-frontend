@@ -272,6 +272,16 @@ export default function PortadaPage() {
           )}
         </section>
       )}
+      {/* Aviso del Mundial 2027: confirmado por la UMB (tira bajo el banner del auspiciante principal) */}
+      <div className="max-w-6xl mx-auto px-4 pt-4">
+        <a href="#mundial" className="block rounded-xl border border-orange/60 bg-gradient-to-r from-orange/20 to-carbon-100 px-4 py-3 md:px-6 md:py-4 min-h-[56px]">
+          <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <span className="text-[11px] font-bold tracking-[0.14em] uppercase bg-orange text-carbon rounded-full px-2.5 py-1">Confirmado por la UMB</span>
+            <span className="font-display font-extrabold uppercase text-white text-xl md:text-2xl leading-tight">Uruguay será sede del Mundial de Billar</span>
+            <span className="text-silver-light text-base md:text-lg">{MUNDIAL.cortaFecha} · <span className="underline text-orange-light font-semibold">Ver más</span></span>
+          </span>
+        </a>
+      </div>
 
       {/* Elegir que ver: torneo, sede y categoria. Lo primero que busca el visitante */}
       <section id="torneos" style={{ scrollMarginTop: 120 }} aria-labelledby="torneos-t" className="max-w-6xl mx-auto px-4 pt-6 flex flex-col gap-4">
@@ -798,9 +808,10 @@ export default function PortadaPage() {
             <span className="w-4 h-4 rounded-full" style={{ background: '#f2f2f2' }} />
             <span className="w-4 h-4 rounded-full" style={{ background: '#f2d41a' }} />
           </div>
-          <span className="text-xs font-semibold tracking-[0.12em] uppercase text-orange-light">Se viene · Uruguay, país sede</span>
+          <span className="text-xs font-semibold tracking-[0.12em] uppercase text-orange-light">Confirmado por la UMB · Uruguay, país sede</span>
           <h2 id="mundial-t" className="font-display font-extrabold uppercase text-white text-5xl md:text-7xl leading-[0.98]">Mundial de Billar 2027</h2>
-          <p className="text-lg text-silver-light">{[MUNDIAL.fecha, MUNDIAL.sede].filter(Boolean).join(' · ')}</p>
+          <p className="font-display font-bold text-orange-light text-3xl md:text-5xl leading-tight">{MUNDIAL.fecha}</p>
+          <p className="text-lg text-silver-light max-w-3xl">La Unión Mundial de Billar (UMB) confirmó a Uruguay como sede del Campeonato Mundial. Cuatro días con los mejores billaristas del mundo, en nuestro país: una oportunidad única para que tu marca esté presente.</p>
           {hrefMundial && <a href={hrefMundial} target="_blank" rel="noopener noreferrer" className="mt-2 min-h-[52px] inline-flex items-center justify-center px-7 rounded-xl bg-orange text-carbon font-bold text-lg">Quiero ser sponsor del Mundial</a>}
         </div>
       </section>

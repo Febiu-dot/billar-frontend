@@ -36,8 +36,8 @@ export interface Entrega {
 export const ENTREGAS: Entrega[] = [
   {
     numero: 1,
-    estado: 'borrador', // creditos de las imagenes resueltos el 17/11/2026; publicar solo con autorizacion expresa de Capo
-    fecha: null,
+    estado: 'publicado', // publicada el 24/11/2026 con autorizacion expresa de Capo
+    fecha: '2026-11-24',
     titulo: 'Los orígenes del billar en Uruguay',
     bajada: 'De los antiguos cafés montevideanos a los primeros pasos de la organización deportiva.',
     resumen: 'Primera entrega de Memorias del Billar Uruguayo: del billar en los cafés montevideanos del siglo XIX a la organización federativa.',
