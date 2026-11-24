@@ -373,6 +373,9 @@ export default function PortadaPage() {
                 </div>
               )}
             </div>
+            {txActual && !canalPrueba && /^UC[\w-]{22}$/.test(String(txActual.canal)) && (
+              <a href={`https://www.youtube.com/channel/${txActual.canal}/live`} target="_blank" rel="noopener noreferrer" className="min-h-[48px] inline-flex items-center justify-center px-5 rounded-lg border border-silver/35 text-white font-semibold">¿No se ve el video? Abrilo en YouTube</a>
+            )}
             {txActual && !canalPrueba && (
               <div>
                 <h2 className="font-display font-extrabold uppercase tracking-wide text-white text-2xl md:text-3xl leading-tight">{txActual.sede} · Mesa {txActual.mesa}</h2>
