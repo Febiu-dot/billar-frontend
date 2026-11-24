@@ -130,3 +130,4 @@ Sitio público de la Federación de Billar del Uruguay, construido sobre el mism
 - 22/11/2026: Sedes (app): campo nuevo «Teléfono de contacto» (Venue.phone, migración 20261122234000_venue_phone).
 - 22/11/2026: Clubes y jugadores (web): al abrir un club se ve «Contacto del club» (dirección, ciudad, teléfono) tomado de la ficha de la sede. Se une club con sede por nombre (sin tildes, espacios ni signos; uno contenido en el otro). Si un club no muestra contacto, los nombres son muy distintos. Endpoint público: GET /api/portada/contactos.
 - 22/11/2026: la transmisión se apaga sola a las 8 h (antes 14 h).
+- 24/11/2026: publicadas las notas «Diego Capote» y «Verónica Gutiérrez» (estado publicado, fecha 2026-11-24), con autorización expresa de Capo. Memorias N.º 1 sigue en borrador.

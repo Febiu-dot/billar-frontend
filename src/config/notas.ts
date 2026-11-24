@@ -40,8 +40,8 @@ export const TEXTO_PENDIENTE = '[TEXTO PENDIENTE: pegar aqui el texto aprobado, 
 export const NOTAS: Nota[] = [
   {
     slug: 'diego-capote',
-    estado: 'borrador',
-    fecha: null,
+    estado: 'publicado',
+    fecha: '2026-11-24',
     tipo: 'Nota',
     titulo: 'Diego Capote: dos veces vicecampeón mundial y protagonista del billar uruguayo',
     bajada: 'Integró las selecciones uruguayas que llegaron a las finales mundiales de 2019 y 2023. Hoy continúa compitiendo en los campeonatos departamentales, compartiendo las mesas con jugadores de distintas generaciones.',
@@ -100,8 +100,8 @@ export const NOTAS: Nota[] = [
   },
   {
     slug: 'veronica-gutierrez',
-    estado: 'borrador',
-    fecha: null,
+    estado: 'publicado',
+    fecha: '2026-11-24',
     tipo: 'Nota',
     titulo: "Verónica Gutiérrez: comenzó a jugar al billar a los 54 años y llegó a la élite mundial",
     bajada: "Tricampeona nacional de cinco quillas, fue quinta en el Mundial de Madrid 2025 y se consagró campeona panamericana en Uruguay en 2026",
