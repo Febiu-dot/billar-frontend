@@ -1,4 +1,4 @@
-// PUBLIC_BUILD = pub-public-2026-11-22-tx-boton-naranja-1
+// PUBLIC_BUILD = pub-public-2026-11-22-boton-web-febiu-1
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
@@ -619,6 +619,16 @@ export default function PublicPage() {
       </header>
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-8">
+
+        {/* Acceso a la web de la FEBIU */}
+        <a href="https://www.febiu.org/portada" target="_blank" rel="noopener noreferrer"
+           className="flex items-center justify-between gap-3 rounded-xl bg-orange text-carbon px-5 py-3 min-h-[56px]">
+          <span>
+            <span className="block font-display font-extrabold uppercase tracking-wide text-lg leading-tight">Visitá la web de la FEBIU</span>
+            <span className="block text-sm font-semibold">Transmisiones en vivo, notas, rankings y más · febiu.org</span>
+          </span>
+          <span aria-hidden="true" className="text-2xl font-bold">→</span>
+        </a>
 
         {/* Selector de torneo */}
         <section>
